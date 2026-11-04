@@ -543,10 +543,10 @@ body {
 }
 
 .receipt-start label {
-  max-width: 110px;
   font-size: 0.68rem;
-  line-height: 1.2;
+  line-height: 1.3;
   color: var(--faint);
+  white-space: nowrap;
 }
 
 .stepper {
