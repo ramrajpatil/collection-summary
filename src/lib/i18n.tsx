@@ -23,6 +23,7 @@ export interface Strings {
   generatePdf: string
   pdfTitle: string
   dateLabel: string
+  selectDate: string
   pastCollection: string
   dayAmount: string
   previousDay: string
@@ -208,6 +209,7 @@ export const STRINGS: Record<Lang, Strings> = {
     generatePdf: 'PDF तयार करा',
     pdfTitle: 'दैनिक पिग्मी वसुली पत्रक',
     dateLabel: 'दिनांक',
+    selectDate: 'दिनांक निवडा',
     pastCollection: 'वसुली',
     dayAmount: 'त्या दिवसाची रक्कम',
     previousDay: 'मागील दिवस',
@@ -396,6 +398,7 @@ export const STRINGS: Record<Lang, Strings> = {
     generatePdf: 'Generate PDF',
     pdfTitle: 'Daily Pigmy Collection Sheet',
     dateLabel: 'Date',
+    selectDate: 'Select date',
     pastCollection: 'Collection',
     dayAmount: "Day's amount",
     previousDay: 'Previous day',

@@ -19,6 +19,7 @@ import {
   sharePdf,
 } from '../lib/sheets'
 import { BottomSheet } from '../components/BottomSheet'
+import { DatePicker } from '../components/DatePicker'
 import {
   CheckIcon,
   ChevronLeftIcon,
@@ -66,6 +67,7 @@ export function CollectionScreen({
   const [reloadToken, setReloadToken] = useState(0)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<'all' | 'collected' | 'pending'>('all')
+  const [calendarOpen, setCalendarOpen] = useState(false)
 
   const refresh = () => setReloadToken((token) => token + 1)
   const isToday = date === today
@@ -302,17 +304,15 @@ export function CollectionScreen({
           >
             <ChevronLeftIcon />
           </button>
-          <label className="date-center">
+          <button
+            type="button"
+            className="date-center"
+            aria-label={s.selectDate}
+            onClick={() => setCalendarOpen(true)}
+          >
             <small>{s.dateLabel}</small>
             <b>{formatDate(date, lang)}</b>
-            <input
-              type="date"
-              value={date}
-              max={today}
-              aria-label={s.dateLabel}
-              onChange={(event) => changeDate(event.target.value)}
-            />
-          </label>
+          </button>
           <button
             type="button"
             className="icon-btn"
@@ -633,6 +633,15 @@ export function CollectionScreen({
             ) : null}
           </div>
         </BottomSheet>
+      ) : null}
+
+      {calendarOpen ? (
+        <DatePicker
+          value={date}
+          max={today}
+          onSelect={(next) => changeDate(next)}
+          onClose={() => setCalendarOpen(false)}
+        />
       ) : null}
     </>
   )
