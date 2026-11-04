@@ -370,10 +370,20 @@ body {
   margin-top: 8px;
 }
 
+.sheet.sheet-fit {
+  width: auto;
+  max-width: min(340px, 100%);
+  padding: 14px;
+  gap: 12px;
+}
+
 .calendar {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
 }
 
 .calendar-head {
@@ -391,12 +401,15 @@ body {
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 5px;
+  gap: 4px;
+  justify-items: center;
 }
 
 .calendar-weekday {
-  padding: 4px 0;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
   font-size: 0.62rem;
   font-weight: 600;
   color: var(--faint);
@@ -406,13 +419,14 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  aspect-ratio: 1;
+  width: 34px;
+  height: 34px;
   border: 1px solid transparent;
   border-radius: 999px;
   background: transparent;
   color: var(--text);
   font-family: inherit;
-  font-size: 0.84rem;
+  font-size: 0.78rem;
   cursor: pointer;
   transition:
     background 0.25s var(--ease),
@@ -420,15 +434,15 @@ body {
     transform 0.3s var(--spring);
 }
 
-.calendar-day.empty {
+.calendar-day.calendar-blank {
   cursor: default;
 }
 
-.calendar-day:not(.empty):not(:disabled):hover {
+.calendar-day:not(.calendar-blank):not(:disabled):hover {
   background: var(--chip-bg);
 }
 
-.calendar-day:not(.empty):not(:disabled):active {
+.calendar-day:not(.calendar-blank):not(:disabled):active {
   transform: scale(0.9);
 }
 

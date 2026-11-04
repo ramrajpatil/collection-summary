@@ -7,6 +7,7 @@ interface BottomSheetProps {
   onClose: () => void
   children: ReactNode
   footer?: ReactNode
+  className?: string
 }
 
 export function BottomSheet({
@@ -15,6 +16,7 @@ export function BottomSheet({
   onClose,
   children,
   footer,
+  className,
 }: BottomSheetProps) {
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -27,7 +29,7 @@ export function BottomSheet({
   return (
     <div className="sheet-backdrop" onClick={onClose}>
       <div
-        className="sheet glass"
+        className={`sheet glass${className ? ` ${className}` : ''}`}
         role="dialog"
         aria-modal="true"
         aria-label={title}

@@ -51,6 +51,8 @@ export function DatePicker({
   const cells: (number | null)[] = []
   for (let i = 0; i < startWeekday; i += 1) cells.push(null)
   for (let day = 1; day <= daysInMonth; day += 1) cells.push(day)
+  // Always render 6 full weeks so the calendar keeps a constant height.
+  while (cells.length < 42) cells.push(null)
 
   const weekdays = lang === 'mr' ? MR_WEEKDAYS : EN_WEEKDAYS
 
@@ -65,6 +67,7 @@ export function DatePicker({
     <BottomSheet
       title={s.selectDate}
       closeLabel={s.close}
+      className="sheet-fit"
       onClose={onClose}
       footer={
         <button
@@ -112,8 +115,8 @@ export function DatePicker({
             if (day === null) {
               return (
                 <span
-                  className="calendar-day empty"
-                  key={`empty-${index}`}
+                  className="calendar-day calendar-blank"
+                  key={`blank-${index}`}
                   aria-hidden
                 />
               )
