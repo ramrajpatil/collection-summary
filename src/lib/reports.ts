@@ -1,4 +1,5 @@
 import type { MonthlyReport } from './models'
+import { compareAccountNo } from './sort'
 
 export const COMMISSION_RATE = 0.03
 
@@ -115,9 +116,7 @@ export function buildMonthlyReport(
       total: round2(holder.total),
       commission: commissionFor(holder.total),
     }))
-    .sort((a, b) =>
-      a.accountNo.localeCompare(b.accountNo, undefined, { numeric: true }),
-    )
+    .sort((a, b) => compareAccountNo(a.accountNo, b.accountNo))
 
   const daily = [...dayMap.entries()]
     .map(([date, value]) => ({

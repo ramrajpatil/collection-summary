@@ -17,6 +17,7 @@ import type {
 import { DEMO_COLLECTED_COUNT, DEMO_HOLDERS } from './demo'
 import { todayIso } from './marathi'
 import { buildMonthlyReport, commissionPeriod } from './reports'
+import { compareAccountNo } from './sort'
 
 const STORAGE_KEY = 'collection-summary.db.v1'
 
@@ -151,7 +152,8 @@ export class WebRepository implements Repository {
         if (status === 'active' && !holder.active) return false
         if (status === 'inactive' && holder.active) return false
         if (search) {
-          const haystack = `${holder.name} ${holder.accountNo}`.toLocaleLowerCase()
+          const haystack =
+            `${holder.name} ${holder.nameEn} ${holder.accountNo}`.toLocaleLowerCase()
           if (!haystack.includes(search)) return false
         }
         return true
@@ -161,9 +163,7 @@ export class WebRepository implements Repository {
           const byName = a.name.localeCompare(b.name)
           if (byName !== 0) return byName
         }
-        return a.accountNo.localeCompare(b.accountNo, undefined, {
-          numeric: true,
-        })
+        return compareAccountNo(a.accountNo, b.accountNo)
       })
 
     return rows.map(toHolder)

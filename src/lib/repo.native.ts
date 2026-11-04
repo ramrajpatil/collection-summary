@@ -257,17 +257,21 @@ export class NativeRepository implements Repository {
     const clauses: string[] = []
     const values: unknown[] = []
     if (search) {
-      clauses.push('(name LIKE ? OR account_no LIKE ?)')
-      values.push(`%${search}%`, `%${search}%`)
+      clauses.push('(name LIKE ? OR name_en LIKE ? OR account_no LIKE ?)')
+      values.push(`%${search}%`, `%${search}%`, `%${search}%`)
     }
     if (status === 'active') clauses.push('active = 1')
     if (status === 'inactive') clauses.push('active = 0')
 
     const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : ''
+    // Sort account numbers by numeric value ("999" before "1000", "01" == "1").
+    // Pure numeric accounts come first; alphanumeric accounts follow.
+    const accountKey =
+      "CASE WHEN trim(account_no) <> '' AND trim(account_no) NOT GLOB '*[^0-9]*' THEN CAST(trim(account_no) AS INTEGER) ELSE NULL END"
     const order =
       sort === 'name'
-        ? 'ORDER BY name COLLATE NOCASE ASC, account_no ASC'
-        : 'ORDER BY account_no COLLATE NOCASE ASC'
+        ? `ORDER BY name COLLATE NOCASE ASC, ((${accountKey}) IS NULL) ASC, ${accountKey} ASC, account_no COLLATE NOCASE ASC`
+        : `ORDER BY ((${accountKey}) IS NULL) ASC, ${accountKey} ASC, account_no COLLATE NOCASE ASC`
 
     const res = await db.query(
       `SELECT * FROM holders ${where} ${order}`,
