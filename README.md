@@ -52,3 +52,22 @@ losing the keystore means existing installs can never be updated in place.
 
 If `android/keystore.properties` is absent, the release build is left unsigned so CI and
 local builds still work.
+
+### Developing on a new machine
+
+The signing password is stored in the developer's notes app on the phone; it is
+intentionally **not** in this repository.
+
+1. Copy the backed-up `release.keystore` file into `android/release.keystore`.
+2. Copy `keystore.properties.example` to `android/keystore.properties`.
+3. Fill `storePassword` and `keyPassword` with the password from the notes app.
+   Keep `storeFile=../release.keystore` and `keyAlias=collection`.
+4. Build the signed release:
+
+```bash
+npm run android:sync
+cd android && ./gradlew assembleRelease
+```
+
+Use the same keystore and password for every future release. A different key means
+phones must uninstall the old app (losing data) before installing the new one.
