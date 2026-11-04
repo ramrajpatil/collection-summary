@@ -9,6 +9,7 @@ import {
   formatReceipt,
   formatRupees,
   shiftIsoDate,
+  toLatinDigits,
   todayIso,
 } from '../lib/marathi'
 import { holderName } from '../lib/names'
@@ -362,11 +363,13 @@ export function CollectionScreen({
                 inputMode="numeric"
                 pattern="[0-9]*"
                 maxLength={4}
-                value={startDraft}
+                value={formatDigits(startDraft, lang)}
                 disabled={busy}
                 onChange={(event) =>
                   setStartDraft(
-                    event.target.value.replace(/\D/g, '').slice(0, 4),
+                    toLatinDigits(event.target.value)
+                      .replace(/\D/g, '')
+                      .slice(0, 4),
                   )
                 }
                 onBlur={() => void commitStart(Number(startDraft))}

@@ -36,6 +36,12 @@ export function toDevanagariDigits(value: number | string): string {
   return String(value).replace(/[0-9]/g, (d) => DEVANAGARI_DIGITS[Number(d)])
 }
 
+export function toLatinDigits(value: string): string {
+  return value.replace(/[०-९]/g, (d) =>
+    String(DEVANAGARI_DIGITS.indexOf(d)),
+  )
+}
+
 export function formatDigits(value: number | string, lang: Lang = 'mr'): string {
   return lang === 'mr' ? toDevanagariDigits(value) : String(value)
 }
