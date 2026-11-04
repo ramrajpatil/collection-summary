@@ -36,8 +36,8 @@ Debug APK output: `android/app/build/outputs/apk/debug/app-debug.apk`.
 
 ### Release signing
 
-1. Copy `keystore.properties.example` to `keystore.properties` and fill it in.
-2. Create a keystore (see the comments in the example file).
+1. Copy `keystore.properties.example` to `android/keystore.properties` and fill it in.
+2. Create the keystore at `android/release.keystore` (see the comments in the example).
 3. Build a signed release:
 
 ```bash
@@ -45,5 +45,10 @@ npm run android:sync
 cd android && ./gradlew assembleRelease
 ```
 
-If `keystore.properties` is absent, the release build is left unsigned so CI and local
-builds still work.
+Release APK output: `android/app/build/outputs/apk/release/app-release.apk`.
+
+The keystore and `android/keystore.properties` are git-ignored. **Back them up** —
+losing the keystore means existing installs can never be updated in place.
+
+If `android/keystore.properties` is absent, the release build is left unsigned so CI and
+local builds still work.
