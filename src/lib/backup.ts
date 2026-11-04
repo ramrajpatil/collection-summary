@@ -41,6 +41,7 @@ function parseHolder(value: unknown): BackupHolder | null {
   return {
     id,
     name: asString(value.name),
+    nameEn: asString(value.nameEn),
     accountNo: asString(value.accountNo),
     defaultAmount: asNumber(value.defaultAmount),
     phone: value.phone == null ? null : asString(value.phone),

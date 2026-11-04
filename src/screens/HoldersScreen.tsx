@@ -8,6 +8,7 @@ import type {
 import { isAccountExistsError } from '../lib/db'
 import { STRINGS, useLanguage } from '../lib/i18n'
 import { formatDigits, formatRupees } from '../lib/marathi'
+import { holderName, upperName } from '../lib/names'
 import { BottomSheet } from '../components/BottomSheet'
 import {
   EditIcon,
@@ -26,6 +27,7 @@ interface HoldersScreenProps {
 
 const EMPTY_DRAFT: HolderInput = {
   name: '',
+  nameEn: '',
   accountNo: '',
   defaultAmount: 100,
   phone: '',
@@ -127,6 +129,7 @@ export function HoldersScreen({
     setNextAccount('')
     setDraft({
       name: holder.name,
+      nameEn: holder.nameEn,
       accountNo: holder.accountNo,
       defaultAmount: holder.defaultAmount,
       phone: holder.phone ?? '',
@@ -306,7 +309,7 @@ export function HoldersScreen({
                   {formatDigits(holder.accountNo.slice(-2), lang)}
                 </span>
                 <span className="holder-info">
-                  <b>{holder.name}</b>
+                  <b>{holderName(holder.name, holder.nameEn, lang)}</b>
                   <small>
                     {s.accountNoShort}{' '}
                     {formatDigits(holder.accountNo, lang)} ·{' '}
@@ -368,7 +371,23 @@ export function HoldersScreen({
               value={draft.name}
               autoComplete="off"
               onChange={(event) =>
-                setDraft({ ...draft, name: event.target.value })
+                setDraft({ ...draft, name: upperName(event.target.value) })
+              }
+            />
+          </div>
+
+          <div className="field">
+            <label htmlFor="holderNameEn">{s.holderNameEn}</label>
+            <input
+              id="holderNameEn"
+              value={draft.nameEn ?? ''}
+              autoComplete="off"
+              placeholder={s.holderNameEnHint}
+              onChange={(event) =>
+                setDraft({
+                  ...draft,
+                  nameEn: upperName(event.target.value),
+                })
               }
             />
           </div>

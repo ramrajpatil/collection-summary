@@ -17,6 +17,7 @@ const profile: Profile = {
 const holder: Holder = {
   id: 1,
   name: 'Ramesh Patil',
+  nameEn: '',
   accountNo: '007',
   defaultAmount: 100,
   phone: '9876543210',

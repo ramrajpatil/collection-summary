@@ -36,6 +36,7 @@ describe('buildMonthlyReport', () => {
       {
         holderId: 1,
         name: 'A',
+        nameEn: '',
         accountNo: '001',
         date: '2026-03-01',
         amount: 100,
@@ -43,6 +44,7 @@ describe('buildMonthlyReport', () => {
       {
         holderId: 1,
         name: 'A',
+        nameEn: '',
         accountNo: '001',
         date: '2026-03-02',
         amount: 50,
@@ -50,6 +52,7 @@ describe('buildMonthlyReport', () => {
       {
         holderId: 2,
         name: 'B',
+        nameEn: '',
         accountNo: '002',
         date: '2026-03-01',
         amount: 200,
@@ -57,6 +60,7 @@ describe('buildMonthlyReport', () => {
       {
         holderId: 2,
         name: 'B',
+        nameEn: '',
         accountNo: '002',
         date: '2026-03-31',
         amount: 999,

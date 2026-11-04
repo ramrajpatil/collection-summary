@@ -23,6 +23,7 @@ const STORAGE_KEY = 'collection-summary.db.v1'
 interface WebHolder {
   id: number
   name: string
+  nameEn: string
   accountNo: string
   defaultAmount: number
   phone: string | null
@@ -71,7 +72,12 @@ function readState(): WebState {
     return {
       profile: parsed.profile ?? null,
       setupComplete: parsed.setupComplete === true,
-      holders: Array.isArray(parsed.holders) ? parsed.holders : [],
+      holders: Array.isArray(parsed.holders)
+        ? parsed.holders.map((holder) => ({
+            ...holder,
+            nameEn: typeof holder.nameEn === 'string' ? holder.nameEn : '',
+          }))
+        : [],
       collections: Array.isArray(parsed.collections)
         ? parsed.collections
         : [],
@@ -92,7 +98,7 @@ function readState(): WebState {
 }
 
 function toHolder(holder: WebHolder): Holder {
-  return { ...holder }
+  return { ...holder, nameEn: holder.nameEn ?? '' }
 }
 
 let instance: WebRepository | null = null
@@ -176,7 +182,8 @@ export class WebRepository implements Repository {
     const now = new Date().toISOString()
     const holder: WebHolder = {
       id: this.state.nextHolderId,
-      name: input.name.trim(),
+      name: input.name.trim().toUpperCase(),
+      nameEn: (input.nameEn ?? '').trim().toUpperCase(),
       accountNo,
       defaultAmount: Math.max(0, Number(input.defaultAmount) || 0),
       phone: input.phone?.trim() || null,
@@ -201,7 +208,8 @@ export class WebRepository implements Repository {
     ) {
       throw new Error('UNIQUE constraint failed: holders.account_no')
     }
-    holder.name = input.name.trim()
+    holder.name = input.name.trim().toUpperCase()
+    holder.nameEn = (input.nameEn ?? '').trim().toUpperCase()
     holder.accountNo = accountNo
     holder.defaultAmount = Math.max(0, Number(input.defaultAmount) || 0)
     holder.phone = input.phone?.trim() || null
@@ -253,6 +261,7 @@ export class WebRepository implements Repository {
           collectionId: row.id,
           holderId: row.holderId,
           name: holder.name,
+          nameEn: holder.nameEn ?? '',
           accountNo: holder.accountNo,
           amount: row.amount,
           receiptNo: row.receiptNo,
@@ -334,6 +343,7 @@ export class WebRepository implements Repository {
         return {
           holderId: row.holderId,
           name: holder?.name ?? '',
+          nameEn: holder?.nameEn ?? '',
           accountNo: holder?.accountNo ?? '',
           date: row.date,
           amount: row.amount,
@@ -390,6 +400,7 @@ export class WebRepository implements Repository {
     const holders: WebHolder[] = data.holders.map((holder) => ({
       id: holder.id,
       name: holder.name,
+      nameEn: holder.nameEn ?? '',
       accountNo: holder.accountNo,
       defaultAmount: Math.max(0, Number(holder.defaultAmount) || 0),
       phone: holder.phone ?? null,
@@ -433,6 +444,7 @@ export class WebRepository implements Repository {
       this.state.holders.push({
         id: this.state.nextHolderId,
         name: demo.name,
+        nameEn: '',
         accountNo: demo.accountNo,
         defaultAmount: demo.defaultAmount,
         phone: null,

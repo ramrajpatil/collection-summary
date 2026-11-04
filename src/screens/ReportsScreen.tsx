@@ -3,7 +3,13 @@ import { Capacitor } from '@capacitor/core'
 import type { MonthlyReport, Profile } from '../lib/models'
 import type { Repository } from '../lib/repo'
 import { STRINGS, useLanguage } from '../lib/i18n'
-import { formatDate, formatDigits, formatMonth, formatRupees } from '../lib/marathi'
+import {
+  formatDate,
+  formatDigits,
+  formatMonth,
+  formatRupees,
+} from '../lib/marathi'
+import { holderName } from '../lib/names'
 import {
   buildDailySheetHtml,
   buildMonthlySheetHtml,
@@ -233,7 +239,7 @@ export function ReportsScreen({ repo, profile }: ReportsScreenProps) {
               {report.holders.map((holder) => (
                 <div className="report-holder" key={holder.holderId}>
                   <div className="report-holder-main">
-                    <b>{holder.name}</b>
+                    <b>{holderName(holder.name, holder.nameEn, lang)}</b>
                     <small>
                       {s.accountNoShort}{' '}
                       {formatDigits(holder.accountNo, lang)} ·{' '}

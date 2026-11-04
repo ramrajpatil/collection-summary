@@ -83,6 +83,8 @@ export interface Strings {
   addHolder: string
   editHolder: string
   holderName: string
+  holderNameEn: string
+  holderNameEnHint: string
   holderAccount: string
   holderAmount: string
   holderPhone: string
@@ -262,6 +264,8 @@ export const STRINGS: Record<Lang, Strings> = {
     addHolder: 'नवीन खातेदार',
     editHolder: 'खातेदार बदला',
     holderName: 'नाव',
+    holderNameEn: 'इंग्रजी नाव',
+    holderNameEnHint: 'इंग्रजीमध्ये नाव (ऐच्छिक)',
     holderAccount: 'खाते क्रमांक',
     holderAmount: 'दैनिक रक्कम',
     holderPhone: 'मोबाइल (ऐच्छिक)',
@@ -442,6 +446,8 @@ export const STRINGS: Record<Lang, Strings> = {
     addHolder: 'New holder',
     editHolder: 'Edit holder',
     holderName: 'Name',
+    holderNameEn: 'English name',
+    holderNameEnHint: 'Name in English (optional)',
     holderAccount: 'Account no.',
     holderAmount: 'Daily amount',
     holderPhone: 'Phone (optional)',

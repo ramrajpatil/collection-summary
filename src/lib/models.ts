@@ -8,6 +8,7 @@ export interface Profile {
 export interface Holder {
   id: number
   name: string
+  nameEn: string
   accountNo: string
   defaultAmount: number
   phone: string | null
@@ -18,6 +19,7 @@ export interface Holder {
 
 export interface HolderInput {
   name: string
+  nameEn?: string
   accountNo: string
   defaultAmount: number
   phone?: string | null
@@ -28,6 +30,7 @@ export interface DayEntry {
   collectionId: number
   holderId: number
   name: string
+  nameEn: string
   accountNo: string
   amount: number
   receiptNo: number
@@ -44,6 +47,7 @@ export interface DayData {
 export interface MonthlyHolderRow {
   holderId: number
   name: string
+  nameEn: string
   accountNo: string
   days: number
   total: number
@@ -86,6 +90,7 @@ export interface HolderHistory {
 export interface BackupHolder {
   id: number
   name: string
+  nameEn: string
   accountNo: string
   defaultAmount: number
   phone: string | null

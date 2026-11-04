@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS settings (
 CREATE TABLE IF NOT EXISTS holders (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
+  name_en TEXT NOT NULL DEFAULT '',
   account_no TEXT NOT NULL UNIQUE,
   default_amount REAL NOT NULL DEFAULT 0,
   phone TEXT,
@@ -62,6 +63,7 @@ CREATE TABLE IF NOT EXISTS daily_meta (
 interface HolderRow {
   id: number
   name: string
+  name_en: string | null
   account_no: string
   default_amount: number
   phone: string | null
@@ -77,6 +79,7 @@ interface DayRow {
   receipt_no: number
   created_at: string
   name: string
+  name_en: string | null
   account_no: string
   default_amount: number
 }
@@ -86,7 +89,12 @@ interface ReportRow {
   date: string
   amount: number
   name: string
+  name_en: string | null
   account_no: string
+}
+
+interface TableColumnRow {
+  name: string
 }
 
 interface ExportCollectionRow {
@@ -119,6 +127,7 @@ function mapHolder(row: HolderRow): Holder {
   return {
     id: Number(row.id),
     name: row.name,
+    nameEn: row.name_en ?? '',
     accountNo: row.account_no,
     defaultAmount: Number(row.default_amount),
     phone: row.phone ?? null,
@@ -133,6 +142,7 @@ function mapEntry(row: DayRow): DayEntry {
     collectionId: Number(row.collection_id),
     holderId: Number(row.holder_id),
     name: row.name,
+    nameEn: row.name_en ?? '',
     accountNo: row.account_no,
     amount: Number(row.amount),
     receiptNo: Number(row.receipt_no),
@@ -155,6 +165,19 @@ export class NativeRepository implements Repository {
   async init(): Promise<void> {
     const db = await this.getDb()
     await db.execute(SCHEMA)
+    await this.migrate(db)
+  }
+
+  private async migrate(db: SQLiteDBConnection): Promise<void> {
+    const info = await db.query('PRAGMA table_info(holders)')
+    const columns = ((info.values ?? []) as TableColumnRow[]).map(
+      (row) => row.name,
+    )
+    if (!columns.includes('name_en')) {
+      await db.run(
+        "ALTER TABLE holders ADD COLUMN name_en TEXT NOT NULL DEFAULT ''",
+      )
+    }
   }
 
   private async getDb(): Promise<SQLiteDBConnection> {
@@ -265,10 +288,11 @@ export class NativeRepository implements Repository {
     const now = new Date().toISOString()
     const res = await db.run(
       `INSERT INTO holders
-        (name, account_no, default_amount, phone, active, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        (name, name_en, account_no, default_amount, phone, active, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        input.name.trim(),
+        input.name.trim().toUpperCase(),
+        (input.nameEn ?? '').trim().toUpperCase(),
         input.accountNo.trim(),
         Math.max(0, Number(input.defaultAmount) || 0),
         input.phone?.trim() || null,
@@ -289,11 +313,12 @@ export class NativeRepository implements Repository {
     const db = await this.getDb()
     await db.run(
       `UPDATE holders
-          SET name = ?, account_no = ?, default_amount = ?, phone = ?,
-              active = ?, updated_at = ?
+          SET name = ?, name_en = ?, account_no = ?, default_amount = ?,
+              phone = ?, active = ?, updated_at = ?
         WHERE id = ?`,
       [
-        input.name.trim(),
+        input.name.trim().toUpperCase(),
+        (input.nameEn ?? '').trim().toUpperCase(),
         input.accountNo.trim(),
         Math.max(0, Number(input.defaultAmount) || 0),
         input.phone?.trim() || null,
@@ -340,7 +365,7 @@ export class NativeRepository implements Repository {
 
     const res = await db.query(
       `SELECT c.id AS collection_id, c.holder_id, c.amount, c.receipt_no,
-              c.created_at, h.name, h.account_no, h.default_amount
+              c.created_at, h.name, h.name_en, h.account_no, h.default_amount
          FROM collections c
          JOIN holders h ON h.id = c.holder_id
         WHERE c.date = ?
@@ -460,7 +485,7 @@ export class NativeRepository implements Repository {
     const db = await this.getDb()
     const { start, end } = commissionPeriod(month)
     const res = await db.query(
-      `SELECT c.holder_id, c.date, c.amount, h.name, h.account_no
+      `SELECT c.holder_id, c.date, c.amount, h.name, h.name_en, h.account_no
          FROM collections c
          JOIN holders h ON h.id = c.holder_id
         WHERE c.date >= ? AND c.date <= ?
@@ -470,6 +495,7 @@ export class NativeRepository implements Repository {
     const rows = ((res.values ?? []) as ReportRow[]).map((row) => ({
       holderId: Number(row.holder_id),
       name: row.name,
+      nameEn: row.name_en ?? '',
       accountNo: row.account_no,
       date: row.date,
       amount: Number(row.amount),
@@ -562,6 +588,7 @@ export class NativeRepository implements Repository {
       holders: ((holdersRes.values ?? []) as HolderRow[]).map((row) => ({
         id: Number(row.id),
         name: row.name,
+        nameEn: row.name_en ?? '',
         accountNo: row.account_no,
         defaultAmount: Number(row.default_amount),
         phone: row.phone ?? null,
@@ -598,11 +625,12 @@ export class NativeRepository implements Repository {
       for (const holder of data.holders) {
         await db.run(
           `INSERT INTO holders
-            (id, name, account_no, default_amount, phone, active, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            (id, name, name_en, account_no, default_amount, phone, active, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             holder.id,
             holder.name,
+            holder.nameEn ?? '',
             holder.accountNo,
             Math.max(0, Number(holder.defaultAmount) || 0),
             holder.phone ?? null,

@@ -4,6 +4,7 @@ import type { DayData, Holder, Profile } from '../lib/models'
 import type { Repository } from '../lib/repo'
 import { STRINGS, useLanguage } from '../lib/i18n'
 import { formatDate, formatDigits, formatRupees, todayIso } from '../lib/marathi'
+import { holderName } from '../lib/names'
 import {
   buildDailySheetHtml,
   canSharePdf,
@@ -110,7 +111,7 @@ export function CollectionScreen({
       if (filter === 'pending' && entry) return false
       if (query) {
         const haystack =
-          `${holder.name} ${holder.accountNo}`.toLocaleLowerCase()
+          `${holder.name} ${holder.nameEn} ${holder.accountNo}`.toLocaleLowerCase()
         if (!haystack.includes(query)) return false
       }
       return true
@@ -420,7 +421,7 @@ export function CollectionScreen({
                 >
                   <div className="sr">{formatDigits(index + 1, lang)}</div>
                   <div className="who">
-                    <b>{holder.name}</b>
+                    <b>{holderName(holder.name, holder.nameEn, lang)}</b>
                     <small>
                       {s.accountNoShort}{' '}
                       {formatDigits(holder.accountNo, lang)}
@@ -496,7 +497,9 @@ export function CollectionScreen({
           onClose={() => setAmountTarget(null)}
         >
           <div className="amount-holder">
-            <b>{amountTarget.holder.name}</b>
+            <b>
+              {holderName(amountTarget.holder.name, amountTarget.holder.nameEn, lang)}
+            </b>
             <small>
               {s.accountNoShort}{' '}
               {formatDigits(amountTarget.holder.accountNo, lang)}

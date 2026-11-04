@@ -1,5 +1,6 @@
 import type { Lang } from './i18n'
 import type { Holder, Profile } from './models'
+import { holderName } from './names'
 
 export function normalizePhone(phone: string | null | undefined): string | null {
   if (!phone) return null
@@ -17,16 +18,17 @@ export function reminderMessage(
   amount: number,
 ): string {
   const outflow = Math.round(amount)
+  const name = holderName(holder.name, holder.nameEn, lang)
   if (lang === 'mr') {
     return (
-      `नमस्कार ${holder.name},\n` +
+      `नमस्कार ${name},\n` +
       `${profile.societyName} — खाते क्र. ${holder.accountNo}. ` +
       `आजची ₹${outflow} वसुली बाकी आहे. कृपया वेळेवर भरा.\n` +
       `— ${profile.agentName || profile.societyName}`
     )
   }
   return (
-    `Hello ${holder.name},\n` +
+    `Hello ${name},\n` +
     `${profile.societyName} — account no. ${holder.accountNo}. ` +
     `Today's collection of ₹${outflow} is pending. Please pay on time.\n` +
     `— ${profile.agentName || profile.societyName}`

@@ -4,6 +4,7 @@ import type { HolderHistory, Profile } from '../lib/models'
 import type { Repository } from '../lib/repo'
 import { STRINGS, useLanguage } from '../lib/i18n'
 import { formatDate, formatDigits, formatRupees } from '../lib/marathi'
+import { holderName } from '../lib/names'
 import {
   buildHolderStatementHtml,
   generateNativePdf,
@@ -138,7 +139,11 @@ export function HolderDetailScreen({
           <ChevronLeftIcon />
         </button>
         <div>
-          <h1>{history?.holder.name ?? s.holderDetail}</h1>
+          <h1>
+            {history
+              ? holderName(history.holder.name, history.holder.nameEn, lang)
+              : s.holderDetail}
+          </h1>
           <p>
             {history
               ? `${s.accountNoShort} ${formatDigits(

@@ -58,6 +58,7 @@ export function currentMonth(): string {
 export interface ReportSourceRow {
   holderId: number
   name: string
+  nameEn: string
   accountNo: string
   date: string
   amount: number
@@ -75,6 +76,7 @@ export function buildMonthlyReport(
     {
       holderId: number
       name: string
+      nameEn: string
       accountNo: string
       dates: Set<string>
       total: number
@@ -88,6 +90,7 @@ export function buildMonthlyReport(
     const holder = holderMap.get(row.holderId) ?? {
       holderId: row.holderId,
       name: row.name,
+      nameEn: row.nameEn,
       accountNo: row.accountNo,
       dates: new Set<string>(),
       total: 0,
@@ -106,6 +109,7 @@ export function buildMonthlyReport(
     .map((holder) => ({
       holderId: holder.holderId,
       name: holder.name,
+      nameEn: holder.nameEn,
       accountNo: holder.accountNo,
       days: holder.dates.size,
       total: round2(holder.total),
