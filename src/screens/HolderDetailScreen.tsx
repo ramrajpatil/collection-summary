@@ -3,7 +3,12 @@ import { Capacitor } from '@capacitor/core'
 import type { HolderHistory, Profile } from '../lib/models'
 import type { Repository } from '../lib/repo'
 import { STRINGS, useLanguage } from '../lib/i18n'
-import { formatDate, formatDigits, formatRupees } from '../lib/marathi'
+import {
+  formatDate,
+  formatDigits,
+  formatReceipt,
+  formatRupees,
+} from '../lib/marathi'
 import { holderName } from '../lib/names'
 import {
   buildHolderStatementHtml,
@@ -271,7 +276,7 @@ export function HolderDetailScreen({
                   <span className="c">{formatDigits(index + 1, lang)}</span>
                   <b>{formatDate(entry.date, lang)}</b>
                   <span className="c">
-                    {formatDigits(entry.receiptNo, lang)}
+                    {formatReceipt(entry.receiptNo, lang)}
                   </span>
                   <span className="r">{formatRupees(entry.amount, lang)}</span>
                 </div>

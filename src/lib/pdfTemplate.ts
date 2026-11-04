@@ -1,5 +1,10 @@
 import { STRINGS, type Lang } from './i18n'
-import { formatDate, formatDigits, formatRupees } from './marathi'
+import {
+  formatDate,
+  formatDigits,
+  formatReceipt,
+  formatRupees,
+} from './marathi'
 
 export interface SheetRow {
   sr: number
@@ -224,7 +229,7 @@ export function buildSheetHtml(data: SheetData, lang: Lang = 'mr'): string {
           <td class="c">${formatDigits(row.sr, lang)}</td>
           <td>${escapeHtml(row.name)}</td>
           <td class="c">${formatDigits(escapeHtml(row.accountNo), lang)}</td>
-          <td class="c">${formatDigits(row.receiptNo, lang)}</td>
+          <td class="c">${formatReceipt(row.receiptNo, lang)}</td>
           <td class="r">${formatRupees(row.amount, lang)}</td>
         </tr>`,
     )
@@ -314,7 +319,7 @@ export function buildStatementHtml(
         <tr>
           <td class="c">${formatDigits(row.sr, lang)}</td>
           <td class="c">${formatDate(row.dateIso, lang)}</td>
-          <td class="c">${formatDigits(row.receiptNo, lang)}</td>
+          <td class="c">${formatReceipt(row.receiptNo, lang)}</td>
           <td class="r">${formatRupees(row.amount, lang)}</td>
         </tr>`,
     )

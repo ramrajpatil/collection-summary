@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { shiftIsoDate } from './marathi'
+import { formatReceipt, shiftIsoDate } from './marathi'
 
 describe('shiftIsoDate', () => {
   it('moves backwards within a month', () => {
@@ -18,5 +18,18 @@ describe('shiftIsoDate', () => {
 
   it('returns the input unchanged when invalid', () => {
     expect(shiftIsoDate('not-a-date', 1)).toBe('not-a-date')
+  })
+})
+
+describe('formatReceipt', () => {
+  it('pads receipt numbers to four digits', () => {
+    expect(formatReceipt(1, 'en')).toBe('0001')
+    expect(formatReceipt(42, 'en')).toBe('0042')
+    expect(formatReceipt('7', 'en')).toBe('0007')
+    expect(formatReceipt(1234, 'en')).toBe('1234')
+  })
+
+  it('uses Devanagari digits for Marathi', () => {
+    expect(formatReceipt(9)).toBe('०००९')
   })
 })

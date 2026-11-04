@@ -51,6 +51,15 @@ export function formatRupees(value: number, lang: Lang = 'mr'): string {
   return `₹ ${formatNumber(value, lang)}`
 }
 
+export function formatReceipt(
+  value: number | string,
+  lang: Lang = 'mr',
+): string {
+  const text = String(value).trim()
+  const padded = /^\d+$/.test(text) ? text.padStart(4, '0') : text
+  return formatDigits(padded, lang)
+}
+
 function pad2(n: number): string {
   return String(n).padStart(2, '0')
 }

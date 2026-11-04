@@ -6,6 +6,7 @@ import { STRINGS, useLanguage } from '../lib/i18n'
 import {
   formatDate,
   formatDigits,
+  formatReceipt,
   formatRupees,
   shiftIsoDate,
   todayIso,
@@ -40,6 +41,11 @@ interface CollectionScreenProps {
 
 const QUICK_AMOUNTS = [10, 20, 50, 100, 200, 500]
 
+function padReceipt(value: number | string): string {
+  const digits = String(value).replace(/\D/g, '')
+  return digits ? digits.padStart(4, '0') : ''
+}
+
 interface AmountTarget {
   holder: Holder
   amount: number
@@ -61,7 +67,7 @@ export function CollectionScreen({
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState('')
-  const [startDraft, setStartDraft] = useState('1')
+  const [startDraft, setStartDraft] = useState('0001')
   const [amountTarget, setAmountTarget] = useState<AmountTarget | null>(null)
   const [amountError, setAmountError] = useState('')
   const [reloadToken, setReloadToken] = useState(0)
@@ -96,7 +102,7 @@ export function CollectionScreen({
         if (state.cancelled) return
         setDay(nextDay)
         setHolders(nextHolders)
-        setStartDraft(String(nextDay.startReceipt))
+        setStartDraft(padReceipt(nextDay.startReceipt))
       })
       .catch((err) => {
         if (!state.cancelled) {
@@ -168,11 +174,11 @@ export function CollectionScreen({
     if (!day) return
     const next = Math.floor(Number(value))
     if (!Number.isFinite(next) || next < 1) {
-      setStartDraft(String(day.startReceipt))
+      setStartDraft(padReceipt(day.startReceipt))
       return
     }
     if (next === day.startReceipt) {
-      setStartDraft(String(next))
+      setStartDraft(padReceipt(next))
       return
     }
     setBusy(true)
@@ -352,12 +358,17 @@ export function CollectionScreen({
               </button>
               <input
                 id="startReceipt"
-                type="number"
-                min={1}
+                type="text"
                 inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={4}
                 value={startDraft}
                 disabled={busy}
-                onChange={(event) => setStartDraft(event.target.value)}
+                onChange={(event) =>
+                  setStartDraft(
+                    event.target.value.replace(/\D/g, '').slice(0, 4),
+                  )
+                }
                 onBlur={() => void commitStart(Number(startDraft))}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') {
@@ -492,7 +503,7 @@ export function CollectionScreen({
                     </small>
                   </div>
                   <div className={`receipt${isDone ? ' filled' : ''}`}>
-                    {entry ? formatDigits(entry.receiptNo, lang) : '—'}
+                    {entry ? formatReceipt(entry.receiptNo, lang) : '—'}
                   </div>
                   <button
                     type="button"

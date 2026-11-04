@@ -205,7 +205,7 @@ export class NativeRepository implements Repository {
     if (!openState.result) {
       await db.open()
     }
-    await db.execute('PRAGMA foreign_keys = ON;')
+    await db.execute('PRAGMA foreign_keys = ON;', false)
     this.db = db
     return db
   }
@@ -391,6 +391,7 @@ export class NativeRepository implements Repository {
       await db.run(
         'INSERT OR IGNORE INTO daily_meta (date, start_receipt) VALUES (?, 1)',
         [date],
+        false,
       )
       const existing = await db.query(
         'SELECT id FROM collections WHERE holder_id = ? AND date = ?',
@@ -401,6 +402,7 @@ export class NativeRepository implements Repository {
         await db.run(
           'UPDATE collections SET amount = ?, updated_at = ? WHERE id = ?',
           [Math.max(0, Number(amount) || 0), now, existing.values[0].id],
+          false,
         )
       } else {
         await db.run(
@@ -408,6 +410,7 @@ export class NativeRepository implements Repository {
             (holder_id, date, amount, receipt_no, created_at, updated_at)
            VALUES (?, ?, ?, 0, ?, ?)`,
           [holderId, date, Math.max(0, Number(amount) || 0), now, now],
+          false,
         )
       }
       await this.renumberDate(db, date)
@@ -429,6 +432,7 @@ export class NativeRepository implements Repository {
       await db.run(
         'DELETE FROM collections WHERE holder_id = ? AND date = ?',
         [holderId, date],
+        false,
       )
       await this.renumberDate(db, date)
       await db.commitTransaction()
@@ -450,6 +454,7 @@ export class NativeRepository implements Repository {
       await db.run(
         'INSERT OR REPLACE INTO daily_meta (date, start_receipt) VALUES (?, ?)',
         [date, value],
+        false,
       )
       await this.renumberDate(db, date)
       await db.commitTransaction()
@@ -478,10 +483,11 @@ export class NativeRepository implements Repository {
     )
     const values = rows.values ?? []
     for (let i = 0; i < values.length; i += 1) {
-      await db.run('UPDATE collections SET receipt_no = ? WHERE id = ?', [
-        start + i,
-        values[i].id,
-      ])
+      await db.run(
+        'UPDATE collections SET receipt_no = ? WHERE id = ?',
+        [start + i, values[i].id],
+        false,
+      )
     }
   }
 
@@ -609,21 +615,23 @@ export class NativeRepository implements Repository {
     const db = await this.getDb()
     await db.beginTransaction()
     try {
-      await db.run('DELETE FROM collections')
-      await db.run('DELETE FROM holders')
-      await db.run('DELETE FROM daily_meta')
-      await db.run('DELETE FROM settings')
+      await db.run('DELETE FROM collections', [], false)
+      await db.run('DELETE FROM holders', [], false)
+      await db.run('DELETE FROM daily_meta', [], false)
+      await db.run('DELETE FROM settings', [], false)
 
       const profile = data.profile
       if (profile) {
         await db.run(
           "INSERT INTO settings (key, value) VALUES ('profile', ?)",
           [JSON.stringify(profile)],
+          false,
         )
       }
       await db.run(
         "INSERT INTO settings (key, value) VALUES ('setupComplete', ?)",
         [data.setupComplete ? '1' : '0'],
+        false,
       )
 
       for (const holder of data.holders) {
@@ -642,6 +650,7 @@ export class NativeRepository implements Repository {
             holder.createdAt,
             holder.updatedAt,
           ],
+          false,
         )
       }
 
@@ -658,6 +667,7 @@ export class NativeRepository implements Repository {
             collection.createdAt,
             collection.updatedAt,
           ],
+          false,
         )
       }
 
@@ -665,6 +675,7 @@ export class NativeRepository implements Repository {
         await db.run(
           'INSERT OR REPLACE INTO daily_meta (date, start_receipt) VALUES (?, ?)',
           [date, Math.max(1, Math.floor(Number(start) || 1))],
+          false,
         )
       }
 
@@ -703,11 +714,13 @@ export class NativeRepository implements Repository {
             now,
             now,
           ],
+          false,
         )
       }
       await db.run(
         'INSERT OR REPLACE INTO daily_meta (date, start_receipt) VALUES (?, 1)',
         [date],
+        false,
       )
       for (let i = 0; i < DEMO_COLLECTED_COUNT; i += 1) {
         const holder = DEMO_HOLDERS[i]
@@ -722,6 +735,7 @@ export class NativeRepository implements Repository {
               (holder_id, date, amount, receipt_no, created_at, updated_at)
              VALUES (?, ?, ?, 0, ?, ?)`,
             [holderId, date, holder.defaultAmount, now, now],
+            false,
           )
         }
       }
