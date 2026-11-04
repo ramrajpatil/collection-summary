@@ -41,8 +41,11 @@ export function DataBackupSheet({
         setStatus(s.backupEmpty)
         return
       }
-      await saveBackupFile(backupFileName(), serializeBackup(data))
-      setStatus(s.backupExported)
+      const result = await saveBackupFile(
+        backupFileName(),
+        serializeBackup(data),
+      )
+      setStatus(`${s.backupSavedTo} ${result.location}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {

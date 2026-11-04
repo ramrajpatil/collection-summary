@@ -1,6 +1,5 @@
 import { Capacitor } from '@capacitor/core'
-import { Directory, Encoding, Filesystem } from '@capacitor/filesystem'
-import { Share } from '@capacitor/share'
+import { FileSaver } from './filesaver'
 import type {
   BackupCollection,
   BackupData,
@@ -123,24 +122,23 @@ export function backupFileName(now = new Date()): string {
   return `collection-backup-${stamp}.json`
 }
 
+export interface BackupSaveResult {
+  location: string
+  uri: string | null
+}
+
 export async function saveBackupFile(
   fileName: string,
   text: string,
-): Promise<string | null> {
+): Promise<BackupSaveResult> {
   if (Capacitor.isNativePlatform()) {
-    const result = await Filesystem.writeFile({
-      path: fileName,
+    const result = await FileSaver.saveToDownloads({
+      fileName,
       data: text,
-      directory: Directory.Cache,
-      encoding: Encoding.UTF8,
+      mimeType: 'application/json',
+      share: true,
     })
-    await Share.share({
-      title: fileName,
-      text: fileName,
-      files: [result.uri],
-      dialogTitle: fileName,
-    })
-    return result.uri
+    return { location: result.location, uri: result.uri }
   }
 
   const blob = new Blob([text], { type: 'application/json' })
@@ -152,7 +150,7 @@ export async function saveBackupFile(
   anchor.click()
   anchor.remove()
   window.setTimeout(() => URL.revokeObjectURL(url), 1000)
-  return fileName
+  return { location: fileName, uri: null }
 }
 
 export function readTextFile(file: File): Promise<string> {

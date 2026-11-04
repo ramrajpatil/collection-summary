@@ -188,6 +188,7 @@ export interface Strings {
   backupPaste: string
   backupImported: string
   backupExported: string
+  backupSavedTo: string
   backupInvalid: string
   backupEmpty: string
   backupRestoreConfirm: string
@@ -379,6 +380,7 @@ export const STRINGS: Record<Lang, Strings> = {
     backupPaste: 'किंवा बॅकअप मजकूर येथे पेस्ट करा',
     backupImported: 'बॅकअप पुन्हा आणला.',
     backupExported: 'बॅकअप फाइल तयार.',
+    backupSavedTo: 'जतन केले:',
     backupInvalid: 'ही वैध बॅकअप फाइल वाटत नाही.',
     backupEmpty: 'अजून बॅकअपसाठी माहिती नाही.',
     backupRestoreConfirm: 'हा बॅकअप वापरून सर्व माहिती बदलायची?',
@@ -568,6 +570,7 @@ export const STRINGS: Record<Lang, Strings> = {
     backupPaste: 'Or paste backup text here',
     backupImported: 'Backup restored.',
     backupExported: 'Backup file is ready.',
+    backupSavedTo: 'Saved to',
     backupInvalid: 'That does not look like a valid backup file.',
     backupEmpty: 'There is nothing to back up yet.',
     backupRestoreConfirm: 'Replace all data with this backup?',

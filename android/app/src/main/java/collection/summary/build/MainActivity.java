@@ -12,6 +12,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(PdfGeneratorPlugin.class);
         registerPlugin(SystemUiPlugin.class);
+        registerPlugin(FileSaverPlugin.class);
         super.onCreate(savedInstanceState);
 
         getWindow().setStatusBarColor(Color.parseColor("#04050a"));
