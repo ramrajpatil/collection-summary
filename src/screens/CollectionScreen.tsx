@@ -3,7 +3,13 @@ import { Capacitor } from '@capacitor/core'
 import type { DayData, Holder, Profile } from '../lib/models'
 import type { Repository } from '../lib/repo'
 import { STRINGS, useLanguage } from '../lib/i18n'
-import { formatDate, formatDigits, formatRupees, todayIso } from '../lib/marathi'
+import {
+  formatDate,
+  formatDigits,
+  formatRupees,
+  shiftIsoDate,
+  todayIso,
+} from '../lib/marathi'
 import { holderName } from '../lib/names'
 import {
   buildDailySheetHtml,
@@ -15,6 +21,8 @@ import {
 import { BottomSheet } from '../components/BottomSheet'
 import {
   CheckIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   DocIcon,
   MinusIcon,
   PlusIcon,
@@ -44,8 +52,9 @@ export function CollectionScreen({
 }: CollectionScreenProps) {
   const { lang } = useLanguage()
   const s = STRINGS[lang]
-  const date = todayIso()
+  const today = todayIso()
 
+  const [date, setDate] = useState(today)
   const [day, setDay] = useState<DayData | null>(null)
   const [holders, setHolders] = useState<Holder[]>([])
   const [loading, setLoading] = useState(true)
@@ -59,6 +68,21 @@ export function CollectionScreen({
   const [filter, setFilter] = useState<'all' | 'collected' | 'pending'>('all')
 
   const refresh = () => setReloadToken((token) => token + 1)
+  const isToday = date === today
+
+  function changeDate(next: string) {
+    if (!next || next === date) return
+    if (next > today) {
+      setStatus(s.futureDate)
+      return
+    }
+    setLoading(true)
+    setDate(next)
+  }
+
+  function shiftDay(delta: number) {
+    changeDate(shiftIsoDate(date, delta))
+  }
 
   useEffect(() => {
     const state = { cancelled: false }
@@ -264,11 +288,51 @@ export function CollectionScreen({
       <section className="hero glass">
         <div className="hero-head">
           <div>
-            <h1>{s.todayCollection}</h1>
+            <h1>{isToday ? s.todayCollection : s.pastCollection}</h1>
             <p>{s.tapToCollect}</p>
           </div>
-          <span className="date-pill">{formatDate(date, lang)}</span>
         </div>
+
+        <div className="date-nav">
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label={s.previousDay}
+            onClick={() => shiftDay(-1)}
+          >
+            <ChevronLeftIcon />
+          </button>
+          <label className="date-center">
+            <small>{s.dateLabel}</small>
+            <b>{formatDate(date, lang)}</b>
+            <input
+              type="date"
+              value={date}
+              max={today}
+              aria-label={s.dateLabel}
+              onChange={(event) => changeDate(event.target.value)}
+            />
+          </label>
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label={s.nextDay}
+            disabled={date >= today}
+            onClick={() => shiftDay(1)}
+          >
+            <ChevronRightIcon />
+          </button>
+        </div>
+
+        {!isToday ? (
+          <button
+            type="button"
+            className="btn-ghost compact centered date-today"
+            onClick={() => changeDate(today)}
+          >
+            {s.goToday}
+          </button>
+        ) : null}
 
         <div className="hero-meta">
           <div className="receipt-start">
@@ -335,7 +399,7 @@ export function CollectionScreen({
             <b>{formatDigits(pendingCount, lang)}</b>
           </div>
           <div className="stat">
-            <small>{s.todayAmount}</small>
+            <small>{isToday ? s.todayAmount : s.dayAmount}</small>
             <b>{formatRupees(total, lang)}</b>
           </div>
         </div>

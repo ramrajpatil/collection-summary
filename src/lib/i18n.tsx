@@ -23,6 +23,12 @@ export interface Strings {
   generatePdf: string
   pdfTitle: string
   dateLabel: string
+  pastCollection: string
+  dayAmount: string
+  previousDay: string
+  nextDay: string
+  goToday: string
+  futureDate: string
   srNo: string
   name: string
   accountNo: string
@@ -202,6 +208,12 @@ export const STRINGS: Record<Lang, Strings> = {
     generatePdf: 'PDF तयार करा',
     pdfTitle: 'दैनिक पिग्मी वसुली पत्रक',
     dateLabel: 'दिनांक',
+    pastCollection: 'वसुली',
+    dayAmount: 'त्या दिवसाची रक्कम',
+    previousDay: 'मागील दिवस',
+    nextDay: 'पुढील दिवस',
+    goToday: 'आज',
+    futureDate: 'भविष्यातील दिनांक नोंदवता येत नाही.',
     srNo: 'अ.क्र.',
     name: 'नाव',
     accountNo: 'खाते क्र.',
@@ -384,6 +396,12 @@ export const STRINGS: Record<Lang, Strings> = {
     generatePdf: 'Generate PDF',
     pdfTitle: 'Daily Pigmy Collection Sheet',
     dateLabel: 'Date',
+    pastCollection: 'Collection',
+    dayAmount: "Day's amount",
+    previousDay: 'Previous day',
+    nextDay: 'Next day',
+    goToday: 'Today',
+    futureDate: 'You cannot record a future date.',
     srNo: 'Sr.',
     name: 'Name',
     accountNo: 'A/c No.',
