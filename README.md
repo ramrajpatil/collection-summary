@@ -1,0 +1,49 @@
+# Collection Summary (वसुली सारांश)
+
+A local-first daily pigmy-collection app for a savings society. Built with React 19 +
+TypeScript + Vite and packaged for Android with Capacitor.
+
+## Features
+
+- Daily collection entry with automatic receipt numbering and configurable start number
+- Holder management (add / edit / deactivate / delete) with search, filters and sorting
+- Holder history screen with totals and a per-holder statement PDF
+- Monthly report with 3% commission, per-holder and per-day breakdowns
+- Daily / monthly / statement PDF generation (native Android renderer) and sharing
+- WhatsApp / SMS payment reminders
+- JSON backup export and restore
+- Marathi / English UI with Devanagari digits and dark / light themes
+- Offline storage in SQLite on device, localStorage on the web
+
+## Development
+
+```bash
+npm install
+npm run dev        # web dev server
+npm run lint       # oxlint
+npm run build      # typecheck + production build
+```
+
+## Android
+
+```bash
+npm run android:sync   # build web assets and copy them into the Android project
+npm run android:open   # open the project in Android Studio
+npm run android:apk    # build a debug APK
+```
+
+Debug APK output: `android/app/build/outputs/apk/debug/app-debug.apk`.
+
+### Release signing
+
+1. Copy `keystore.properties.example` to `keystore.properties` and fill it in.
+2. Create a keystore (see the comments in the example file).
+3. Build a signed release:
+
+```bash
+npm run android:sync
+cd android && ./gradlew assembleRelease
+```
+
+If `keystore.properties` is absent, the release build is left unsigned so CI and local
+builds still work.
