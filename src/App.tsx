@@ -5,6 +5,7 @@ import { StatusBar } from '@capacitor/status-bar'
 import { getRepo } from './lib/db'
 import { runBackHandler } from './lib/backButton'
 import { tapFeedback } from './lib/haptics'
+import { getGeminiKey, setGeminiKey } from './lib/gemini'
 import type { Profile } from './lib/models'
 import type { Repository } from './lib/repo'
 import { STRINGS, useLanguage } from './lib/i18n'
@@ -53,6 +54,7 @@ export default function App() {
   const [settingsDraft, setSettingsDraft] = useState<Settings>(
     defaultSettings(lang),
   )
+  const [geminiKeyDraft, setGeminiKeyDraft] = useState('')
   const [settingsError, setSettingsError] = useState('')
   const [savingSettings, setSavingSettings] = useState(false)
 
@@ -156,6 +158,7 @@ export default function App() {
 
   function openSettings() {
     setSettingsDraft(profile ?? defaultSettings(lang))
+    setGeminiKeyDraft(getGeminiKey())
     setSettingsError('')
     setSettingsOpen(true)
   }
@@ -171,6 +174,7 @@ export default function App() {
     try {
       await repo.saveProfile(settingsDraft)
       setProfile(settingsDraft)
+      setGeminiKey(geminiKeyDraft)
       setSettingsOpen(false)
     } catch (err) {
       setSettingsError(err instanceof Error ? err.message : String(err))
@@ -425,6 +429,19 @@ export default function App() {
                 }
               />
             </div>
+          </div>
+
+          <div className="field">
+            <label htmlFor="settingsGeminiKey">{s.geminiKey}</label>
+            <input
+              id="settingsGeminiKey"
+              type="password"
+              autoComplete="off"
+              spellCheck={false}
+              value={geminiKeyDraft}
+              onChange={(event) => setGeminiKeyDraft(event.target.value)}
+            />
+            <p className="field-hint">{s.geminiKeyHint}</p>
           </div>
 
           <div className="field">

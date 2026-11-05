@@ -9,6 +9,7 @@ import type {
   Profile,
 } from './models'
 import type {
+  CollectionInput,
   HolderSort,
   HolderStatus,
   ListHoldersOptions,
@@ -302,6 +303,45 @@ export class WebRepository implements Repository {
       this.state.nextCollectionId += 1
     }
     this.renumber(date)
+    this.persist()
+  }
+
+  async saveCollectionsWithReceipts(
+    date: string,
+    entries: CollectionInput[],
+  ): Promise<void> {
+    if (this.state.dailyMeta[date] === undefined) {
+      this.state.dailyMeta[date] = 1
+    }
+    const used = new Set(
+      this.state.collections
+        .filter((row) => row.date === date)
+        .map((row) => row.receiptNo),
+    )
+    const now = new Date().toISOString()
+    for (const entry of entries) {
+      const receiptNo = Math.floor(Number(entry.receiptNo) || 0)
+      if (receiptNo <= 0) throw new Error('INVALID_RECEIPT')
+      if (used.has(receiptNo)) throw new Error('DUPLICATE_RECEIPT')
+      if (
+        this.state.collections.some(
+          (row) => row.holderId === entry.holderId && row.date === date,
+        )
+      ) {
+        throw new Error('ALREADY_COLLECTED')
+      }
+      used.add(receiptNo)
+      this.state.collections.push({
+        id: this.state.nextCollectionId,
+        holderId: entry.holderId,
+        date,
+        amount: Math.max(0, Number(entry.amount) || 0),
+        receiptNo,
+        createdAt: now,
+        updatedAt: now,
+      })
+      this.state.nextCollectionId += 1
+    }
     this.persist()
   }
 

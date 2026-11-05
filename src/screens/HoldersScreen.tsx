@@ -68,7 +68,7 @@ export function HoldersScreen({
       setLoading(true)
       Promise.all([
         repo.listHolders({ search, status: statusFilter, sort }),
-        repo.listHolders({ search: '', status: 'all', sort }),
+        repo.listHolders({ search: '', status: statusFilter, sort }),
       ])
         .then(([rows, all]) => {
           if (cancelled) return
@@ -274,7 +274,7 @@ export function HoldersScreen({
         <select
           className="select"
           value={sort}
-          aria-label={s.sortedByAccount}
+          aria-label={sort === 'name' ? s.sortName : s.sortAccount}
           onChange={(event) => setSort(event.target.value as HolderSort)}
         >
           <option value="account">{s.sortAccount}</option>

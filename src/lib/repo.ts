@@ -11,6 +11,12 @@ import type {
 export type HolderStatus = 'active' | 'inactive' | 'all'
 export type HolderSort = 'account' | 'name'
 
+export interface CollectionInput {
+  holderId: number
+  amount: number
+  receiptNo: number
+}
+
 export interface ListHoldersOptions {
   search?: string
   status?: HolderStatus
@@ -32,6 +38,10 @@ export interface Repository {
   nextAccountNo(): Promise<string>
   getDay(date: string): Promise<DayData>
   saveCollection(holderId: number, date: string, amount: number): Promise<void>
+  saveCollectionsWithReceipts(
+    date: string,
+    entries: CollectionInput[],
+  ): Promise<void>
   deleteCollection(holderId: number, date: string): Promise<void>
   setStartReceipt(date: string, start: number): Promise<void>
   getMonthlyReport(month: string): Promise<MonthlyReport>

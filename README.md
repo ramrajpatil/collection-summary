@@ -53,6 +53,19 @@ losing the keystore means existing installs can never be updated in place.
 If `android/keystore.properties` is absent, the release build is left unsigned so CI and
 local builds still work.
 
+### Scanner (Gemini)
+
+The front-page scanner takes a photo with the phone camera and reads it with the
+Gemini API. Add a Gemini API key in **Settings** on the device; the key
+is stored only on that device and is never included in backups. The scanned page
+image is sent to Google for recognition, so scanning requires internet access.
+
+### Versioning
+
+Before building a release, bump `versionCode` and `versionName` in
+`android/app/build.gradle`. Increase `versionCode` by one for every release so
+Android treats the APK as an upgrade; keep the same signing key.
+
 ### Developing on a new machine
 
 The signing password is stored in the developer's notes app on the phone; it is

@@ -127,6 +127,33 @@ export interface Strings {
   collectNow: string
   removeCollection: string
   amountSaved: string
+  scanEntries: string
+  scanTitle: string
+  scanHint: string
+  scanStart: string
+  scanPreparing: string
+  scanReading: string
+  scanReview: string
+  scanNotFound: string
+  scanAlready: string
+  scanDuplicate: string
+  scanAdd: string
+  scanSave: string
+  scanEmpty: string
+  scanFailed: string
+  scanReceiptInvalid: string
+  scanReceiptUsed: string
+  scanReceiptStart: string
+  scanNativeOnly: string
+  scanNoKey: string
+  scanCloudFailed: string
+  geminiKey: string
+  geminiKeyHint: string
+  scanSaved: string
+  scanFixUnknown: string
+  scanFixAmount: string
+  scanMatched: string
+  scanRetry: string
   noEntries: string
   pdfSaved: string
   pdfFailed: string
@@ -318,6 +345,37 @@ export const STRINGS: Record<Lang, Strings> = {
     collectNow: 'वसुली नोंदवा',
     removeCollection: 'वसुली रद्द करा',
     amountSaved: 'रक्कम जतन झाली.',
+    scanEntries: 'स्कॅन करा',
+    scanTitle: 'पावती स्कॅन करा',
+    scanHint:
+      'पावतीचे पान कॅमेऱ्याने स्पष्ट काढा. खाते क्रमांक व रक्कम ओळखल्यानंतर तपासून जतन करा.',
+    scanStart: 'कॅमेरा उघडा',
+    scanPreparing: 'कॅमेरा उघडत आहे…',
+    scanReading: 'पान वाचत आहे…',
+    scanReview: 'स्कॅन केलेल्या नोंदी',
+    scanNotFound: 'खाते सापडले नाही',
+    scanAlready: 'आधीच नोंदवले',
+    scanDuplicate: 'दुहेरी खाते',
+    scanAdd: 'नोंद जोडा',
+    scanSave: 'वसुलीत जोडा',
+    scanEmpty: 'कोणत्याही नोंदी सापडल्या नाहीत. पुन्हा स्कॅन करा.',
+    scanFailed: 'स्कॅन करता आला नाही.',
+    scanReceiptInvalid: 'पावती क्रमांक चुकीचा आहे.',
+    scanReceiptUsed: 'हा पावती क्रमांक आधीच वापरला आहे.',
+    scanReceiptStart: 'पावती क्रमांक सुरुवात',
+    scanNativeOnly: 'स्कॅनिंग फक्त Android अॅपमध्ये उपलब्ध आहे.',
+    scanNoKey:
+      'स्कॅनिंगसाठी सेटिंग्जमध्ये Gemini API की जोडा.',
+    scanCloudFailed: 'पान ओळखता आले नाही:',
+    geminiKey: 'Gemini API की',
+    geminiKeyHint:
+      'फक्त या डिव्हाइसवर साठवली जाते. स्कॅनिंगसाठी आवश्यक.',
+    scanSaved: 'नोंदी वसुलीत जोडल्या.',
+    scanFixUnknown:
+      'अपरिचित खाते क्रमांक दुरुस्त करा किंवा काढून टाका.',
+    scanFixAmount: 'प्रत्येक नोंदीची रक्कम भरा.',
+    scanMatched: 'जुळले',
+    scanRetry: 'पुन्हा स्कॅन करा',
     noEntries: 'आज कोणतीही वसुली नोंदलेली नाही.',
     pdfSaved: 'PDF तयार झाला.',
     pdfFailed: 'PDF तयार करता आला नाही.',
@@ -509,6 +567,34 @@ export const STRINGS: Record<Lang, Strings> = {
     collectNow: 'Record collection',
     removeCollection: 'Remove collection',
     amountSaved: 'Amount saved.',
+    scanEntries: 'Scan',
+    scanTitle: 'Scan collection sheet',
+    scanHint:
+      'Take a clear photo of the collection page. Review the detected account numbers and amounts before saving.',
+    scanStart: 'Open camera',
+    scanPreparing: 'Opening the camera…',
+    scanReading: 'Reading the page…',
+    scanReview: 'Scanned entries',
+    scanNotFound: 'Account not found',
+    scanAlready: 'Already collected',
+    scanDuplicate: 'Duplicate account',
+    scanAdd: 'Add entry',
+    scanSave: 'Add to collection',
+    scanEmpty: 'No entries were found. Try scanning again.',
+    scanFailed: 'Could not scan the page.',
+    scanReceiptInvalid: 'Enter a valid receipt number.',
+    scanReceiptUsed: 'That receipt number is already used.',
+    scanReceiptStart: 'Starting receipt number',
+    scanNativeOnly: 'Scanning is available in the Android app only.',
+    scanNoKey: 'Add a Gemini API key in Settings to scan.',
+    scanCloudFailed: 'Could not recognize the page:',
+    geminiKey: 'Gemini API key',
+    geminiKeyHint: 'Stored only on this device. Required for scanning.',
+    scanSaved: 'entries added.',
+    scanFixUnknown: 'Fix or remove the unknown account numbers.',
+    scanFixAmount: 'Enter an amount for every entry.',
+    scanMatched: 'Matched',
+    scanRetry: 'Scan again',
     noEntries: 'No collections recorded today.',
     pdfSaved: 'PDF generated.',
     pdfFailed: 'Could not generate the PDF.',

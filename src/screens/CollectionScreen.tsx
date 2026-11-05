@@ -23,8 +23,10 @@ import {
 } from '../lib/sheets'
 import { BottomSheet } from '../components/BottomSheet'
 import { DatePicker } from '../components/DatePicker'
+import { ScanFlow } from '../components/ScanFlow'
 import { Toast } from '../components/Toast'
 import {
+  CameraIcon,
   CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -77,6 +79,7 @@ export function CollectionScreen({
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<'all' | 'collected' | 'pending'>('all')
   const [calendarOpen, setCalendarOpen] = useState(false)
+  const [scanOpen, setScanOpen] = useState(false)
 
   const refresh = () => setReloadToken((token) => token + 1)
   const isToday = date === today
@@ -145,6 +148,26 @@ export function CollectionScreen({
     const map = new Map<number, DayData['entries'][number]>()
     day?.entries.forEach((entry) => map.set(entry.holderId, entry))
     return map
+  }, [day])
+
+  const collectedHolderIds = useMemo(
+    () => day?.entries.map((entry) => entry.holderId) ?? [],
+    [day],
+  )
+
+  const existingReceipts = useMemo(
+    () => day?.entries.map((entry) => entry.receiptNo) ?? [],
+    [day],
+  )
+
+  const nextReceipt = useMemo(() => {
+    const start = day?.startReceipt ?? 1
+    const highest =
+      day?.entries.reduce(
+        (value, entry) => Math.max(value, entry.receiptNo),
+        start - 1,
+      ) ?? start - 1
+    return highest + 1
   }, [day])
 
   const total = day?.entries.reduce((sum, entry) => sum + entry.amount, 0) ?? 0
@@ -343,6 +366,14 @@ export function CollectionScreen({
             onClick={() => shiftDay(1)}
           >
             <ChevronRightIcon />
+          </button>
+          <button
+            type="button"
+            className="icon-btn scan-open"
+            aria-label={s.scanEntries}
+            onClick={() => setScanOpen(true)}
+          >
+            <CameraIcon />
           </button>
         </div>
 
@@ -675,6 +706,25 @@ export function CollectionScreen({
           max={today}
           onSelect={(next) => changeDate(next)}
           onClose={() => setCalendarOpen(false)}
+        />
+      ) : null}
+
+      {scanOpen ? (
+        <ScanFlow
+          repo={repo}
+          date={date}
+          lang={lang}
+          startReceipt={nextReceipt}
+          collectedHolderIds={collectedHolderIds}
+          existingReceipts={existingReceipts}
+          onClose={() => setScanOpen(false)}
+          onSaved={(count) => {
+            setScanOpen(false)
+            refresh()
+            setStatus(
+              `${formatDigits(count, lang)} ${s.scanSaved}`,
+            )
+          }}
         />
       ) : null}
     </>

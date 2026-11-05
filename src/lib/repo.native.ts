@@ -14,6 +14,7 @@ import type {
   Profile,
 } from './models'
 import type {
+  CollectionInput,
   HolderSort,
   HolderStatus,
   ListHoldersOptions,
@@ -414,6 +415,59 @@ export class NativeRepository implements Repository {
         )
       }
       await this.renumberDate(db, date)
+      await db.commitTransaction()
+    } catch (err) {
+      try {
+        await db.rollbackTransaction()
+      } catch {
+        void 0
+      }
+      throw err
+    }
+  }
+
+  async saveCollectionsWithReceipts(
+    date: string,
+    entries: CollectionInput[],
+  ): Promise<void> {
+    const db = await this.getDb()
+    await db.beginTransaction()
+    try {
+      await db.run(
+        'INSERT OR IGNORE INTO daily_meta (date, start_receipt) VALUES (?, 1)',
+        [date],
+        false,
+      )
+      const existing = await db.query(
+        'SELECT receipt_no FROM collections WHERE date = ?',
+        [date],
+      )
+      const used = new Set(
+        ((existing.values ?? []) as Array<{ receipt_no: number }>).map((row) =>
+          Number(row.receipt_no),
+        ),
+      )
+      const now = new Date().toISOString()
+      for (const entry of entries) {
+        const receiptNo = Math.floor(Number(entry.receiptNo) || 0)
+        if (receiptNo <= 0) throw new Error('INVALID_RECEIPT')
+        if (used.has(receiptNo)) throw new Error('DUPLICATE_RECEIPT')
+        used.add(receiptNo)
+        await db.run(
+          `INSERT INTO collections
+            (holder_id, date, amount, receipt_no, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [
+            entry.holderId,
+            date,
+            Math.max(0, Number(entry.amount) || 0),
+            receiptNo,
+            now,
+            now,
+          ],
+          false,
+        )
+      }
       await db.commitTransaction()
     } catch (err) {
       try {
