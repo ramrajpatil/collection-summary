@@ -163,22 +163,65 @@ const SHEET_CSS = `
     font-weight: 700;
     background: #eef2ff;
   }
-  .notes { margin-top: 4mm; page-break-inside: avoid; }
-  .notes-title { font-size: 10.5pt; font-weight: 700; margin-bottom: 2mm; }
+  .notes { margin-top: 3mm; page-break-inside: avoid; }
+  .notes-title { font-size: 10pt; font-weight: 700; margin-bottom: 1.5mm; }
   .notes-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 1.5mm;
+    width: 100%;
   }
   .note {
     border: 0.3mm solid #6b7280;
     border-radius: 1.5mm;
-    padding: 1.6mm 1mm;
+    padding: 1.5mm;
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 20mm;
   }
-  .note-label { font-weight: 700; font-size: 9pt; }
-  .note-count { font-size: 10pt; margin: 0.8mm 0; }
-  .note-amount { font-size: 9pt; color: #374151; }
+  .note-label {
+    font-weight: 700;
+    font-size: 9pt;
+    margin-bottom: 0;
+  }
+  .note-count {
+    font-size: 10pt;
+    margin: 0;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 0 0 0.4mm 2mm;
+    gap: 1mm;
+  }
+  .note-count .write-line {
+    flex: 1;
+    border-bottom: 0.3mm solid #6b7280;
+    min-height: 2mm;
+    margin-bottom: -0.4mm;
+  }
+  .note-amount {
+    font-size: 9pt;
+    color: #374151;
+    margin-top: 0;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 0.4mm 0 0.4mm 2mm;
+    gap: 1mm;
+  }
+  .note-amount .write-line {
+    flex: 1;
+    border-bottom: 0.3mm solid #6b7280;
+    min-height: 8mm;
+    margin-bottom: -0.4mm;
+  }
   .notes-total {
     margin-top: 2mm;
     text-align: right;
@@ -205,6 +248,9 @@ const SHEET_CSS = `
     flex: 1;
     text-align: center;
   }
+  .extra-top-height {
+    height-top: 20mm;
+  }
   .sign-line {
     border-top: 0.35mm solid #111827;
     margin-top: 16mm;
@@ -217,10 +263,6 @@ const SHEET_CSS = `
 export function buildSheetHtml(data: SheetData, lang: Lang = 'mr'): string {
   const s = STRINGS[lang]
   const total = data.rows.reduce((sum, row) => sum + row.amount, 0)
-  const notesTotal = data.denominations.reduce(
-    (sum, d) => sum + d.value * d.count,
-    0,
-  )
 
   const rowsHtml = data.rows
     .map(
@@ -235,14 +277,14 @@ export function buildSheetHtml(data: SheetData, lang: Lang = 'mr'): string {
     )
     .join('')
 
-  const notesHtml = data.denominations
+  const filteredDenominations = data.denominations.filter(
+    d => ![20, 10, 5].includes(d.value)
+  )
+
+  const notesHtml = filteredDenominations
     .map(
       (d) => `
-        <div class="note">
-          <div class="note-label">${formatRupees(d.value, lang)}</div>
-          <div class="note-count">× ${formatDigits(d.count, lang)}</div>
-          <div class="note-amount">${formatRupees(d.value * d.count, lang)}</div>
-        </div>`,
+        <div class="note"><div class="note-label">${formatRupees(d.value, lang)}</div><div class="note-count">×<span></span></div><div class="note-amount">₹<span class="write-line"></span></div></div>`,
     )
     .join('')
 
@@ -291,7 +333,6 @@ export function buildSheetHtml(data: SheetData, lang: Lang = 'mr'): string {
   <section class="notes">
     <div class="notes-title">${s.notesDetail}</div>
     <div class="notes-grid">${notesHtml}</div>
-    <div class="notes-total">${s.notesTotal}: ${formatRupees(notesTotal, lang)}</div>
   </section>
   <section class="signs">
     <div class="sign">
@@ -457,7 +498,7 @@ export function buildMonthlyHtml(
       </tr>
     </tfoot>
   </table>
-  <section class="signs">
+  <section class="signs extra-top-height">
     <div class="sign">
       <div class="sign-line">${s.agentSign}</div>
       <div class="sign-name">${escapeHtml(data.agentName)}</div>
