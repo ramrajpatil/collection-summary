@@ -13,6 +13,7 @@ import {
   todayIso,
 } from '../lib/marathi'
 import { holderName } from '../lib/names'
+import { pushBackHandler } from '../lib/backButton'
 import {
   buildDailySheetHtml,
   canSharePdf,
@@ -126,6 +127,19 @@ export function CollectionScreen({
     const timer = window.setTimeout(() => setStatus(''), 6000)
     return () => window.clearTimeout(timer)
   }, [status])
+
+  useEffect(() => {
+    if (!amountTarget && !calendarOpen) return
+    return pushBackHandler(() => {
+      if (amountTarget) {
+        setAmountTarget(null)
+        setAmountError('')
+        return true
+      }
+      setCalendarOpen(false)
+      return true
+    })
+  }, [amountTarget, calendarOpen])
 
   const entryByHolder = useMemo(() => {
     const map = new Map<number, DayData['entries'][number]>()

@@ -6,6 +6,7 @@ import type {
   Repository,
 } from '../lib/repo'
 import { isAccountExistsError } from '../lib/db'
+import { pushBackHandler } from '../lib/backButton'
 import { STRINGS, useLanguage } from '../lib/i18n'
 import { formatDigits, formatRupees } from '../lib/marathi'
 import { holderName, upperName } from '../lib/names'
@@ -101,6 +102,14 @@ export function HoldersScreen({
     const timer = window.setTimeout(() => setStatus(''), 6000)
     return () => window.clearTimeout(timer)
   }, [status])
+
+  useEffect(() => {
+    if (!sheetOpen) return
+    return pushBackHandler(() => {
+      if (!busy) setSheetOpen(false)
+      return true
+    })
+  }, [sheetOpen, busy])
 
   useEffect(() => {
     if (editHolderId == null) return

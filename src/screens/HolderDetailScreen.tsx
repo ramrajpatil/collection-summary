@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core'
 import type { HolderHistory, Profile } from '../lib/models'
 import type { Repository } from '../lib/repo'
 import { STRINGS, useLanguage } from '../lib/i18n'
+import { pushBackHandler } from '../lib/backButton'
 import {
   formatDate,
   formatDigits,
@@ -86,6 +87,14 @@ export function HolderDetailScreen({
     const timer = window.setTimeout(() => setStatus(''), 6000)
     return () => window.clearTimeout(timer)
   }, [status])
+
+  useEffect(() => {
+    if (!reminderOpen) return
+    return pushBackHandler(() => {
+      setReminderOpen(false)
+      return true
+    })
+  }, [reminderOpen])
 
   const phone = normalizePhone(history?.holder.phone)
   const message = history

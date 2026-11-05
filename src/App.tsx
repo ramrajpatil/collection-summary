@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Capacitor } from '@capacitor/core'
+import { App as CapacitorApp } from '@capacitor/app'
 import { StatusBar } from '@capacitor/status-bar'
 import { getRepo } from './lib/db'
+import { runBackHandler } from './lib/backButton'
 import type { Profile } from './lib/models'
 import type { Repository } from './lib/repo'
 import { STRINGS, useLanguage } from './lib/i18n'
@@ -83,6 +85,41 @@ export default function App() {
     void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {})
     applySystemTheme(theme)
   }, [theme])
+
+  const backAction = useRef<() => boolean>(() => false)
+  useEffect(() => {
+    backAction.current = () => {
+      if (settingsOpen) {
+        setSettingsOpen(false)
+        return true
+      }
+      if (backupOpen) {
+        setBackupOpen(false)
+        return true
+      }
+      if (runBackHandler()) return true
+      if (holderId != null) {
+        setHolderId(null)
+        return true
+      }
+      if (tab !== 'collection') {
+        setTab('collection')
+        return true
+      }
+      return false
+    }
+  })
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return
+    const listener = CapacitorApp.addListener('backButton', () => {
+      if (backAction.current()) return
+      void CapacitorApp.minimizeApp()
+    })
+    return () => {
+      void listener.then((handle) => handle.remove())
+    }
+  }, [])
 
   function handleSetupComplete(next: Profile) {
     setProfile(next)
