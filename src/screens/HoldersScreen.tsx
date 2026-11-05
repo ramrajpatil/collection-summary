@@ -45,6 +45,7 @@ export function HoldersScreen({
   const s = STRINGS[lang]
 
   const [holders, setHolders] = useState<Holder[]>([])
+  const [srById, setSrById] = useState<Record<number, number>>({})
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<HolderStatus>('active')
   const [sort, setSort] = useState<HolderSort>('account')
@@ -64,10 +65,18 @@ export function HoldersScreen({
     let cancelled = false
     const timer = window.setTimeout(() => {
       setLoading(true)
-      repo
-        .listHolders({ search, status: statusFilter, sort })
-        .then((rows) => {
-          if (!cancelled) setHolders(rows)
+      Promise.all([
+        repo.listHolders({ search, status: statusFilter, sort }),
+        repo.listHolders({ search: '', status: 'all', sort }),
+      ])
+        .then(([rows, all]) => {
+          if (cancelled) return
+          setHolders(rows)
+          const map: Record<number, number> = {}
+          all.forEach((holder, index) => {
+            map[holder.id] = index + 1
+          })
+          setSrById(map)
         })
         .catch((err) => {
           if (!cancelled) {
@@ -307,7 +316,7 @@ export function HoldersScreen({
                 onClick={() => onOpenHolder(holder.id)}
               >
                 <span className="holder-avatar">
-                  {formatDigits(holder.accountNo.slice(-2), lang)}
+                  {formatDigits(srById[holder.id] ?? index + 1, lang)}
                 </span>
                 <span className="holder-info">
                   <b>{holderName(holder.name, holder.nameEn, lang)}</b>
