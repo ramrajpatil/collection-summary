@@ -13,7 +13,13 @@ import {
   recognizeWithGemini,
   type GeminiEntry,
 } from '../lib/gemini'
-import { CameraIcon, CloseIcon, PlusIcon, TrashIcon } from './Icons'
+import {
+  CameraIcon,
+  CloseIcon,
+  EditIcon,
+  PlusIcon,
+  TrashIcon,
+} from './Icons'
 
 interface ScanFlowProps {
   repo: Repository
@@ -166,12 +172,26 @@ export function ScanFlow({
       : receiptCollision
         ? s.scanReceiptUsed
         : ''
+  const conflictCount = rowInfos.filter(
+    (info) => info.status === 'already' || info.status === 'duplicate',
+  ).length
+  const conflictAlready = rowInfos.some((info) => info.status === 'already')
+
   const canSave =
     saveable.length > 0 &&
     missingCount === 0 &&
     invalidAmountCount === 0 &&
+    conflictCount === 0 &&
     !receiptError &&
     !saving
+
+  function startManual() {
+    setError('')
+    if (rows.length === 0) {
+      setRows([createRow()])
+    }
+    setPhase('review')
+  }
 
   function updateRow(key: string, patch: Partial<ScanRow>) {
     setRows((current) =>
@@ -303,18 +323,35 @@ export function ScanFlow({
             {error ? <p className="form-error">{error}</p> : null}
             {!native ? (
               <p className="scan-note">{s.scanNativeOnly}</p>
-            ) : keyConfigured ? (
+            ) : !keyConfigured ? (
+              <p className="scan-note">{s.scanNoKey}</p>
+            ) : null}
+
+            <div className="scan-actions">
+              {native && keyConfigured ? (
+                <button
+                  type="button"
+                  className="btn-primary wide"
+                  onClick={() => void runScan()}
+                >
+                  <CameraIcon />
+                  {s.scanStart}
+                </button>
+              ) : null}
+
               <button
                 type="button"
-                className="btn-primary wide"
-                onClick={() => void runScan()}
+                className={
+                  native && keyConfigured
+                    ? 'btn-ghost wide'
+                    : 'btn-primary wide'
+                }
+                onClick={startManual}
               >
-                <CameraIcon />
-                {s.scanStart}
+                <EditIcon />
+                {s.scanManual}
               </button>
-            ) : (
-              <p className="scan-note">{s.scanNoKey}</p>
-            )}
+            </div>
           </div>
         ) : null}
 
@@ -327,123 +364,147 @@ export function ScanFlow({
 
         {phase === 'review' ? (
           <div className="scan-review">
-              {error ? <p className="form-error">{error}</p> : null}
-              {rows.length === 0 ? (
-                <p className="scan-empty">{s.scanEmpty}</p>
-              ) : null}
+            {error ? <p className="form-error">{error}</p> : null}
+            {rows.length === 0 ? (
+              <p className="scan-empty">{s.scanEmpty}</p>
+            ) : null}
 
-              <div className="scan-start">
-                <label htmlFor="scanStartReceipt">{s.scanReceiptStart}</label>
-                <input
-                  id="scanStartReceipt"
-                  type="number"
-                  min={1}
-                  inputMode="numeric"
-                  value={startDraft}
-                  onChange={(event) => setStartDraft(event.target.value)}
-                />
-              </div>
-              {receiptError ? (
-                <p className="form-error">{receiptError}</p>
-              ) : null}
+            <div className="scan-start">
+              <label htmlFor="scanStartReceipt">{s.scanReceiptStart}</label>
+              <input
+                id="scanStartReceipt"
+                type="number"
+                min={1}
+                inputMode="numeric"
+                value={startDraft}
+                onChange={(event) => setStartDraft(event.target.value)}
+              />
+            </div>
+            {receiptError ? (
+              <p className="form-error">{receiptError}</p>
+            ) : null}
 
-              <div className="scan-rows">
-                {rowInfos.map((info, index) => (
-                  <div
-                    key={info.row.key}
-                    className={`scan-row ${info.status}`}
-                  >
-                    <div className="scan-row-top">
-                      <span className="scan-index">
-                        {formatDigits(index + 1, lang)}
-                      </span>
+            <div className="scan-rows">
+              {rowInfos.map((info, index) => (
+                <div key={info.row.key} className={`scan-row ${info.status}`}>
+                  <div className="scan-row-top">
+                    <span className="scan-index">
+                      {formatDigits(index + 1, lang)}
+                    </span>
+                    {info.status !== 'blank' ? (
                       <span className={`scan-chip ${info.status}`}>
                         {statusLabel(info.status)}
                       </span>
-                      <button
-                        type="button"
-                        className="icon-btn scan-remove"
-                        aria-label={s.delete}
-                        onClick={() => removeRow(info.row.key)}
-                      >
-                        <TrashIcon />
-                      </button>
-                    </div>
-                    <div className="scan-fields">
-                      <label className="scan-field">
-                        <span>{s.accountNoShort}</span>
-                        <input
-                          value={info.row.accountNo}
-                          inputMode="numeric"
-                          autoComplete="off"
-                          onChange={(event) =>
-                            updateRow(info.row.key, {
-                              accountNo: event.target.value,
-                            })
-                          }
-                        />
-                      </label>
-                      <label className="scan-field">
-                        <span>{s.amount}</span>
-                        <input
-                          type="number"
-                          min={0}
-                          inputMode="decimal"
-                          value={info.row.amount}
-                          onChange={(event) =>
-                            updateRow(info.row.key, {
-                              amount: event.target.value,
-                            })
-                          }
-                        />
-                      </label>
-                    </div>
-                    <div className="scan-row-name">
-                      {info.holder ? (
-                        <b>
-                          {holderName(
-                            info.holder.name,
-                            info.holder.nameEn,
-                            lang,
-                          )}
-                        </b>
-                      ) : (
-                        <span>{s.scanNotFound}</span>
-                      )}
-                      {info.row.rawAccountNo &&
-                      info.row.rawAccountNo !== info.row.accountNo ? (
-                        <small>{info.row.rawAccountNo}</small>
-                      ) : null}
-                    </div>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="icon-btn scan-remove"
+                      aria-label={s.delete}
+                      onClick={() => removeRow(info.row.key)}
+                    >
+                      <TrashIcon />
+                    </button>
                   </div>
-                ))}
-              </div>
+                  <div className="scan-fields">
+                    <label className="scan-field">
+                      <span>{s.accountNoShort}</span>
+                      <input
+                        value={info.row.accountNo}
+                        inputMode="numeric"
+                        autoComplete="off"
+                        onChange={(event) =>
+                          updateRow(info.row.key, {
+                            accountNo: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+                    <label className="scan-field">
+                      <span>{s.amount}</span>
+                      <input
+                        type="number"
+                        min={0}
+                        inputMode="decimal"
+                        value={info.row.amount}
+                        onChange={(event) =>
+                          updateRow(info.row.key, {
+                            amount: event.target.value,
+                          })
+                        }
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault()
+                            addRow()
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                  <div className="scan-row-name">
+                    {info.holder ? (
+                      <b>
+                        {holderName(
+                          info.holder.name,
+                          info.holder.nameEn,
+                          lang,
+                        )}
+                      </b>
+                    ) : info.status === 'blank' ? (
+                      <span className="scan-empty-hint">—</span>
+                    ) : (
+                      <span>{s.scanNotFound}</span>
+                    )}
+                    {info.row.rawAccountNo &&
+                    info.row.rawAccountNo !== info.row.accountNo ? (
+                      <small>{info.row.rawAccountNo}</small>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+            </div>
 
-              <button type="button" className="btn-ghost wide" onClick={addRow}>
-                <PlusIcon />
-                {s.scanAdd}
-              </button>
+            <button type="button" className="btn-ghost wide" onClick={addRow}>
+              <PlusIcon />
+              {s.scanAdd}
+            </button>
 
-              {missingCount > 0 ? (
-                <p className="form-error">{s.scanFixUnknown}</p>
-              ) : null}
-              {invalidAmountCount > 0 ? (
-                <p className="form-error">{s.scanFixAmount}</p>
-              ) : null}
+            {missingCount > 0 ? (
+              <p className="form-error">{s.scanFixUnknown}</p>
+            ) : null}
+            {invalidAmountCount > 0 ? (
+              <p className="form-error">{s.scanFixAmount}</p>
+            ) : null}
+            {conflictCount > 0 ? (
+              <p className="form-error">
+                {conflictAlready ? s.scanAlready : s.scanDuplicate}
+              </p>
+            ) : null}
           </div>
         ) : null}
       </div>
 
       {phase === 'review' ? (
         <footer className="scan-foot">
-          <button
-            type="button"
-            className="btn-ghost"
-            disabled={saving}
-            onClick={() => void runScan()}
-          >
-            {s.scanRetry}
-          </button>
+          {native && keyConfigured ? (
+            <button
+              type="button"
+              className="btn-ghost"
+              disabled={saving}
+              onClick={() => void runScan()}
+            >
+              <CameraIcon />
+              {s.scanRetry}
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="btn-ghost"
+              disabled={saving}
+              onClick={() => setPhase('intro')}
+            >
+              {s.back}
+            </button>
+          )}
           <button
             type="button"
             className="btn-primary"

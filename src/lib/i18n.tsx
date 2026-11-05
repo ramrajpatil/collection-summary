@@ -154,6 +154,7 @@ export interface Strings {
   scanFixAmount: string
   scanMatched: string
   scanRetry: string
+  scanManual: string
   noEntries: string
   pdfSaved: string
   pdfFailed: string
@@ -376,6 +377,7 @@ export const STRINGS: Record<Lang, Strings> = {
     scanFixAmount: 'प्रत्येक नोंदीची रक्कम भरा.',
     scanMatched: 'जुळले',
     scanRetry: 'पुन्हा स्कॅन करा',
+    scanManual: 'मॅन्युअली नोंदी भरा',
     noEntries: 'आज कोणतीही वसुली नोंदलेली नाही.',
     pdfSaved: 'PDF तयार झाला.',
     pdfFailed: 'PDF तयार करता आला नाही.',
@@ -595,6 +597,7 @@ export const STRINGS: Record<Lang, Strings> = {
     scanFixAmount: 'Enter an amount for every entry.',
     scanMatched: 'Matched',
     scanRetry: 'Scan again',
+    scanManual: 'Enter manually',
     noEntries: 'No collections recorded today.',
     pdfSaved: 'PDF generated.',
     pdfFailed: 'Could not generate the PDF.',

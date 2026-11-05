@@ -2036,6 +2036,18 @@ body {
   border: 1px dashed var(--chip-border);
 }
 
+.scan-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.scan-empty-hint {
+  color: var(--muted);
+  font-weight: normal;
+}
+
 .scan-progress {
   width: 220px;
   height: 8px;
