@@ -28,19 +28,8 @@ export function commissionPeriod(month: string): {
   end: string
 } {
   const [year, monthNo] = month.split('-').map(Number)
-  const prevMonth = monthNo === 1 ? 12 : monthNo - 1
-  const prevYear = monthNo === 1 ? year - 1 : year
-  const prevDays = daysInMonth(prevYear, prevMonth)
-
-  const start =
-    prevDays === 31
-      ? isoDate(prevYear, prevMonth, 31)
-      : isoDate(year, monthNo, 1)
-  const end = isoDate(
-    year,
-    monthNo,
-    Math.min(30, daysInMonth(year, monthNo)),
-  )
+  const start = isoDate(year, monthNo, 1)
+  const end = isoDate(year, monthNo, daysInMonth(year, monthNo))
 
   return { start, end }
 }

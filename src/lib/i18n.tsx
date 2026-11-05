@@ -145,6 +145,7 @@ export interface Strings {
   commission: string
   commissionRate: string
   commissionNote: string
+  commissionHistory: string
   period: string
   days: string
   dailySheets: string
@@ -335,6 +336,7 @@ export const STRINGS: Record<Lang, Strings> = {
     commission: 'कमिशन',
     commissionRate: 'कमिशन दर: ३%',
     commissionNote: 'कमिशन ३% दराने, दोन दशांश स्थळांपर्यंत.',
+    commissionHistory: 'कमिशन इतिहास',
     period: 'कालावधी',
     days: 'दिवस',
     dailySheets: 'दैनिक पत्रके',
@@ -525,6 +527,7 @@ export const STRINGS: Record<Lang, Strings> = {
     commission: 'Commission',
     commissionRate: 'Commission rate: 3%',
     commissionNote: 'Commission at 3%, rounded to two decimal places.',
+    commissionHistory: 'Commission history',
     period: 'Period',
     days: 'Days',
     dailySheets: 'Daily sheets',

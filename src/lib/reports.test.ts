@@ -15,23 +15,31 @@ describe('commissionFor', () => {
 })
 
 describe('commissionPeriod', () => {
-  it('runs from the 1st when the previous month is shorter than 31 days', () => {
+  it('covers the whole calendar month', () => {
     expect(commissionPeriod('2026-03')).toEqual({
       start: '2026-03-01',
-      end: '2026-03-30',
+      end: '2026-03-31',
+    })
+    expect(commissionPeriod('2026-01')).toEqual({
+      start: '2026-01-01',
+      end: '2026-01-31',
     })
   })
 
-  it('starts on the 31st when the previous month has 31 days', () => {
-    expect(commissionPeriod('2026-01')).toEqual({
-      start: '2025-12-31',
-      end: '2026-01-30',
+  it('ends on the last day of the month, including leap years', () => {
+    expect(commissionPeriod('2026-02')).toEqual({
+      start: '2026-02-01',
+      end: '2026-02-28',
+    })
+    expect(commissionPeriod('2024-02')).toEqual({
+      start: '2024-02-01',
+      end: '2024-02-29',
     })
   })
 })
 
 describe('buildMonthlyReport', () => {
-  it('aggregates per holder and per day, excluding days after the 30th', () => {
+  it('aggregates per holder and per day for the month', () => {
     const report = buildMonthlyReport('2026-03', [
       {
         holderId: 1,
@@ -67,10 +75,10 @@ describe('buildMonthlyReport', () => {
       },
     ])
 
-    expect(report.total).toBe(350)
+    expect(report.total).toBe(1349)
     expect(report.accounts).toBe(2)
-    expect(report.days).toBe(2)
-    expect(report.commission).toBe(10.5)
+    expect(report.days).toBe(3)
+    expect(report.commission).toBe(40.47)
     expect(report.holders[0]).toMatchObject({
       accountNo: '001',
       days: 2,
@@ -79,10 +87,10 @@ describe('buildMonthlyReport', () => {
     })
     expect(report.holders[1]).toMatchObject({
       accountNo: '002',
-      days: 1,
-      total: 200,
+      days: 2,
+      total: 1199,
     })
-    expect(report.daily.map((day) => day.total)).toEqual([300, 50])
+    expect(report.daily.map((day) => day.total)).toEqual([300, 50, 999])
   })
 })
 

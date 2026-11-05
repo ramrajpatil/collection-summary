@@ -22,6 +22,7 @@ import {
 } from '../lib/sheets'
 import { BottomSheet } from '../components/BottomSheet'
 import { DatePicker } from '../components/DatePicker'
+import { Toast } from '../components/Toast'
 import {
   CheckIcon,
   ChevronLeftIcon,
@@ -378,7 +379,6 @@ export function CollectionScreen({
                     event.currentTarget.blur()
                   }
                 }}
-                onFocus={(event) => event.target.select()}
               />
               <button
                 type="button"
@@ -566,7 +566,14 @@ export function CollectionScreen({
         </div>
       </div>
 
-      {status ? <div className="toast glass">{status}</div> : null}
+      {status ? (
+        <Toast
+          key={status}
+          message={status}
+          onDismiss={() => setStatus('')}
+          dismissLabel={s.close}
+        />
+      ) : null}
 
       {amountTarget ? (
         <BottomSheet
@@ -599,7 +606,6 @@ export function CollectionScreen({
                   amount: Number(event.target.value),
                 })
               }
-              onFocus={(event) => event.target.select()}
             />
           </div>
 

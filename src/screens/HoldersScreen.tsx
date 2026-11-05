@@ -10,6 +10,7 @@ import { STRINGS, useLanguage } from '../lib/i18n'
 import { formatDigits, formatRupees } from '../lib/marathi'
 import { holderName, upperName } from '../lib/names'
 import { BottomSheet } from '../components/BottomSheet'
+import { Toast } from '../components/Toast'
 import {
   EditIcon,
   PlusIcon,
@@ -335,7 +336,14 @@ export function HoldersScreen({
         </section>
       )}
 
-      {status ? <div className="toast glass">{status}</div> : null}
+      {status ? (
+        <Toast
+          key={status}
+          message={status}
+          onDismiss={() => setStatus('')}
+          dismissLabel={s.close}
+        />
+      ) : null}
 
       {sheetOpen ? (
         <BottomSheet
@@ -425,7 +433,6 @@ export function HoldersScreen({
                     defaultAmount: Number(event.target.value),
                   })
                 }
-                onFocus={(event) => event.target.select()}
               />
             </div>
           </div>

@@ -12,9 +12,19 @@
     <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
-        <item name="android:background">#04050a</item>
         <item name="android:windowBackground">#04050a</item>
-        <item name="android:colorBackground">#04050a</item>
+        <!-- Keep native selection handles/popups transparent; the web UI paints
+             the actual background. A dark colorBackground here renders a black
+             square behind the caret and selection handles. -->
+        <item name="android:colorBackground">@android:color/transparent</item>
+        <item name="android:colorBackgroundFloating">#151c2c</item>
+        <item name="android:textColorPrimary">#eef2ff</item>
+        <item name="android:textColorSecondary">#c7d2e5</item>
+        <item name="android:textColorHighlight">#4d2dd4bf</item>
+        <item name="android:colorAccent">#2dd4bf</item>
+        <item name="colorAccent">#2dd4bf</item>
+        <item name="android:colorControlActivated">#2dd4bf</item>
+        <item name="android:colorControlHighlight">#332dd4bf</item>
         <item name="android:statusBarColor">#04050a</item>
         <item name="android:navigationBarColor">#04050a</item>
         <item name="android:windowLightStatusBar">false</item>

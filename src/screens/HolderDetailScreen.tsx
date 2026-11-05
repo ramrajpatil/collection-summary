@@ -25,6 +25,7 @@ import {
   whatsappUrl,
 } from '../lib/reminders'
 import { BottomSheet } from '../components/BottomSheet'
+import { Toast } from '../components/Toast'
 import {
   ChatIcon,
   ChevronLeftIcon,
@@ -286,7 +287,14 @@ export function HolderDetailScreen({
         </>
       )}
 
-      {status ? <div className="toast glass">{status}</div> : null}
+      {status ? (
+        <Toast
+          key={status}
+          message={status}
+          onDismiss={() => setStatus('')}
+          dismissLabel={s.close}
+        />
+      ) : null}
 
       {reminderOpen && history && phone ? (
         <BottomSheet

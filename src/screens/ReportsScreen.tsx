@@ -22,6 +22,7 @@ import {
   ChevronRightIcon,
   DocIcon,
 } from '../components/Icons'
+import { Toast } from '../components/Toast'
 import { currentMonth, shiftMonth } from '../lib/reports'
 
 interface ReportsScreenProps {
@@ -38,6 +39,10 @@ export function ReportsScreen({ repo, profile }: ReportsScreenProps) {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState('')
+  const [history, setHistory] = useState<
+    { month: string; total: number; commission: number }[]
+  >([])
+  const [historyOpen, setHistoryOpen] = useState(false)
 
   useEffect(() => {
     const state = { cancelled: false }
@@ -66,6 +71,30 @@ export function ReportsScreen({ repo, profile }: ReportsScreenProps) {
     const timer = window.setTimeout(() => setStatus(''), 6000)
     return () => window.clearTimeout(timer)
   }, [status])
+
+  useEffect(() => {
+    let cancelled = false
+    const months = Array.from({ length: 6 }, (_, index) =>
+      shiftMonth(currentMonth(), -index),
+    )
+    Promise.all(months.map((item) => repo.getMonthlyReport(item)))
+      .then((reports) => {
+        if (cancelled) return
+        setHistory(
+          reports.map((item) => ({
+            month: item.month,
+            total: item.total,
+            commission: item.commission,
+          })),
+        )
+      })
+      .catch(() => {
+        void 0
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [repo])
 
   function goToMonth(next: string) {
     if (next === month) return
@@ -223,6 +252,42 @@ export function ReportsScreen({ repo, profile }: ReportsScreenProps) {
             {s.reportPdf}
           </button>
 
+          <button
+            type="button"
+            className={`commission-toggle${historyOpen ? ' open' : ''}`}
+            aria-expanded={historyOpen}
+            aria-controls="commission-history"
+            onClick={() => setHistoryOpen((value) => !value)}
+          >
+            <span>{s.commissionHistory}</span>
+            <ChevronRightIcon />
+          </button>
+          {historyOpen ? (
+            <section id="commission-history" className="commission-history">
+              {history.map((row) => (
+                <button
+                  key={row.month}
+                  type="button"
+                  className={`commission-row${
+                    row.month === month ? ' active' : ''
+                  }`}
+                  onClick={() => goToMonth(row.month)}
+                >
+                  <span className="commission-month">
+                    <b>{formatMonth(row.month, lang)}</b>
+                    <small>
+                      {s.monthlyTotal}: {formatRupees(row.total, lang)}
+                    </small>
+                  </span>
+                  <span className="commission-value">
+                    <small>{s.commission}</small>
+                    <b>{formatRupees(row.commission, lang)}</b>
+                  </span>
+                </button>
+              ))}
+            </section>
+          ) : null}
+
           <div className="section-title">
             <h2>{s.monthlyReport}</h2>
             <span>
@@ -296,7 +361,14 @@ export function ReportsScreen({ repo, profile }: ReportsScreenProps) {
         </>
       )}
 
-      {status ? <div className="toast glass">{status}</div> : null}
+      {status ? (
+        <Toast
+          key={status}
+          message={status}
+          onDismiss={() => setStatus('')}
+          dismissLabel={s.close}
+        />
+      ) : null}
     </>
   )
 }
