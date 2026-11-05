@@ -42,7 +42,7 @@ interface CollectionScreenProps {
   onGoToHolders: () => void
 }
 
-const QUICK_AMOUNTS = [10, 20, 50, 100, 200, 500]
+const QUICK_AMOUNTS = [100, 200, 300, 400, 500, 1000, 1500]
 
 function padReceipt(value: number | string): string {
   const digits = String(value).replace(/\D/g, '')

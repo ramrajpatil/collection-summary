@@ -4,6 +4,7 @@ import { App as CapacitorApp } from '@capacitor/app'
 import { StatusBar } from '@capacitor/status-bar'
 import { getRepo } from './lib/db'
 import { runBackHandler } from './lib/backButton'
+import { tapFeedback } from './lib/haptics'
 import type { Profile } from './lib/models'
 import type { Repository } from './lib/repo'
 import { STRINGS, useLanguage } from './lib/i18n'
@@ -118,6 +119,25 @@ export default function App() {
     })
     return () => {
       void listener.then((handle) => handle.remove())
+    }
+  }, [])
+
+  useEffect(() => {
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target
+      if (!(target instanceof Element)) return
+      const control = target.closest('button, a[href], [role="button"]')
+      if (!(control instanceof HTMLElement)) return
+      if (control instanceof HTMLButtonElement && control.disabled) return
+      if (control.getAttribute('aria-disabled') === 'true') return
+      tapFeedback()
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown, {
+      passive: true,
+    })
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
     }
   }, [])
 
