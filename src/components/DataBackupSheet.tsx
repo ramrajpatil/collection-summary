@@ -9,7 +9,7 @@ import {
   serializeBackup,
 } from '../lib/backup'
 import { BottomSheet } from './BottomSheet'
-import { DownloadIcon, ShareIcon } from './Icons'
+import { CloseIcon, CopyIcon, DownloadIcon, ShareIcon } from './Icons'
 
 interface DataBackupSheetProps {
   repo: Repository
@@ -29,6 +29,10 @@ export function DataBackupSheet({
   const [status, setStatus] = useState('')
   const [error, setError] = useState('')
   const [text, setText] = useState('')
+  const [fileText, setFileText] = useState('')
+  const [fileName, setFileName] = useState('')
+
+  const hasContent = fileText.trim().length > 0 || text.trim().length > 0
 
   async function exportBackup() {
     if (busy) return
@@ -81,10 +85,32 @@ export function DataBackupSheet({
     if (!file) return
     try {
       const raw = await readTextFile(file)
-      setText(raw)
+      // Keep large files out of the textarea; rendering megabytes of text in
+      // an input can freeze or blank the WebView on Android.
+      setFileText(raw)
+      setFileName(file.name)
+      setText('')
       setError('')
     } catch {
       setError(s.backupInvalid)
+    }
+  }
+
+  async function handlePasteBackupText() {
+    try {
+      const clip = await navigator.clipboard.readText()
+      if (clip && clip.trim()) {
+        setText(clip.trim())
+        setFileText('')
+        setFileName('')
+        setError('')
+      }
+    } catch {
+      const el = document.getElementById(
+        'backupText',
+      ) as HTMLTextAreaElement | null
+      el?.focus()
+      el?.select()
     }
   }
 
@@ -97,8 +123,8 @@ export function DataBackupSheet({
         <button
           type="button"
           className="btn-primary"
-          disabled={busy || !text.trim()}
-          onClick={() => void restore(text)}
+          disabled={busy || !hasContent}
+          onClick={() => void restore(fileText.trim() || text)}
         >
           {busy ? <span className="spinner" /> : null}
           {s.backupImport}
@@ -134,13 +160,61 @@ export function DataBackupSheet({
             }}
           />
         </label>
+        {fileName ? (
+          <div className="file-picked">
+            <span>{fileName}</span>
+            <button
+              type="button"
+              className="field-action-btn"
+              onClick={() => {
+                setFileText('')
+                setFileName('')
+              }}
+            >
+              <CloseIcon className="action-icon" />
+              <span>{s.clear}</span>
+            </button>
+          </div>
+        ) : null}
         <div className="field">
-          <label htmlFor="backupText">{s.backupPaste}</label>
+          <div className="field-head">
+            <label htmlFor="backupText">{s.backupPaste}</label>
+            <div className="field-actions">
+              <button
+                type="button"
+                className="field-action-btn"
+                onClick={() => void handlePasteBackupText()}
+                title={s.paste}
+              >
+                <CopyIcon className="action-icon" />
+                <span>{s.paste}</span>
+              </button>
+              {text ? (
+                <button
+                  type="button"
+                  className="field-action-btn"
+                  onClick={() => setText('')}
+                  title={s.clear}
+                >
+                  <CloseIcon className="action-icon" />
+                  <span>{s.clear}</span>
+                </button>
+              ) : null}
+            </div>
+          </div>
           <textarea
             id="backupText"
             rows={4}
             value={text}
-            onChange={(event) => setText(event.target.value)}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="none"
+            spellCheck={false}
+            onChange={(event) => {
+              setText(event.target.value)
+              setFileText('')
+              setFileName('')
+            }}
           />
         </div>
       </div>

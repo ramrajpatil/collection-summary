@@ -103,6 +103,13 @@ export function parseBackup(text: string): BackupData {
     }
   }
 
+  const locks: Record<string, boolean> = {}
+  if (isRecord(raw.locks)) {
+    for (const [date, locked] of Object.entries(raw.locks)) {
+      if (locked === true) locks[date] = true
+    }
+  }
+
   return {
     version: asNumber(raw.version) || BACKUP_VERSION,
     exportedAt: asString(raw.exportedAt, new Date().toISOString()),
@@ -111,6 +118,7 @@ export function parseBackup(text: string): BackupData {
     holders,
     collections,
     dailyMeta,
+    locks,
   }
 }
 
@@ -130,18 +138,19 @@ export interface BackupSaveResult {
 export async function saveBackupFile(
   fileName: string,
   text: string,
+  mimeType = 'application/json',
 ): Promise<BackupSaveResult> {
   if (Capacitor.isNativePlatform()) {
     const result = await FileSaver.saveToDownloads({
       fileName,
       data: text,
-      mimeType: 'application/json',
+      mimeType,
       share: true,
     })
     return { location: result.location, uri: result.uri }
   }
 
-  const blob = new Blob([text], { type: 'application/json' })
+  const blob = new Blob([text], { type: mimeType })
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
   anchor.href = url

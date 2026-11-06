@@ -1,5 +1,7 @@
 import type {
   BackupData,
+  CollectionExport,
+  CollectionImportResult,
   DayData,
   Holder,
   HolderHistory,
@@ -37,6 +39,7 @@ export interface Repository {
   deleteHolder(id: number): Promise<void>
   nextAccountNo(): Promise<string>
   getDay(date: string): Promise<DayData>
+  setDayLocked(date: string, locked: boolean): Promise<void>
   saveCollection(holderId: number, date: string, amount: number): Promise<void>
   saveCollectionsWithReceipts(
     date: string,
@@ -48,5 +51,9 @@ export interface Repository {
   getHolderHistory(id: number): Promise<HolderHistory | null>
   exportBackup(): Promise<BackupData>
   importBackup(data: BackupData): Promise<void>
+  exportCollections(start: string, end: string): Promise<CollectionExport>
+  importCollections(
+    data: CollectionExport,
+  ): Promise<CollectionImportResult>
   seedDemoData(profile: Profile): Promise<void>
 }

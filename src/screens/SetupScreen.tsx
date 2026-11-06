@@ -94,6 +94,9 @@ export function SetupScreen({
           <input
             id="setupSociety"
             value={draft.societyName}
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
             onChange={(event) =>
               setDraft({ ...draft, societyName: event.target.value })
             }
@@ -105,6 +108,9 @@ export function SetupScreen({
           <input
             id="setupAddress"
             value={draft.address}
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
             onChange={(event) =>
               setDraft({ ...draft, address: event.target.value })
             }
@@ -117,6 +123,9 @@ export function SetupScreen({
             <input
               id="setupAgent"
               value={draft.agentName}
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
               onChange={(event) =>
                 setDraft({ ...draft, agentName: event.target.value })
               }
@@ -127,6 +136,9 @@ export function SetupScreen({
             <input
               id="setupManager"
               value={draft.managerName}
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
               onChange={(event) =>
                 setDraft({ ...draft, managerName: event.target.value })
               }

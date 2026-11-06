@@ -60,6 +60,7 @@ export interface Strings {
   tabCollection: string
   tabHolders: string
   tabReports: string
+  tabExport: string
 
   setupTitle: string
   setupSubtitle: string
@@ -78,6 +79,7 @@ export interface Strings {
   share: string
   pdf: string
   search: string
+  filterLabel: string
   loading: string
   retry: string
   noData: string
@@ -138,6 +140,7 @@ export interface Strings {
   scanAlready: string
   scanDuplicate: string
   scanAdd: string
+  scanExisting: string
   scanSave: string
   scanEmpty: string
   scanFailed: string
@@ -149,6 +152,10 @@ export interface Strings {
   scanCloudFailed: string
   geminiKey: string
   geminiKeyHint: string
+  paste: string
+  clear: string
+  showKey: string
+  hideKey: string
   scanSaved: string
   scanFixUnknown: string
   scanFixAmount: string
@@ -161,6 +168,10 @@ export interface Strings {
   sharePdf: string
   shareTitle: string
   shareText: string
+  sortReceipt: string
+  sortPdfBy: string
+  saveToDownloads: string
+  shareToWhatsApp: string
   receiptAssigned: string
   uncollected: string
   startReceiptShort: string
@@ -221,6 +232,45 @@ export interface Strings {
   backupInvalid: string
   backupEmpty: string
   backupRestoreConfirm: string
+
+  exportTitle: string
+  exportSubtitle: string
+  exportRange: string
+  rangeDay: string
+  rangeWeek: string
+  rangeMonth: string
+  rangeCustom: string
+  exportFrom: string
+  exportTo: string
+  exportRows: string
+  exportDays: string
+  exportTotal: string
+  exportJson: string
+  exportCsv: string
+  exportSavedTo: string
+  exportNoData: string
+  exportImport: string
+  exportImportHint: string
+  exportImportChoose: string
+  exportImportPreview: string
+  exportImportConfirm: string
+  exportImported: string
+  exportSkipped: string
+  exportInvalidFile: string
+  exportRangeInvalid: string
+
+  lockDay: string
+  lockConfirm: string
+  dayLocked: string
+  unlockDay: string
+  unlockHint: string
+  masterPassword: string
+  unlockWrong: string
+  unlock: string
+  dayUnlocked: string
+  lockedBadge: string
+  lockedNote: string
+  dayLockedError: string
 }
 
 export const STRINGS: Record<Lang, Strings> = {
@@ -276,6 +326,7 @@ export const STRINGS: Record<Lang, Strings> = {
     tabCollection: 'वसुली',
     tabHolders: 'खातेदार',
     tabReports: 'अहवाल',
+    tabExport: 'डेटा',
 
     setupTitle: 'स्वागत आहे',
     setupSubtitle: 'पतसंस्था वसुली सुरू करा',
@@ -296,6 +347,7 @@ export const STRINGS: Record<Lang, Strings> = {
     share: 'शेअर',
     pdf: 'PDF',
     search: 'शोधा',
+    filterLabel: 'फिल्टर',
     loading: 'लोड होत आहे...',
     retry: 'पुन्हा प्रयत्न करा',
     noData: 'माहिती नाही',
@@ -358,6 +410,7 @@ export const STRINGS: Record<Lang, Strings> = {
     scanAlready: 'आधीच नोंदवले',
     scanDuplicate: 'दुहेरी खाते',
     scanAdd: 'नोंद जोडा',
+    scanExisting: 'आधीच नोंदवलेल्या नोंदी',
     scanSave: 'वसुलीत जोडा',
     scanEmpty: 'कोणत्याही नोंदी सापडल्या नाहीत. पुन्हा स्कॅन करा.',
     scanFailed: 'स्कॅन करता आला नाही.',
@@ -371,6 +424,10 @@ export const STRINGS: Record<Lang, Strings> = {
     geminiKey: 'Gemini API की',
     geminiKeyHint:
       'फक्त या डिव्हाइसवर साठवली जाते. स्कॅनिंगसाठी आवश्यक.',
+    paste: 'पेस्ट करा',
+    clear: 'साफ करा',
+    showKey: 'की दाखवा',
+    hideKey: 'की लपवा',
     scanSaved: 'नोंदी वसुलीत जोडल्या.',
     scanFixUnknown:
       'अपरिचित खाते क्रमांक दुरुस्त करा किंवा काढून टाका.',
@@ -384,6 +441,10 @@ export const STRINGS: Record<Lang, Strings> = {
     sharePdf: 'PDF शेअर करा',
     shareTitle: 'दैनिक वसुली पत्रक',
     shareText: 'आजचे वसुली पत्रक जोडले आहे.',
+    sortReceipt: 'पावती क्र.',
+    sortPdfBy: 'क्रमवारी',
+    saveToDownloads: 'डाउनलोड्समध्ये सेव्ह करा',
+    shareToWhatsApp: 'WhatsApp वर शेअर करा',
     receiptAssigned: 'पावती क्रमांक',
     uncollected: 'बाकी',
     startReceiptShort: 'सुरुवात',
@@ -446,6 +507,47 @@ export const STRINGS: Record<Lang, Strings> = {
     backupInvalid: 'ही वैध बॅकअप फाइल वाटत नाही.',
     backupEmpty: 'अजून बॅकअपसाठी माहिती नाही.',
     backupRestoreConfirm: 'हा बॅकअप वापरून सर्व माहिती बदलायची?',
+
+    exportTitle: 'डेटा निर्यात व बॅकअप',
+    exportSubtitle: 'निवडलेल्या तारखांसाठी वसुलीचा डेटा निर्यात करा किंवा पुन्हा आणा.',
+    exportRange: 'कालावधी',
+    rangeDay: 'दिवस',
+    rangeWeek: 'आठवडा',
+    rangeMonth: 'महिना',
+    rangeCustom: 'स्वतःचा',
+    exportFrom: 'पासून',
+    exportTo: 'पर्यंत',
+    exportRows: 'नोंदी',
+    exportDays: 'दिवस',
+    exportTotal: 'एकूण वसुली',
+    exportJson: 'JSON बॅकअप',
+    exportCsv: 'CSV निर्यात',
+    exportSavedTo: 'जतन केले:',
+    exportNoData: 'या कालावधीत वसुली नाही.',
+    exportImport: 'डेटा पुन्हा आणा',
+    exportImportHint:
+      'पूर्वी निर्यात केलेली JSON फाइल निवडा. फक्त त्या तारखांचा डेटा जोडला जाईल; लॉक असलेल्या तारखा वगळल्या जातील.',
+    exportImportChoose: 'JSON फाइल निवडा',
+    exportImportPreview: 'फाइलमध्ये',
+    exportImportConfirm: 'जोडा व जतन करा',
+    exportImported: 'यशस्वीरित्या जोडले.',
+    exportSkipped: 'वगळले',
+    exportInvalidFile: 'ही वैध निर्यात फाइल वाटत नाही.',
+    exportRangeInvalid: 'कृपया वैध तारखा निवडा.',
+
+    lockDay: 'दिवस लॉक करा',
+    lockConfirm:
+      'या दिवसाचा डेटा लॉक करायचा? लॉक केल्यावर बदल करता येणार नाहीत आणि केवळ मास्टर पासवर्डनेच उघडता येईल.',
+    dayLocked: 'हा दिवस लॉक आहे',
+    unlockDay: 'लॉक उघडा',
+    unlockHint: 'लॉक उघडण्यासाठी मास्टर पासवर्ड टाका.',
+    masterPassword: 'मास्टर पासवर्ड',
+    unlockWrong: 'पासवर्ड चुकीचा आहे.',
+    unlock: 'उघडा',
+    dayUnlocked: 'दिवस अनलॉक झाला.',
+    lockedBadge: 'लॉक',
+    lockedNote: 'हा दिवस लॉक केलेला आहे. बदल करता येणार नाहीत.',
+    dayLockedError: 'हा दिवस लॉक आहे.',
   },
   en: {
     appName: 'Collection Summary',
@@ -499,6 +601,7 @@ export const STRINGS: Record<Lang, Strings> = {
     tabCollection: 'Collection',
     tabHolders: 'Holders',
     tabReports: 'Reports',
+    tabExport: 'Data',
 
     setupTitle: 'Welcome',
     setupSubtitle: 'Start your collection book',
@@ -519,6 +622,7 @@ export const STRINGS: Record<Lang, Strings> = {
     share: 'Share',
     pdf: 'PDF',
     search: 'Search',
+    filterLabel: 'Filter',
     loading: 'Loading...',
     retry: 'Retry',
     noData: 'No data',
@@ -581,6 +685,7 @@ export const STRINGS: Record<Lang, Strings> = {
     scanAlready: 'Already collected',
     scanDuplicate: 'Duplicate account',
     scanAdd: 'Add entry',
+    scanExisting: 'Already saved for this day',
     scanSave: 'Add to collection',
     scanEmpty: 'No entries were found. Try scanning again.',
     scanFailed: 'Could not scan the page.',
@@ -592,6 +697,10 @@ export const STRINGS: Record<Lang, Strings> = {
     scanCloudFailed: 'Could not recognize the page:',
     geminiKey: 'Gemini API key',
     geminiKeyHint: 'Stored only on this device. Required for scanning.',
+    paste: 'Paste',
+    clear: 'Clear',
+    showKey: 'Show key',
+    hideKey: 'Hide key',
     scanSaved: 'entries added.',
     scanFixUnknown: 'Fix or remove the unknown account numbers.',
     scanFixAmount: 'Enter an amount for every entry.',
@@ -604,6 +713,10 @@ export const STRINGS: Record<Lang, Strings> = {
     sharePdf: 'Share PDF',
     shareTitle: 'Daily collection sheet',
     shareText: 'The daily collection sheet is attached.',
+    sortReceipt: 'Receipt no.',
+    sortPdfBy: 'Sort by',
+    saveToDownloads: 'Save to Downloads',
+    shareToWhatsApp: 'Share on WhatsApp',
     receiptAssigned: 'Receipt no.',
     uncollected: 'Pending',
     startReceiptShort: 'Start',
@@ -666,6 +779,48 @@ export const STRINGS: Record<Lang, Strings> = {
     backupInvalid: 'That does not look like a valid backup file.',
     backupEmpty: 'There is nothing to back up yet.',
     backupRestoreConfirm: 'Replace all data with this backup?',
+
+    exportTitle: 'Export & backup',
+    exportSubtitle:
+      'Export collection data for the selected dates, or bring it back later.',
+    exportRange: 'Range',
+    rangeDay: 'Day',
+    rangeWeek: 'Week',
+    rangeMonth: 'Month',
+    rangeCustom: 'Custom',
+    exportFrom: 'From',
+    exportTo: 'To',
+    exportRows: 'Rows',
+    exportDays: 'Days',
+    exportTotal: 'Total',
+    exportJson: 'JSON backup',
+    exportCsv: 'CSV export',
+    exportSavedTo: 'Saved to',
+    exportNoData: 'No collections in this range.',
+    exportImport: 'Import data',
+    exportImportHint:
+      'Choose a previously exported JSON file. Only those dates are merged; locked dates are skipped.',
+    exportImportChoose: 'Choose JSON file',
+    exportImportPreview: 'File contains',
+    exportImportConfirm: 'Merge & save',
+    exportImported: 'Imported successfully.',
+    exportSkipped: 'skipped',
+    exportInvalidFile: 'That does not look like a valid export file.',
+    exportRangeInvalid: 'Please pick a valid date range.',
+
+    lockDay: 'Lock day',
+    lockConfirm:
+      'Lock this day? After locking, no edits are allowed and only a master password can unlock it.',
+    dayLocked: 'This day is locked',
+    unlockDay: 'Unlock',
+    unlockHint: 'Enter the master password to unlock this day.',
+    masterPassword: 'Master password',
+    unlockWrong: 'Incorrect password.',
+    unlock: 'Unlock',
+    dayUnlocked: 'Day unlocked.',
+    lockedBadge: 'LOCKED',
+    lockedNote: 'This day is locked. No edits are allowed.',
+    dayLockedError: 'This day is locked.',
   },
 }
 

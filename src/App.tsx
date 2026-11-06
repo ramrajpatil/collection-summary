@@ -21,10 +21,16 @@ import { CollectionScreen } from './screens/CollectionScreen'
 import { HoldersScreen } from './screens/HoldersScreen'
 import { HolderDetailScreen } from './screens/HolderDetailScreen'
 import { ReportsScreen } from './screens/ReportsScreen'
+import { ExportScreen } from './screens/ExportScreen'
 import { BottomSheet } from './components/BottomSheet'
 import { DataBackupSheet } from './components/DataBackupSheet'
 import {
+  ArchiveIcon,
   ChartIcon,
+  CloseIcon,
+  CopyIcon,
+  EyeIcon,
+  EyeOffIcon,
   GearIcon,
   MoonIcon,
   SunIcon,
@@ -32,7 +38,7 @@ import {
   WalletIcon,
 } from './components/Icons'
 
-type Tab = 'collection' | 'holders' | 'reports'
+type Tab = 'collection' | 'holders' | 'reports' | 'export'
 
 export default function App() {
   const { lang, setLang } = useLanguage()
@@ -46,6 +52,7 @@ export default function App() {
   const [setupComplete, setSetupComplete] = useState(false)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [tab, setTab] = useState<Tab>('collection')
+  const [tabbarHidden, setTabbarHidden] = useState(false)
   const [holderId, setHolderId] = useState<number | null>(null)
   const [editHolderId, setEditHolderId] = useState<number | null>(null)
 
@@ -55,8 +62,14 @@ export default function App() {
     defaultSettings(lang),
   )
   const [geminiKeyDraft, setGeminiKeyDraft] = useState('')
+  const [showGeminiKey, setShowGeminiKey] = useState(false)
   const [settingsError, setSettingsError] = useState('')
   const [savingSettings, setSavingSettings] = useState(false)
+
+  function selectTab(next: Tab) {
+    setTabbarHidden(false)
+    setTab(next)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -89,6 +102,37 @@ export default function App() {
     applySystemTheme(theme)
   }, [theme])
 
+  useEffect(() => {
+    let lastY = window.scrollY
+    let accumulated = 0
+    const THRESHOLD = 10
+    const HIDE_AFTER = 64
+
+    function handleScroll() {
+      const y = window.scrollY
+      if (y <= 8) {
+        setTabbarHidden(false)
+        lastY = y
+        accumulated = 0
+        return
+      }
+
+      accumulated += y - lastY
+      lastY = y
+
+      if (accumulated > THRESHOLD && y > HIDE_AFTER) {
+        setTabbarHidden(true)
+        accumulated = 0
+      } else if (accumulated < -THRESHOLD) {
+        setTabbarHidden(false)
+        accumulated = 0
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
   const backAction = useRef<() => boolean>(() => false)
   useEffect(() => {
     backAction.current = () => {
@@ -106,7 +150,7 @@ export default function App() {
         return true
       }
       if (tab !== 'collection') {
-        setTab('collection')
+        selectTab('collection')
         return true
       }
       return false
@@ -146,12 +190,12 @@ export default function App() {
   function handleSetupComplete(next: Profile) {
     setProfile(next)
     setSetupComplete(true)
-    setTab('collection')
+    selectTab('collection')
   }
 
   function handleImported() {
     setHolderId(null)
-    setTab('collection')
+    selectTab('collection')
     setBackupOpen(false)
     window.location.reload()
   }
@@ -159,8 +203,32 @@ export default function App() {
   function openSettings() {
     setSettingsDraft(profile ?? defaultSettings(lang))
     setGeminiKeyDraft(getGeminiKey())
+    setShowGeminiKey(false)
     setSettingsError('')
     setSettingsOpen(true)
+  }
+
+  async function handlePasteGeminiKey() {
+    try {
+      const clip = await navigator.clipboard.readText()
+      if (clip && clip.trim()) {
+        setGeminiKeyDraft(clip.trim())
+      }
+    } catch {
+      const el = document.getElementById(
+        'settingsGeminiKey',
+      ) as HTMLInputElement | null
+      el?.focus()
+      el?.select()
+    }
+  }
+
+  function handleClearGeminiKey() {
+    setGeminiKeyDraft('')
+    const el = document.getElementById(
+      'settingsGeminiKey',
+    ) as HTMLInputElement | null
+    el?.focus()
   }
 
   async function saveSettings() {
@@ -289,7 +357,7 @@ export default function App() {
           <CollectionScreen
             repo={repo}
             profile={profile}
-            onGoToHolders={() => setTab('holders')}
+            onGoToHolders={() => selectTab('holders')}
           />
         ) : null}
 
@@ -318,13 +386,18 @@ export default function App() {
         {tab === 'reports' && profile ? (
           <ReportsScreen repo={repo} profile={profile} />
         ) : null}
+
+        {tab === 'export' ? <ExportScreen repo={repo} /> : null}
       </main>
 
-      <nav className="tabbar glass" aria-label={s.appName}>
+      <nav
+        className={`tabbar glass${tabbarHidden ? ' is-hidden' : ''}`}
+        aria-label={s.appName}
+      >
         <button
           type="button"
           className={`tab${tab === 'collection' ? ' active' : ''}`}
-          onClick={() => setTab('collection')}
+          onClick={() => selectTab('collection')}
         >
           <WalletIcon />
           <span>{s.tabCollection}</span>
@@ -332,7 +405,7 @@ export default function App() {
         <button
           type="button"
           className={`tab${tab === 'holders' ? ' active' : ''}`}
-          onClick={() => setTab('holders')}
+          onClick={() => selectTab('holders')}
         >
           <UsersIcon />
           <span>{s.tabHolders}</span>
@@ -340,10 +413,18 @@ export default function App() {
         <button
           type="button"
           className={`tab${tab === 'reports' ? ' active' : ''}`}
-          onClick={() => setTab('reports')}
+          onClick={() => selectTab('reports')}
         >
           <ChartIcon />
           <span>{s.tabReports}</span>
+        </button>
+        <button
+          type="button"
+          className={`tab${tab === 'export' ? ' active' : ''}`}
+          onClick={() => selectTab('export')}
+        >
+          <ArchiveIcon />
+          <span>{s.tabExport}</span>
         </button>
       </nav>
 
@@ -379,6 +460,9 @@ export default function App() {
             <input
               id="settingsSociety"
               value={settingsDraft.societyName}
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
               onChange={(event) =>
                 setSettingsDraft({
                   ...settingsDraft,
@@ -393,6 +477,9 @@ export default function App() {
             <input
               id="settingsAddress"
               value={settingsDraft.address}
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
               onChange={(event) =>
                 setSettingsDraft({
                   ...settingsDraft,
@@ -408,6 +495,9 @@ export default function App() {
               <input
                 id="settingsAgent"
                 value={settingsDraft.agentName}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
                 onChange={(event) =>
                   setSettingsDraft({
                     ...settingsDraft,
@@ -421,6 +511,9 @@ export default function App() {
               <input
                 id="settingsManager"
                 value={settingsDraft.managerName}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
                 onChange={(event) =>
                   setSettingsDraft({
                     ...settingsDraft,
@@ -432,15 +525,55 @@ export default function App() {
           </div>
 
           <div className="field">
-            <label htmlFor="settingsGeminiKey">{s.geminiKey}</label>
-            <input
-              id="settingsGeminiKey"
-              type="password"
-              autoComplete="off"
-              spellCheck={false}
-              value={geminiKeyDraft}
-              onChange={(event) => setGeminiKeyDraft(event.target.value)}
-            />
+            <div className="field-head">
+              <label htmlFor="settingsGeminiKey">{s.geminiKey}</label>
+              <div className="field-actions">
+                <button
+                  type="button"
+                  className="field-action-btn"
+                  onClick={() => void handlePasteGeminiKey()}
+                  title={s.paste}
+                >
+                  <CopyIcon className="action-icon" />
+                  <span>{s.paste}</span>
+                </button>
+                {geminiKeyDraft ? (
+                  <button
+                    type="button"
+                    className="field-action-btn"
+                    onClick={handleClearGeminiKey}
+                    title={s.clear}
+                  >
+                    <CloseIcon className="action-icon" />
+                    <span>{s.clear}</span>
+                  </button>
+                ) : null}
+              </div>
+            </div>
+            <div className="input-group">
+              <input
+                id="settingsGeminiKey"
+                type={showGeminiKey ? 'text' : 'password'}
+                autoComplete="off"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                data-lpignore="true"
+                data-form-type="other"
+                placeholder="AIzaSy..."
+                value={geminiKeyDraft}
+                onChange={(event) => setGeminiKeyDraft(event.target.value)}
+              />
+              <button
+                type="button"
+                className="input-toggle-btn"
+                onClick={() => setShowGeminiKey((prev) => !prev)}
+                aria-label={showGeminiKey ? s.hideKey : s.showKey}
+                title={showGeminiKey ? s.hideKey : s.showKey}
+              >
+                {showGeminiKey ? <EyeOffIcon /> : <EyeIcon />}
+              </button>
+            </div>
             <p className="field-hint">{s.geminiKeyHint}</p>
           </div>
 

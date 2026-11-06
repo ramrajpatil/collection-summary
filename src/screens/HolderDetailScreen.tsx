@@ -281,7 +281,7 @@ export function HolderDetailScreen({
                 <div
                   className="history-row glass"
                   key={`${entry.date}-${entry.receiptNo}`}
-                  style={{ animationDelay: `${index * 0.02}s` }}
+                  style={{ animationDelay: `${Math.min(index, 12) * 0.02}s` }}
                 >
                   <span className="c">{formatDigits(index + 1, lang)}</span>
                   <b>{formatDate(entry.date, lang)}</b>

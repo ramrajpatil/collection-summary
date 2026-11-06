@@ -13,13 +13,14 @@ import {
   todayIso,
 } from '../lib/marathi'
 import { holderName } from '../lib/names'
+import { verifyMasterPassword } from '../lib/lock'
 import { pushBackHandler } from '../lib/backButton'
 import {
   buildDailySheetHtml,
-  canSharePdf,
   generateNativePdf,
   openPrintPreview,
-  sharePdf,
+  sharePdfToWhatsApp,
+  type SheetSort,
 } from '../lib/sheets'
 import { BottomSheet } from '../components/BottomSheet'
 import { DatePicker } from '../components/DatePicker'
@@ -30,11 +31,13 @@ import {
   CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  DocIcon,
+  DownloadIcon,
+  LockIcon,
   MinusIcon,
   PlusIcon,
   SearchIcon,
   ShareIcon,
+  UnlockIcon,
   UsersIcon,
 } from '../components/Icons'
 
@@ -70,19 +73,29 @@ export function CollectionScreen({
   const [day, setDay] = useState<DayData | null>(null)
   const [holders, setHolders] = useState<Holder[]>([])
   const [loading, setLoading] = useState(true)
+  const [holdersLoading, setHoldersLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState('')
+  const [lockConfirmOpen, setLockConfirmOpen] = useState(false)
+  const [unlockOpen, setUnlockOpen] = useState(false)
+  const [unlockPassword, setUnlockPassword] = useState('')
+  const [unlockError, setUnlockError] = useState('')
   const [startDraft, setStartDraft] = useState('0001')
   const [amountTarget, setAmountTarget] = useState<AmountTarget | null>(null)
   const [amountError, setAmountError] = useState('')
   const [reloadToken, setReloadToken] = useState(0)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<'all' | 'collected' | 'pending'>('all')
+  const [filterOpen, setFilterOpen] = useState(false)
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [scanOpen, setScanOpen] = useState(false)
+  const [pdfOpen, setPdfOpen] = useState(false)
+  const [pdfSort, setPdfSort] = useState<SheetSort>('account')
+  const [pdfAction, setPdfAction] = useState<'save' | 'share' | null>(null)
 
   const refresh = () => setReloadToken((token) => token + 1)
   const isToday = date === today
+  const locked = day?.locked ?? false
 
   function changeDate(next: string) {
     if (!next || next === date) return
@@ -100,14 +113,33 @@ export function CollectionScreen({
 
   useEffect(() => {
     const state = { cancelled: false }
-    Promise.all([
-      repo.getDay(date),
-      repo.listHolders({ status: 'active', sort: 'account' }),
-    ])
-      .then(([nextDay, nextHolders]) => {
+    repo
+      .listHolders({ status: 'active', sort: 'account' })
+      .then((nextHolders) => {
+        if (!state.cancelled) setHolders(nextHolders)
+      })
+      .catch((err) => {
+        if (!state.cancelled) {
+          setStatus(
+            `${s.failed}: ${err instanceof Error ? err.message : String(err)}`,
+          )
+        }
+      })
+      .finally(() => {
+        if (!state.cancelled) setHoldersLoading(false)
+      })
+    return () => {
+      state.cancelled = true
+    }
+  }, [repo, s.failed])
+
+  useEffect(() => {
+    const state = { cancelled: false }
+    repo
+      .getDay(date)
+      .then((nextDay) => {
         if (state.cancelled) return
         setDay(nextDay)
-        setHolders(nextHolders)
         setStartDraft(padReceipt(nextDay.startReceipt))
       })
       .catch((err) => {
@@ -132,8 +164,27 @@ export function CollectionScreen({
   }, [status])
 
   useEffect(() => {
-    if (!amountTarget && !calendarOpen) return
+    if (
+      !amountTarget &&
+      !calendarOpen &&
+      !filterOpen &&
+      !unlockOpen &&
+      !lockConfirmOpen
+    )
+      return
     return pushBackHandler(() => {
+      if (unlockOpen) {
+        setUnlockOpen(false)
+        return true
+      }
+      if (lockConfirmOpen) {
+        setLockConfirmOpen(false)
+        return true
+      }
+      if (filterOpen) {
+        setFilterOpen(false)
+        return true
+      }
       if (amountTarget) {
         setAmountTarget(null)
         setAmountError('')
@@ -142,7 +193,7 @@ export function CollectionScreen({
       setCalendarOpen(false)
       return true
     })
-  }, [amountTarget, calendarOpen])
+  }, [amountTarget, calendarOpen, filterOpen, unlockOpen, lockConfirmOpen])
 
   const entryByHolder = useMemo(() => {
     const map = new Map<number, DayData['entries'][number]>()
@@ -191,6 +242,10 @@ export function CollectionScreen({
 
   async function toggle(holder: Holder) {
     if (busy) return
+    if (locked) {
+      setStatus(s.dayLockedError)
+      return
+    }
     setBusy(true)
     setStatus('')
     try {
@@ -211,6 +266,10 @@ export function CollectionScreen({
 
   async function commitStart(value: number) {
     if (!day) return
+    if (locked) {
+      setStatus(s.dayLockedError)
+      return
+    }
     const next = Math.floor(Number(value))
     if (!Number.isFinite(next) || next < 1) {
       setStartDraft(padReceipt(day.startReceipt))
@@ -235,6 +294,10 @@ export function CollectionScreen({
   }
 
   function openAmount(holder: Holder) {
+    if (locked) {
+      setStatus(s.dayLockedError)
+      return
+    }
     const entry = entryByHolder.get(holder.id)
     setAmountError('')
     setAmountTarget({
@@ -246,6 +309,10 @@ export function CollectionScreen({
 
   async function saveAmount() {
     if (!amountTarget) return
+    if (locked) {
+      setAmountError(s.dayLockedError)
+      return
+    }
     const amount = Number(amountTarget.amount)
     if (!Number.isFinite(amount) || amount < 0) {
       setAmountError(s.amountInvalid)
@@ -266,6 +333,10 @@ export function CollectionScreen({
 
   async function removeAmount() {
     if (!amountTarget) return
+    if (locked) {
+      setAmountError(s.dayLockedError)
+      return
+    }
     setBusy(true)
     try {
       await repo.deleteCollection(amountTarget.holder.id, date)
@@ -279,16 +350,66 @@ export function CollectionScreen({
     }
   }
 
-  async function handlePdf(share: boolean) {
+  function openLockConfirm() {
+    setLockConfirmOpen(true)
+  }
+
+  async function confirmLockDay() {
+    if (busy || locked) return
+    setBusy(true)
+    setStatus('')
+    try {
+      await repo.setDayLocked(date, true)
+      setLockConfirmOpen(false)
+      setStatus(s.dayLocked)
+      refresh()
+    } catch (err) {
+      setStatus(
+        `${s.failed}: ${err instanceof Error ? err.message : String(err)}`,
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function openUnlock() {
+    setUnlockPassword('')
+    setUnlockError('')
+    setUnlockOpen(true)
+  }
+
+  async function submitUnlock() {
+    if (busy) return
+    if (!verifyMasterPassword(unlockPassword)) {
+      setUnlockError(s.unlockWrong)
+      return
+    }
+    setBusy(true)
+    setUnlockError('')
+    try {
+      await repo.setDayLocked(date, false)
+      setUnlockOpen(false)
+      setUnlockPassword('')
+      setStatus(s.dayUnlocked)
+      refresh()
+    } catch (err) {
+      setUnlockError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handlePdf(sort: SheetSort, action: 'save' | 'share') {
     if (busy) return
     if (!day || day.entries.length === 0) {
       setStatus(s.noEntries)
       return
     }
     setBusy(true)
+    setPdfAction(action)
     setStatus('')
     try {
-      const html = await buildDailySheetHtml(repo, profile, date, lang)
+      const html = await buildDailySheetHtml(repo, profile, date, lang, sort)
       if (!html) {
         setStatus(s.noEntries)
         return
@@ -303,25 +424,28 @@ export function CollectionScreen({
         )
         return
       }
-      const result = await generateNativePdf(html, `vasuli-${date}.pdf`)
-      if (share) {
-        await sharePdf(result, s.shareTitle, s.shareText)
+      const fileName = `collection-${date}.pdf`
+      const result = await generateNativePdf(html, fileName, action === 'save')
+      if (action === 'share') {
+        await sharePdfToWhatsApp(result, fileName, s.shareText)
         setStatus(s.pdfSaved)
       } else {
         setStatus(
           `${s.pdfSaved} ${result.path} (${Math.round(result.size / 1024)} KB)`,
         )
       }
+      setPdfOpen(false)
     } catch (err) {
       setStatus(
         `${s.pdfFailed} ${err instanceof Error ? err.message : String(err)}`,
       )
     } finally {
       setBusy(false)
+      setPdfAction(null)
     }
   }
 
-  if (loading) {
+  if (loading || holdersLoading) {
     return (
       <div className="screen-loading">
         <span className="spinner large" />
@@ -336,9 +460,20 @@ export function CollectionScreen({
         <div className="hero-head">
           <div>
             <h1>{isToday ? s.todayCollection : s.pastCollection}</h1>
-            <p>{s.tapToCollect}</p>
+            <p>{locked ? s.lockedNote : s.tapToCollect}</p>
           </div>
+          <button
+            type="button"
+            className={`icon-btn day-lock${locked ? ' locked' : ''}`}
+            aria-label={locked ? s.unlockDay : s.lockDay}
+            title={locked ? s.unlockDay : s.lockDay}
+            disabled={busy}
+            onClick={locked ? openUnlock : openLockConfirm}
+          >
+            {locked ? <UnlockIcon /> : <LockIcon />}
+          </button>
         </div>
+        {locked ? <p className="lock-note">{s.lockedBadge}</p> : null}
 
         <div className="date-nav">
           <button
@@ -371,6 +506,7 @@ export function CollectionScreen({
             type="button"
             className="icon-btn scan-open"
             aria-label={s.scanEntries}
+            disabled={busy || locked}
             onClick={() => setScanOpen(true)}
           >
             <CameraIcon />
@@ -394,7 +530,7 @@ export function CollectionScreen({
               <button
                 type="button"
                 aria-label={s.startingReceipt}
-                disabled={busy}
+                disabled={busy || locked}
                 onClick={() =>
                   void commitStart(
                     (Number(startDraft) || day?.startReceipt || 1) - 1,
@@ -409,8 +545,11 @@ export function CollectionScreen({
                 inputMode="numeric"
                 pattern="[0-9]*"
                 maxLength={4}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
                 value={formatDigits(startDraft, lang)}
-                disabled={busy}
+                disabled={busy || locked}
                 onChange={(event) =>
                   setStartDraft(
                     toLatinDigits(event.target.value)
@@ -428,7 +567,7 @@ export function CollectionScreen({
               <button
                 type="button"
                 aria-label={s.startingReceipt}
-                disabled={busy}
+                disabled={busy || locked}
                 onClick={() =>
                   void commitStart(
                     (Number(startDraft) || day?.startReceipt || 1) + 1,
@@ -479,50 +618,84 @@ export function CollectionScreen({
         </div>
       ) : (
         <>
-          <div className="searchbar glass">
-            <SearchIcon />
-            <input
-              type="search"
-              value={search}
-              placeholder={s.searchCollection}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-          </div>
-
-          <div className="filter-row">
-            <div className="segmented">
-              <button
-                type="button"
-                className={filter === 'all' ? 'active' : ''}
-                onClick={() => setFilter('all')}
-              >
-                {s.filterAll}
-              </button>
-              <button
-                type="button"
-                className={filter === 'pending' ? 'active' : ''}
-                onClick={() => setFilter('pending')}
-              >
-                {s.filterPending}
-              </button>
-              <button
-                type="button"
-                className={filter === 'collected' ? 'active' : ''}
-                onClick={() => setFilter('collected')}
-              >
-                {s.filterCollected}
-              </button>
+          <div className="search-filter-row">
+            <div className="searchbar glass">
+              <SearchIcon />
+              <input
+                type="search"
+                value={search}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                placeholder={s.searchCollection}
+                onChange={(event) => setSearch(event.target.value)}
+              />
             </div>
-            <span className="list-count">
-              {formatDigits(visibleHolders.length, lang)}
-            </span>
+            <div className="filter-dropdown-wrapper">
+              <button
+                type="button"
+                className="filter-select glass"
+                aria-label={s.filterLabel}
+                aria-expanded={filterOpen}
+                onClick={() => setFilterOpen((prev) => !prev)}
+              >
+                <span>
+                  {filter === 'collected'
+                    ? s.filterCollected
+                    : filter === 'pending'
+                      ? s.filterPending
+                      : s.filterAll}
+                </span>
+                <ChevronRightIcon
+                  className={`filter-chevron${filterOpen ? ' open' : ''}`}
+                />
+              </button>
+              {filterOpen ? (
+                <>
+                  <div
+                    className="dropdown-backdrop"
+                    onClick={() => setFilterOpen(false)}
+                  />
+                  <div className="dropdown-menu glass" role="menu">
+                    {(
+                      [
+                        { id: 'all', label: s.filterAll },
+                        { id: 'pending', label: s.filterPending },
+                        { id: 'collected', label: s.filterCollected },
+                      ] as const
+                    ).map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        role="menuitem"
+                        className={`dropdown-item${filter === opt.id ? ' active' : ''}`}
+                        onClick={() => {
+                          setFilter(opt.id)
+                          setFilterOpen(false)
+                        }}
+                      >
+                        <span>{opt.label}</span>
+                        {filter === opt.id ? (
+                          <CheckIcon className="dropdown-check" />
+                        ) : null}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : null}
+            </div>
           </div>
 
           <div className="list-head" aria-hidden>
             <span className="c">{s.srNo}</span>
             <span>{s.name}</span>
             <span className="c">{s.receiptShort}</span>
-            <span className="r">{s.amount}</span>
+            <span className="r list-amount-head">
+              <span>{s.amount}</span>
+              <span className="list-count">
+                {formatDigits(visibleHolders.length, lang)}
+              </span>
+            </span>
             <span />
           </div>
 
@@ -540,7 +713,7 @@ export function CollectionScreen({
                 <div
                   key={holder.id}
                   className={`row${isDone ? ' done' : ''}`}
-                  style={{ animationDelay: `${index * 0.03}s` }}
+                  style={{ animationDelay: `${Math.min(index, 12) * 0.03}s` }}
                 >
                   <div className="sr">{formatDigits(index + 1, lang)}</div>
                   <div className="who">
@@ -557,6 +730,7 @@ export function CollectionScreen({
                     type="button"
                     className={`amount amount-btn${isDone ? ' filled' : ''}`}
                     aria-label={s.editAmount}
+                    disabled={locked}
                     onClick={() => openAmount(holder)}
                   >
                     {formatRupees(
@@ -570,7 +744,7 @@ export function CollectionScreen({
                     aria-label={
                       isDone ? s.unmarkCollected : s.markCollected
                     }
-                    disabled={busy}
+                    disabled={busy || locked}
                     onClick={() => void toggle(holder)}
                   >
                     {isDone ? <CheckIcon /> : <PlusIcon />}
@@ -588,28 +762,79 @@ export function CollectionScreen({
           <b>{formatRupees(total, lang)}</b>
         </div>
         <div className="dock-actions">
-          {canSharePdf() ? (
-            <button
-              type="button"
-              className="icon-btn"
-              aria-label={s.sharePdf}
-              disabled={busy || collectedCount === 0}
-              onClick={() => void handlePdf(true)}
-            >
-              <ShareIcon />
-            </button>
-          ) : null}
           <button
             type="button"
             className="btn-primary"
-            onClick={() => void handlePdf(false)}
+            aria-label={s.sharePdf}
             disabled={busy || collectedCount === 0}
+            onClick={() => setPdfOpen(true)}
           >
-            {busy ? <span className="spinner" /> : <DocIcon />}
-            {s.generatePdf}
+            <ShareIcon />
+            {s.sharePdf}
           </button>
         </div>
       </div>
+
+      {pdfOpen ? (
+        <BottomSheet
+          title={s.sharePdf}
+          closeLabel={s.close}
+          onClose={() => {
+            if (!busy) setPdfOpen(false)
+          }}
+        >
+          <div className="field">
+            <span className="field-label">{s.sortPdfBy}</span>
+            <div className="segmented" role="group" aria-label={s.sortPdfBy}>
+              <button
+                type="button"
+                className={pdfSort === 'account' ? 'active' : ''}
+                disabled={busy}
+                onClick={() => setPdfSort('account')}
+              >
+                {s.sortAccount}
+              </button>
+              <button
+                type="button"
+                className={pdfSort === 'receipt' ? 'active' : ''}
+                disabled={busy}
+                onClick={() => setPdfSort('receipt')}
+              >
+                {s.sortReceipt}
+              </button>
+            </div>
+          </div>
+
+          <div className="pdf-actions">
+            <button
+              type="button"
+              className="btn-ghost"
+              disabled={busy}
+              onClick={() => void handlePdf(pdfSort, 'save')}
+            >
+              {pdfAction === 'save' ? (
+                <span className="spinner" />
+              ) : (
+                <DownloadIcon />
+              )}
+              {s.saveToDownloads}
+            </button>
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={busy}
+              onClick={() => void handlePdf(pdfSort, 'share')}
+            >
+              {pdfAction === 'share' ? (
+                <span className="spinner" />
+              ) : (
+                <ShareIcon />
+              )}
+              {s.shareToWhatsApp}
+            </button>
+          </div>
+        </BottomSheet>
+      ) : null}
 
       {status ? (
         <Toast
@@ -644,6 +869,7 @@ export function CollectionScreen({
               min={0}
               step="1"
               inputMode="decimal"
+              autoComplete="off"
               value={amountTarget.amount}
               onChange={(event) =>
                 setAmountTarget({
@@ -700,6 +926,86 @@ export function CollectionScreen({
         </BottomSheet>
       ) : null}
 
+      {lockConfirmOpen ? (
+        <BottomSheet
+          title={s.lockDay}
+          closeLabel={s.close}
+          onClose={() => setLockConfirmOpen(false)}
+          footer={
+            <>
+              <button
+                type="button"
+                className="btn-ghost"
+                disabled={busy}
+                onClick={() => setLockConfirmOpen(false)}
+              >
+                {s.cancel}
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={busy}
+                onClick={() => void confirmLockDay()}
+              >
+                {busy ? <span className="spinner" /> : <LockIcon />}
+                {s.lockDay}
+              </button>
+            </>
+          }
+        >
+          <p className="field-hint">{s.lockConfirm}</p>
+        </BottomSheet>
+      ) : null}
+
+      {unlockOpen ? (
+        <BottomSheet
+          title={s.unlockDay}
+          closeLabel={s.close}
+          onClose={() => setUnlockOpen(false)}
+          footer={
+            <>
+              <button
+                type="button"
+                className="btn-ghost"
+                disabled={busy}
+                onClick={() => setUnlockOpen(false)}
+              >
+                {s.cancel}
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={busy}
+                onClick={() => void submitUnlock()}
+              >
+                {busy ? <span className="spinner" /> : null}
+                {s.unlock}
+              </button>
+            </>
+          }
+        >
+          <p className="field-hint">{s.unlockHint}</p>
+          <div className="field">
+            <label htmlFor="unlockPassword">{s.masterPassword}</label>
+            <input
+              id="unlockPassword"
+              type="password"
+              value={unlockPassword}
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              onChange={(event) => setUnlockPassword(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') void submitUnlock()
+              }}
+            />
+          </div>
+          {unlockError ? (
+            <p className="form-error">{unlockError}</p>
+          ) : null}
+        </BottomSheet>
+      ) : null}
+
       {calendarOpen ? (
         <DatePicker
           value={date}
@@ -714,10 +1020,11 @@ export function CollectionScreen({
           repo={repo}
           date={date}
           lang={lang}
-          startReceipt={nextReceipt}
-          collectedHolderIds={collectedHolderIds}
-          existingReceipts={existingReceipts}
-          onClose={() => setScanOpen(false)}
+startReceipt={nextReceipt}
+            collectedHolderIds={collectedHolderIds}
+            existingReceipts={existingReceipts}
+            existingEntries={day?.entries ?? []}
+            onClose={() => setScanOpen(false)}
           onSaved={(count) => {
             setScanOpen(false)
             refresh()

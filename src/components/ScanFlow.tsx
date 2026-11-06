@@ -1,10 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Capacitor } from '@capacitor/core'
 import { Camera } from '@capacitor/camera'
-import type { Holder } from '../lib/models'
+import type { DayEntry, Holder } from '../lib/models'
 import type { Repository } from '../lib/repo'
 import { STRINGS, type Lang } from '../lib/i18n'
-import { formatDate, formatDigits, toLatinDigits } from '../lib/marathi'
+import {
+  formatDate,
+  formatDigits,
+  formatReceipt,
+  formatRupees,
+  toLatinDigits,
+} from '../lib/marathi'
 import { holderName } from '../lib/names'
 import { pushBackHandler } from '../lib/backButton'
 import {
@@ -28,6 +34,7 @@ interface ScanFlowProps {
   startReceipt: number
   collectedHolderIds: number[]
   existingReceipts: number[]
+  existingEntries: DayEntry[]
   onClose: () => void
   onSaved: (count: number) => void
 }
@@ -83,6 +90,7 @@ export function ScanFlow({
   startReceipt,
   collectedHolderIds,
   existingReceipts,
+  existingEntries,
   onClose,
   onSaved,
 }: ScanFlowProps) {
@@ -331,7 +339,7 @@ export function ScanFlow({
               {native && keyConfigured ? (
                 <button
                   type="button"
-                  className="btn-primary wide"
+                  className="btn-primary scan-cta"
                   onClick={() => void runScan()}
                 >
                   <CameraIcon />
@@ -341,11 +349,9 @@ export function ScanFlow({
 
               <button
                 type="button"
-                className={
-                  native && keyConfigured
-                    ? 'btn-ghost wide'
-                    : 'btn-primary wide'
-                }
+                className={`${
+                  native && keyConfigured ? 'btn-ghost' : 'btn-primary'
+                } scan-cta`}
                 onClick={startManual}
               >
                 <EditIcon />
@@ -376,12 +382,45 @@ export function ScanFlow({
                 type="number"
                 min={1}
                 inputMode="numeric"
+                autoComplete="off"
+                spellCheck={false}
                 value={startDraft}
                 onChange={(event) => setStartDraft(event.target.value)}
               />
             </div>
             {receiptError ? (
               <p className="form-error">{receiptError}</p>
+            ) : null}
+
+            {existingEntries.length > 0 ? (
+              <section className="scan-existing">
+                <div className="scan-existing-head">
+                  <h2>{s.scanExisting}</h2>
+                  <span>{formatDigits(existingEntries.length, lang)}</span>
+                </div>
+                <div className="scan-existing-list">
+                  {existingEntries.map((entry) => (
+                    <div
+                      className="scan-existing-row"
+                      key={entry.collectionId}
+                    >
+                      <div className="scan-existing-name">
+                        <b>{holderName(entry.name, entry.nameEn, lang)}</b>
+                        <small>
+                          {s.accountNoShort}{' '}
+                          {formatDigits(entry.accountNo, lang)}
+                        </small>
+                      </div>
+                      <div className="scan-existing-meta">
+                        <b>{formatRupees(entry.amount, lang)}</b>
+                        <small>
+                          {formatReceipt(entry.receiptNo, lang)}
+                        </small>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
             ) : null}
 
             <div className="scan-rows">
@@ -412,6 +451,8 @@ export function ScanFlow({
                         value={info.row.accountNo}
                         inputMode="numeric"
                         autoComplete="off"
+                        autoCorrect="off"
+                        spellCheck={false}
                         onChange={(event) =>
                           updateRow(info.row.key, {
                             accountNo: event.target.value,
@@ -425,6 +466,7 @@ export function ScanFlow({
                         type="number"
                         min={0}
                         inputMode="decimal"
+                        autoComplete="off"
                         value={info.row.amount}
                         onChange={(event) =>
                           updateRow(info.row.key, {

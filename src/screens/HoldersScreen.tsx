@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Holder, HolderInput } from '../lib/models'
 import type {
   HolderSort,
@@ -46,7 +46,6 @@ export function HoldersScreen({
   const s = STRINGS[lang]
 
   const [holders, setHolders] = useState<Holder[]>([])
-  const [srById, setSrById] = useState<Record<number, number>>({})
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<HolderStatus>('active')
   const [sort, setSort] = useState<HolderSort>('account')
@@ -64,38 +63,44 @@ export function HoldersScreen({
 
   useEffect(() => {
     let cancelled = false
-    const timer = window.setTimeout(() => {
-      setLoading(true)
-      Promise.all([
-        repo.listHolders({ search, status: statusFilter, sort }),
-        repo.listHolders({ search: '', status: statusFilter, sort }),
-      ])
-        .then(([rows, all]) => {
-          if (cancelled) return
-          setHolders(rows)
-          const map: Record<number, number> = {}
-          all.forEach((holder, index) => {
-            map[holder.id] = index + 1
-          })
-          setSrById(map)
-        })
-        .catch((err) => {
-          if (!cancelled) {
-            setStatus(
-              `${s.failed}: ${err instanceof Error ? err.message : String(err)}`,
-            )
-          }
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false)
-        })
-    }, 180)
-
+    setLoading(true)
+    repo
+      .listHolders({ search: '', status: statusFilter, sort })
+      .then((rows) => {
+        if (!cancelled) setHolders(rows)
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setStatus(
+            `${s.failed}: ${err instanceof Error ? err.message : String(err)}`,
+          )
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
     return () => {
       cancelled = true
-      window.clearTimeout(timer)
     }
-  }, [repo, search, statusFilter, sort, reloadToken, s.failed])
+  }, [repo, statusFilter, sort, reloadToken, s.failed])
+
+  const srById = useMemo(() => {
+    const map: Record<number, number> = {}
+    holders.forEach((holder, index) => {
+      map[holder.id] = index + 1
+    })
+    return map
+  }, [holders])
+
+  const visibleHolders = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase()
+    if (!query) return holders
+    return holders.filter((holder) =>
+      `${holder.name} ${holder.nameEn} ${holder.accountNo}`
+        .toLocaleLowerCase()
+        .includes(query),
+    )
+  }, [holders, search])
 
   useEffect(() => {
     if (!status) return
@@ -242,6 +247,9 @@ export function HoldersScreen({
         <input
           type="search"
           value={search}
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
           placeholder={s.searchHolders}
           onChange={(event) => setSearch(event.target.value)}
         />
@@ -295,7 +303,7 @@ export function HoldersScreen({
         <div className="list-loading">
           <span className="spinner" />
         </div>
-      ) : holders.length === 0 ? (
+      ) : visibleHolders.length === 0 ? (
         <div className="empty glass">
           <UserPlusIcon />
           <h2>{isSearching ? s.noData : s.noHolders}</h2>
@@ -313,11 +321,11 @@ export function HoldersScreen({
         </div>
       ) : (
         <section className="holder-list">
-          {holders.map((holder, index) => (
+          {visibleHolders.map((holder, index) => (
             <div
               key={holder.id}
               className={`holder-row${holder.active ? '' : ' inactive'}`}
-              style={{ animationDelay: `${index * 0.025}s` }}
+              style={{ animationDelay: `${Math.min(index, 12) * 0.025}s` }}
             >
               <button
                 type="button"
@@ -396,6 +404,8 @@ export function HoldersScreen({
               id="holderName"
               value={draft.name}
               autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
               onChange={(event) =>
                 setDraft({ ...draft, name: upperName(event.target.value) })
               }
@@ -408,6 +418,8 @@ export function HoldersScreen({
               id="holderNameEn"
               value={draft.nameEn ?? ''}
               autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
               placeholder={s.holderNameEnHint}
               onChange={(event) =>
                 setDraft({
@@ -426,6 +438,8 @@ export function HoldersScreen({
                 value={draft.accountNo}
                 inputMode="numeric"
                 autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
                 onChange={(event) =>
                   setDraft({ ...draft, accountNo: event.target.value })
                 }
@@ -444,6 +458,7 @@ export function HoldersScreen({
                 min={0}
                 step="1"
                 inputMode="decimal"
+                autoComplete="off"
                 value={draft.defaultAmount}
                 onChange={(event) =>
                   setDraft({
@@ -461,6 +476,9 @@ export function HoldersScreen({
               id="holderPhone"
               type="tel"
               inputMode="tel"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
               value={draft.phone ?? ''}
               onChange={(event) =>
                 setDraft({ ...draft, phone: event.target.value })

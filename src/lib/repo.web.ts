@@ -1,5 +1,7 @@
 import type {
   BackupData,
+  CollectionExport,
+  CollectionImportResult,
   DayData,
   DayEntry,
   Holder,
@@ -50,6 +52,7 @@ interface WebState {
   holders: WebHolder[]
   collections: WebCollection[]
   dailyMeta: Record<string, number>
+  locks: Record<string, boolean>
   nextHolderId: number
   nextCollectionId: number
 }
@@ -61,6 +64,7 @@ function emptyState(): WebState {
     holders: [],
     collections: [],
     dailyMeta: {},
+    locks: {},
     nextHolderId: 1,
     nextCollectionId: 1,
   }
@@ -87,6 +91,8 @@ function readState(): WebState {
         parsed.dailyMeta && typeof parsed.dailyMeta === 'object'
           ? parsed.dailyMeta
           : {},
+      locks:
+        parsed.locks && typeof parsed.locks === 'object' ? parsed.locks : {},
       nextHolderId:
         typeof parsed.nextHolderId === 'number' ? parsed.nextHolderId : 1,
       nextCollectionId:
@@ -272,7 +278,18 @@ export class WebRepository implements Repository {
       })
       .filter((row): row is DayEntry => row !== null)
 
-    return { date, startReceipt, entries }
+    return { date, startReceipt, locked: this.state.locks[date] === true, entries }
+  }
+
+  async setDayLocked(date: string, locked: boolean): Promise<void> {
+    if (locked) this.state.locks[date] = true
+    else delete this.state.locks[date]
+    if (this.state.dailyMeta[date] === undefined) this.state.dailyMeta[date] = 1
+    this.persist()
+  }
+
+  private assertUnlocked(date: string): void {
+    if (this.state.locks[date] === true) throw new Error('DAY_LOCKED')
   }
 
   async saveCollection(
@@ -280,6 +297,7 @@ export class WebRepository implements Repository {
     date: string,
     amount: number,
   ): Promise<void> {
+    this.assertUnlocked(date)
     if (this.state.dailyMeta[date] === undefined) {
       this.state.dailyMeta[date] = 1
     }
@@ -310,6 +328,7 @@ export class WebRepository implements Repository {
     date: string,
     entries: CollectionInput[],
   ): Promise<void> {
+    this.assertUnlocked(date)
     if (this.state.dailyMeta[date] === undefined) {
       this.state.dailyMeta[date] = 1
     }
@@ -346,6 +365,7 @@ export class WebRepository implements Repository {
   }
 
   async deleteCollection(holderId: number, date: string): Promise<void> {
+    this.assertUnlocked(date)
     this.state.collections = this.state.collections.filter(
       (row) => !(row.holderId === holderId && row.date === date),
     )
@@ -354,6 +374,7 @@ export class WebRepository implements Repository {
   }
 
   async setStartReceipt(date: string, start: number): Promise<void> {
+    this.assertUnlocked(date)
     this.state.dailyMeta[date] = Math.max(
       1,
       Math.floor(Number(start) || 1),
@@ -433,6 +454,7 @@ export class WebRepository implements Repository {
         updatedAt: row.updatedAt,
       })),
       dailyMeta: { ...this.state.dailyMeta },
+      locks: { ...this.state.locks },
     }
   }
 
@@ -464,10 +486,136 @@ export class WebRepository implements Repository {
       holders,
       collections,
       dailyMeta: { ...(data.dailyMeta ?? {}) },
+      locks: { ...(data.locks ?? {}) },
       nextHolderId: holders.reduce((max, row) => Math.max(max, row.id), 0) + 1,
       nextCollectionId: collections.length + 1,
     }
     this.persist()
+  }
+
+  async exportCollections(
+    start: string,
+    end: string,
+  ): Promise<CollectionExport> {
+    const dailyMeta: Record<string, number> = {}
+    for (const [date, value] of Object.entries(this.state.dailyMeta)) {
+      if (date >= start && date <= end) dailyMeta[date] = value
+    }
+    const locks: Record<string, boolean> = {}
+    for (const [date, value] of Object.entries(this.state.locks)) {
+      if (value && date >= start && date <= end) locks[date] = true
+    }
+
+    const collections = this.state.collections
+      .filter((row) => row.date >= start && row.date <= end)
+      .sort(
+        (a, b) =>
+          a.date.localeCompare(b.date) ||
+          a.receiptNo - b.receiptNo ||
+          a.id - b.id,
+      )
+      .map((row): CollectionExport['collections'][number] | null => {
+        const holder = this.state.holders.find(
+          (candidate) => candidate.id === row.holderId,
+        )
+        if (!holder) return null
+        return {
+          accountNo: holder.accountNo,
+          name: holder.nameEn && holder.nameEn !== '' ? holder.nameEn : holder.name,
+          date: row.date,
+          amount: row.amount,
+          receiptNo: row.receiptNo,
+        }
+      })
+      .filter((row): row is CollectionExport['collections'][number] => row !== null)
+
+    return {
+      type: 'collection-export',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      range: { start, end },
+      dailyMeta,
+      locks,
+      collections,
+    }
+  }
+
+  async importCollections(
+    data: CollectionExport,
+  ): Promise<CollectionImportResult> {
+    const holderByAccount = new Map<string, WebHolder>()
+    for (const holder of this.state.holders) {
+      holderByAccount.set(holder.accountNo.trim(), holder)
+    }
+
+    const now = new Date().toISOString()
+    const rows = [...data.collections].sort(
+      (a, b) => a.date.localeCompare(b.date) || a.receiptNo - b.receiptNo,
+    )
+    const minReceipt = new Map<string, number>()
+    const affected = new Set<string>()
+    let imported = 0
+    let skipped = 0
+
+    for (const row of rows) {
+      if (this.state.locks[row.date] === true) {
+        skipped += 1
+        continue
+      }
+      const holder = holderByAccount.get(String(row.accountNo).trim())
+      if (!holder) {
+        skipped += 1
+        continue
+      }
+      const receiptNo = Math.max(0, Math.floor(Number(row.receiptNo) || 0))
+      const previous = minReceipt.get(row.date)
+      if (receiptNo > 0 && (previous === undefined || receiptNo < previous)) {
+        minReceipt.set(row.date, receiptNo)
+      }
+      affected.add(row.date)
+      const existing = this.state.collections.find(
+        (candidate) =>
+          candidate.holderId === holder.id && candidate.date === row.date,
+      )
+      if (existing) {
+        existing.amount = Math.max(0, Number(row.amount) || 0)
+        existing.receiptNo = receiptNo
+        existing.updatedAt = now
+      } else {
+        this.state.collections.push({
+          id: this.state.nextCollectionId,
+          holderId: holder.id,
+          date: row.date,
+          amount: Math.max(0, Number(row.amount) || 0),
+          receiptNo,
+          createdAt: now,
+          updatedAt: now,
+        })
+        this.state.nextCollectionId += 1
+      }
+      imported += 1
+    }
+
+    const metaDates = new Set([
+      ...affected,
+      ...Object.keys(data.locks ?? {}),
+    ])
+    for (const date of metaDates) {
+      if (this.state.dailyMeta[date] === undefined) {
+        const fromFile = data.dailyMeta?.[date]
+        this.state.dailyMeta[date] =
+          fromFile !== undefined
+            ? Math.max(1, Math.floor(Number(fromFile) || 1))
+            : Math.max(1, minReceipt.get(date) ?? 1)
+      }
+      if (data.locks?.[date]) this.state.locks[date] = true
+    }
+    for (const date of affected) {
+      this.renumber(date)
+    }
+
+    this.persist()
+    return { imported, skipped, dates: affected.size }
   }
 
   async seedDemoData(profile: Profile): Promise<void> {

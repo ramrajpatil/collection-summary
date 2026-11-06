@@ -92,6 +92,60 @@ function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;')
 }
 
+interface Column {
+  label: string
+  width: string
+  align?: 'c' | 'r'
+}
+
+function colgroupHtml(columns: Column[]): string {
+  const cols = columns
+    .map((column) =>
+      column.width ? `<col style="width: ${column.width}" />` : `<col />`,
+    )
+    .join('')
+  return `<colgroup>${cols}</colgroup>`
+}
+
+function theadHtml(columns: Column[]): string {
+  const cells = columns
+    .map(
+      (column) =>
+        `<th${column.align ? ` class="${column.align}"` : ''}>${column.label}</th>`,
+    )
+    .join('')
+  return `<thead><tr>${cells}</tr></thead>`
+}
+
+function headerBlockHtml(
+  societyName: string,
+  address: string,
+  heading: string,
+  right: string,
+): string {
+  return `<header class="head">
+    <div class="society">${escapeHtml(societyName)}</div>
+    <div class="address">${escapeHtml(address)}</div>
+    <div class="meta">
+      <div class="heading">${escapeHtml(heading)}</div>
+      <div class="date">${right}</div>
+    </div>
+  </header>`
+}
+
+function runningBlockHtml(
+  headerHtml: string,
+  columns: Column[],
+  periodHtml = '',
+): string {
+  return `<div class="running">
+    ${headerHtml}
+    <div class="divider"></div>
+    ${periodHtml}
+    <table class="running-table">${colgroupHtml(columns)}${theadHtml(columns)}</table>
+  </div>`
+}
+
 const SHEET_CSS = `
   @font-face {
     font-family: 'NotoDev';
@@ -103,7 +157,7 @@ const SHEET_CSS = `
     src: url('fonts/NotoSansDevanagari-Bold.ttf') format('truetype');
     font-weight: 700;
   }
-  @page { size: A4; margin: 18mm 16mm 18mm 22mm; }
+  @page { size: A4; margin: 10.8mm 16mm 18mm 22mm; }
   * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   html, body { margin: 0; padding: 0; }
   body {
@@ -121,13 +175,13 @@ const SHEET_CSS = `
   .head { text-align: center; }
   .society { font-size: 19pt; font-weight: 700; letter-spacing: 0.2pt; }
   .address { font-size: 9.5pt; color: #4b5563; margin-top: 1.5mm; }
-  .divider { height: 0.4mm; background: #111827; margin: 4mm 0 3mm; }
+  .divider { height: 0.4mm; background: #111827; margin: 3mm 0 2.5mm; }
   .meta {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
     gap: 4mm;
-    margin-bottom: 3mm;
+    margin: 2.5mm 0 0;
   }
   .heading { font-size: 12.5pt; font-weight: 700; }
   .date { font-size: 10.5pt; white-space: nowrap; flex-shrink: 0; }
@@ -135,7 +189,7 @@ const SHEET_CSS = `
     display: flex;
     justify-content: space-between;
     gap: 4mm;
-    margin: -1mm 0 3mm;
+    margin: 0 0 2.5mm;
     font-size: 9.5pt;
     color: #374151;
   }
@@ -143,14 +197,14 @@ const SHEET_CSS = `
   thead th {
     background: #eef2ff;
     border: 0.35mm solid #1f2937;
-    padding: 2.2mm 2mm;
+    padding: 1.2mm 1.6mm;
     font-size: 10pt;
     font-weight: 700;
     text-align: left;
   }
   tbody td {
     border: 0.3mm solid #6b7280;
-    padding: 1.9mm 2mm;
+    padding: 1mm 1.6mm;
     font-size: 10pt;
   }
   tbody tr:nth-child(even) td { background: #f8fafc; }
@@ -158,11 +212,22 @@ const SHEET_CSS = `
   .r { text-align: right; white-space: nowrap; }
   tfoot td {
     border: 0.35mm solid #1f2937;
-    padding: 2.4mm 2mm;
+    padding: 1.4mm 1.6mm;
     font-size: 11pt;
     font-weight: 700;
     background: #eef2ff;
   }
+  .running { display: none; }
+  body.continued .running {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: #fff;
+    z-index: 20;
+  }
+  .running-table { width: 100%; border-collapse: collapse; }
   .notes { margin-top: 3mm; page-break-inside: avoid; }
   .notes-title { font-size: 10pt; font-weight: 700; margin-bottom: 1.5mm; }
   .notes-grid {
@@ -270,8 +335,8 @@ export function buildSheetHtml(data: SheetData, lang: Lang = 'mr'): string {
         <tr>
           <td class="c">${formatDigits(row.sr, lang)}</td>
           <td>${escapeHtml(row.name)}</td>
-          <td class="c">${formatDigits(escapeHtml(row.accountNo), lang)}</td>
           <td class="c">${formatReceipt(row.receiptNo, lang)}</td>
+          <td class="c">${formatDigits(escapeHtml(row.accountNo), lang)}</td>
           <td class="r">${formatRupees(row.amount, lang)}</td>
         </tr>`,
     )
@@ -288,6 +353,22 @@ export function buildSheetHtml(data: SheetData, lang: Lang = 'mr'): string {
     )
     .join('')
 
+  const columns: Column[] = [
+    { label: s.srNo, width: '13mm', align: 'c' },
+    { label: s.name, width: '' },
+    { label: s.receiptNo, width: '28mm', align: 'c' },
+    { label: s.accountNo, width: '26mm', align: 'c' },
+    { label: s.amount, width: '27mm', align: 'r' },
+  ]
+  const dateHtml = `${s.dateLabel}: ${formatDate(data.dateIso, lang)}`
+  const headerHtml = headerBlockHtml(
+    data.societyName,
+    data.address,
+    data.heading,
+    dateHtml,
+  )
+  const runningHtml = runningBlockHtml(headerHtml, columns)
+
   return `<!doctype html>
 <html lang="${lang}">
 <head>
@@ -295,33 +376,13 @@ export function buildSheetHtml(data: SheetData, lang: Lang = 'mr'): string {
 <style>${SHEET_CSS}</style>
 </head>
 <body>
+  ${runningHtml}
   <div class="accent"></div>
-  <header class="head">
-    <div class="society">${escapeHtml(data.societyName)}</div>
-    <div class="address">${escapeHtml(data.address)}</div>
-  </header>
+  ${headerHtml}
   <div class="divider"></div>
-  <div class="meta">
-    <div class="heading">${escapeHtml(data.heading)}</div>
-    <div class="date">${s.dateLabel}: ${formatDate(data.dateIso, lang)}</div>
-  </div>
   <table>
-    <colgroup>
-      <col style="width: 13mm" />
-      <col />
-      <col style="width: 26mm" />
-      <col style="width: 28mm" />
-      <col style="width: 27mm" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th class="c">${s.srNo}</th>
-        <th>${s.name}</th>
-        <th class="c">${s.accountNo}</th>
-        <th class="c">${s.receiptNo}</th>
-        <th class="r">${s.amount}</th>
-      </tr>
-    </thead>
+    ${colgroupHtml(columns)}
+    ${theadHtml(columns)}
     <tbody>${rowsHtml}</tbody>
     <tfoot>
       <tr>
@@ -366,6 +427,26 @@ export function buildStatementHtml(
     )
     .join('')
 
+  const columns: Column[] = [
+    { label: s.srNo, width: '16mm', align: 'c' },
+    { label: s.dateLabel, width: '', align: 'c' },
+    { label: s.receiptNo, width: '32mm', align: 'c' },
+    { label: s.amount, width: '34mm', align: 'r' },
+  ]
+  const headerHtml = headerBlockHtml(
+    data.societyName,
+    data.address,
+    data.heading,
+    `${s.period}: ${escapeHtml(data.periodLabel)}`,
+  )
+  const periodHtml = `<div class="period">
+    <span>${s.holderName}: ${escapeHtml(data.holderName)}</span>
+    <span>${s.accountNo}: ${formatDigits(escapeHtml(data.accountNo), lang)}${
+      data.phone ? ` · ${s.holderPhone}: ${escapeHtml(data.phone)}` : ''
+    }</span>
+  </div>`
+  const runningHtml = runningBlockHtml(headerHtml, columns, periodHtml)
+
   return `<!doctype html>
 <html lang="${lang}">
 <head>
@@ -373,37 +454,14 @@ export function buildStatementHtml(
 <style>${SHEET_CSS}</style>
 </head>
 <body>
+  ${runningHtml}
   <div class="accent"></div>
-  <header class="head">
-    <div class="society">${escapeHtml(data.societyName)}</div>
-    <div class="address">${escapeHtml(data.address)}</div>
-  </header>
+  ${headerHtml}
   <div class="divider"></div>
-  <div class="meta">
-    <div class="heading">${escapeHtml(data.heading)}</div>
-    <div class="date">${s.period}: ${escapeHtml(data.periodLabel)}</div>
-  </div>
-  <div class="period">
-    <span>${s.holderName}: ${escapeHtml(data.holderName)}</span>
-    <span>${s.accountNo}: ${formatDigits(escapeHtml(data.accountNo), lang)}${
-      data.phone ? ` · ${s.holderPhone}: ${escapeHtml(data.phone)}` : ''
-    }</span>
-  </div>
+  ${periodHtml}
   <table>
-    <colgroup>
-      <col style="width: 16mm" />
-      <col />
-      <col style="width: 32mm" />
-      <col style="width: 34mm" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th class="c">${s.srNo}</th>
-        <th class="c">${s.dateLabel}</th>
-        <th class="c">${s.receiptNo}</th>
-        <th class="r">${s.amount}</th>
-      </tr>
-    </thead>
+    ${colgroupHtml(columns)}
+    ${theadHtml(columns)}
     <tbody>${rowsHtml}</tbody>
     <tfoot>
       <tr>
@@ -449,6 +507,26 @@ export function buildMonthlyHtml(
     )
     .join('')
 
+  const columns: Column[] = [
+    { label: s.srNo, width: '13mm', align: 'c' },
+    { label: s.name, width: '' },
+    { label: s.accountNo, width: '26mm', align: 'c' },
+    { label: s.days, width: '16mm', align: 'c' },
+    { label: s.totalCollection, width: '30mm', align: 'r' },
+    { label: s.commission, width: '30mm', align: 'r' },
+  ]
+  const headerHtml = headerBlockHtml(
+    data.societyName,
+    data.address,
+    data.heading,
+    escapeHtml(data.monthLabel),
+  )
+  const periodHtml = `<div class="period">
+    <span>${s.period}: ${escapeHtml(data.periodLabel)}</span>
+    <span>${s.commissionRate}</span>
+  </div>`
+  const runningHtml = runningBlockHtml(headerHtml, columns, periodHtml)
+
   return `<!doctype html>
 <html lang="${lang}">
 <head>
@@ -456,39 +534,14 @@ export function buildMonthlyHtml(
 <style>${SHEET_CSS}</style>
 </head>
 <body>
+  ${runningHtml}
   <div class="accent"></div>
-  <header class="head">
-    <div class="society">${escapeHtml(data.societyName)}</div>
-    <div class="address">${escapeHtml(data.address)}</div>
-  </header>
+  ${headerHtml}
   <div class="divider"></div>
-  <div class="meta">
-    <div class="heading">${escapeHtml(data.heading)}</div>
-    <div class="date">${escapeHtml(data.monthLabel)}</div>
-  </div>
-  <div class="period">
-    <span>${s.period}: ${escapeHtml(data.periodLabel)}</span>
-    <span>${s.commissionRate}</span>
-  </div>
+  ${periodHtml}
   <table>
-    <colgroup>
-      <col style="width: 13mm" />
-      <col />
-      <col style="width: 26mm" />
-      <col style="width: 16mm" />
-      <col style="width: 30mm" />
-      <col style="width: 30mm" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th class="c">${s.srNo}</th>
-        <th>${s.name}</th>
-        <th class="c">${s.accountNo}</th>
-        <th class="c">${s.days}</th>
-        <th class="r">${s.totalCollection}</th>
-        <th class="r">${s.commission}</th>
-      </tr>
-    </thead>
+    ${colgroupHtml(columns)}
+    ${theadHtml(columns)}
     <tbody>${rowsHtml}</tbody>
     <tfoot>
       <tr>

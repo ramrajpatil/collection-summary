@@ -73,6 +73,7 @@ export function ReportsScreen({ repo, profile }: ReportsScreenProps) {
   }, [status])
 
   useEffect(() => {
+    if (!historyOpen) return
     let cancelled = false
     const months = Array.from({ length: 6 }, (_, index) =>
       shiftMonth(currentMonth(), -index),
@@ -94,7 +95,7 @@ export function ReportsScreen({ repo, profile }: ReportsScreenProps) {
     return () => {
       cancelled = true
     }
-  }, [repo])
+  }, [repo, historyOpen])
 
   function goToMonth(next: string) {
     if (next === month) return
@@ -153,7 +154,7 @@ export function ReportsScreen({ repo, profile }: ReportsScreenProps) {
         )
         return
       }
-      const result = await generateNativePdf(html, `vasuli-${date}.pdf`)
+      const result = await generateNativePdf(html, `collection-${date}.pdf`)
       await sharePdf(result, s.shareTitle, s.shareText)
       setStatus(s.pdfSaved)
     } catch (err) {

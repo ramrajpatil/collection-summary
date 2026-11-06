@@ -1,6 +1,11 @@
 import { Capacitor } from '@capacitor/core'
 import { Share } from '@capacitor/share'
-import type { HolderHistory, MonthlyReport, Profile } from './models'
+import type {
+  DayEntry,
+  HolderHistory,
+  MonthlyReport,
+  Profile,
+} from './models'
 import type { Repository } from './repo'
 import { STRINGS, type Lang } from './i18n'
 import { formatDate, formatMonth } from './marathi'
@@ -16,22 +21,41 @@ import {
 } from './pdfTemplate'
 import { PdfGenerator, type PdfGeneratorResult } from './pdf'
 
+export type SheetSort = 'account' | 'receipt'
+
+function sortEntries(entries: DayEntry[], sort?: SheetSort): DayEntry[] {
+  if (!sort) return entries
+  const sorted = [...entries]
+  if (sort === 'account') {
+    sorted.sort(
+      (a, b) =>
+        Number(a.accountNo) - Number(b.accountNo) ||
+        a.accountNo.localeCompare(b.accountNo),
+    )
+  } else {
+    sorted.sort((a, b) => a.receiptNo - b.receiptNo)
+  }
+  return sorted
+}
+
 export async function buildDailySheetHtml(
   repo: Repository,
   profile: Profile,
   date: string,
   lang: Lang,
+  sort?: SheetSort,
 ): Promise<string | null> {
   const day = await repo.getDay(date)
   if (day.entries.length === 0) return null
   const s = STRINGS[lang]
-  const total = day.entries.reduce((sum, entry) => sum + entry.amount, 0)
+  const entries = sortEntries(day.entries, sort)
+  const total = entries.reduce((sum, entry) => sum + entry.amount, 0)
   const data: SheetData = {
     societyName: profile.societyName,
     address: profile.address,
     heading: s.pdfTitle,
     dateIso: date,
-    rows: day.entries.map((entry, index) => ({
+    rows: entries.map((entry, index) => ({
       sr: index + 1,
       name: holderName(entry.name, entry.nameEn, lang),
       accountNo: entry.accountNo,
@@ -127,7 +151,7 @@ const PRINT_STYLE = `
       max-width: 210mm;
       min-height: 100vh;
       margin: 0 auto;
-      padding: 18mm 16mm 18mm 22mm;
+      padding: 10.8mm 16mm 18mm 22mm;
       box-shadow: 0 0 26px rgba(0,0,0,.18);
     }
     .accent { border-radius: 0; }
@@ -135,7 +159,7 @@ const PRINT_STYLE = `
   @media print {
     html, body { margin: 0; }
     body {
-      padding: 18mm 16mm 18mm 22mm;
+      padding: 10.8mm 16mm 18mm 22mm;
       -webkit-box-decoration-break: clone;
       box-decoration-break: clone;
     }
@@ -165,8 +189,23 @@ export function openPrintPreview(html: string): boolean {
 export async function generateNativePdf(
   html: string,
   fileName: string,
+  saveToDownloads = true,
 ): Promise<PdfGeneratorResult> {
-  return PdfGenerator.generate({ html, fileName })
+  return PdfGenerator.generate({ html, fileName, saveToDownloads })
+}
+
+export async function sharePdfToWhatsApp(
+  result: PdfGeneratorResult,
+  fileName: string,
+  text: string,
+): Promise<void> {
+  if (!Capacitor.isNativePlatform()) return
+  await PdfGenerator.share({
+    uri: result.uri,
+    fileName,
+    text,
+    packageName: 'com.whatsapp',
+  })
 }
 
 export function canSharePdf(): boolean {

@@ -41,6 +41,7 @@ export interface DayEntry {
 export interface DayData {
   date: string
   startReceipt: number
+  locked: boolean
   entries: DayEntry[]
 }
 
@@ -116,4 +117,29 @@ export interface BackupData {
   holders: BackupHolder[]
   collections: BackupCollection[]
   dailyMeta: Record<string, number>
+  locks: Record<string, boolean>
+}
+
+export interface CollectionExportRow {
+  accountNo: string
+  name: string
+  date: string
+  amount: number
+  receiptNo: number
+}
+
+export interface CollectionExport {
+  type: 'collection-export'
+  version: number
+  exportedAt: string
+  range: { start: string; end: string }
+  dailyMeta: Record<string, number>
+  locks: Record<string, boolean>
+  collections: CollectionExportRow[]
+}
+
+export interface CollectionImportResult {
+  imported: number
+  skipped: number
+  dates: number
 }

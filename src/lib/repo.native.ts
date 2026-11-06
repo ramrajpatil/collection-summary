@@ -5,6 +5,8 @@ import {
 } from '@capacitor-community/sqlite'
 import type {
   BackupData,
+  CollectionExport,
+  CollectionImportResult,
   DayData,
   DayEntry,
   Holder,
@@ -55,9 +57,11 @@ CREATE TABLE IF NOT EXISTS collections (
   FOREIGN KEY(holder_id) REFERENCES holders(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_collections_date ON collections(date);
+CREATE INDEX IF NOT EXISTS idx_collections_date_id ON collections(date, id);
 CREATE TABLE IF NOT EXISTS daily_meta (
   date TEXT PRIMARY KEY NOT NULL,
-  start_receipt INTEGER NOT NULL DEFAULT 1
+  start_receipt INTEGER NOT NULL DEFAULT 1,
+  locked INTEGER NOT NULL DEFAULT 0
 );
 `
 
@@ -117,6 +121,20 @@ interface HistoryRow {
 interface MetaRow {
   date: string
   start_receipt: number
+  locked?: number
+}
+
+interface LockRow {
+  locked: number
+}
+
+interface ExportRow {
+  date: string
+  amount: number
+  receipt_no: number
+  account_no: string
+  name: string
+  name_en: string | null
 }
 
 interface SettingRow {
@@ -179,6 +197,16 @@ export class NativeRepository implements Repository {
         "ALTER TABLE holders ADD COLUMN name_en TEXT NOT NULL DEFAULT ''",
       )
     }
+
+    const meta = await db.query('PRAGMA table_info(daily_meta)')
+    const metaColumns = ((meta.values ?? []) as TableColumnRow[]).map(
+      (row) => row.name,
+    )
+    if (!metaColumns.includes('locked')) {
+      await db.run(
+        'ALTER TABLE daily_meta ADD COLUMN locked INTEGER NOT NULL DEFAULT 0',
+      )
+    }
   }
 
   private async getDb(): Promise<SQLiteDBConnection> {
@@ -207,6 +235,19 @@ export class NativeRepository implements Repository {
       await db.open()
     }
     await db.execute('PRAGMA foreign_keys = ON;', false)
+    // WAL keeps the UI responsive while writes are flushed, and NORMAL
+    // synchronous is safe for this local-only app while avoiding an fsync on
+    // every small transaction. These are best-effort tuning flags.
+    try {
+      // PRAGMA statements return a row, so they must use query() rather than
+      // execute() on the Capacitor SQLite bridge.
+      await db.query('PRAGMA journal_mode = WAL;')
+      await db.query('PRAGMA synchronous = NORMAL;')
+      await db.query('PRAGMA temp_store = MEMORY;')
+      await db.query('PRAGMA cache_size = -8000;')
+    } catch {
+      void 0
+    }
     this.db = db
     return db
   }
@@ -350,23 +391,23 @@ export class NativeRepository implements Repository {
   async nextAccountNo(): Promise<string> {
     const db = await this.getDb()
     const res = await db.query(
-      "SELECT account_no FROM holders WHERE account_no GLOB '[0-9]*'",
+      `SELECT MAX(CAST(trim(account_no) AS INTEGER)) AS max_no
+         FROM holders
+        WHERE trim(account_no) <> ''
+          AND trim(account_no) NOT GLOB '*[^0-9]*'`,
     )
-    let max = 0
-    for (const row of res.values ?? []) {
-      const value = Number(row.account_no)
-      if (Number.isInteger(value) && value > max) max = value
-    }
+    const max = Number(res.values?.[0]?.max_no ?? 0) || 0
     return String(max + 1).padStart(3, '0')
   }
 
   async getDay(date: string): Promise<DayData> {
     const db = await this.getDb()
     const meta = await db.query(
-      'SELECT start_receipt FROM daily_meta WHERE date = ?',
+      'SELECT start_receipt, locked FROM daily_meta WHERE date = ?',
       [date],
     )
     const startReceipt = Number(meta.values?.[0]?.start_receipt ?? 1)
+    const locked = Number(meta.values?.[0]?.locked ?? 0) === 1
 
     const res = await db.query(
       `SELECT c.id AS collection_id, c.holder_id, c.amount, c.receipt_no,
@@ -378,7 +419,30 @@ export class NativeRepository implements Repository {
       [date],
     )
     const entries = ((res.values ?? []) as DayRow[]).map(mapEntry)
-    return { date, startReceipt, entries }
+    return { date, startReceipt, locked, entries }
+  }
+
+  private async assertUnlocked(
+    db: SQLiteDBConnection,
+    date: string,
+  ): Promise<void> {
+    const res = await db.query(
+      'SELECT locked FROM daily_meta WHERE date = ?',
+      [date],
+    )
+    if (Number((res.values?.[0] as LockRow | undefined)?.locked ?? 0) === 1) {
+      throw new Error('DAY_LOCKED')
+    }
+  }
+
+  async setDayLocked(date: string, locked: boolean): Promise<void> {
+    const db = await this.getDb()
+    await db.run(
+      `INSERT INTO daily_meta (date, start_receipt, locked)
+       VALUES (?, 1, ?)
+       ON CONFLICT(date) DO UPDATE SET locked = excluded.locked`,
+      [date, locked ? 1 : 0],
+    )
   }
 
   async saveCollection(
@@ -389,32 +453,40 @@ export class NativeRepository implements Repository {
     const db = await this.getDb()
     await db.beginTransaction()
     try {
+      await this.assertUnlocked(db, date)
       await db.run(
         'INSERT OR IGNORE INTO daily_meta (date, start_receipt) VALUES (?, 1)',
         [date],
         false,
       )
-      const existing = await db.query(
-        'SELECT id FROM collections WHERE holder_id = ? AND date = ?',
-        [holderId, date],
-      )
       const now = new Date().toISOString()
-      if (existing.values?.length) {
-        await db.run(
-          'UPDATE collections SET amount = ?, updated_at = ? WHERE id = ?',
-          [Math.max(0, Number(amount) || 0), now, existing.values[0].id],
-          false,
-        )
-      } else {
-        await db.run(
-          `INSERT INTO collections
-            (holder_id, date, amount, receipt_no, created_at, updated_at)
-           VALUES (?, ?, ?, 0, ?, ?)`,
-          [holderId, date, Math.max(0, Number(amount) || 0), now, now],
-          false,
-        )
-      }
-      await this.renumberDate(db, date)
+      // Compute the next receipt in SQL so adding a collection stays O(1);
+      // only deletes and start-receipt changes need a full renumber.
+      await db.run(
+        `INSERT INTO collections
+          (holder_id, date, amount, receipt_no, created_at, updated_at)
+         VALUES (
+           ?, ?, ?,
+           MAX(
+             COALESCE((SELECT start_receipt FROM daily_meta WHERE date = ?), 1),
+             COALESCE((SELECT MAX(receipt_no) FROM collections WHERE date = ?), 0) + 1
+           ),
+           ?, ?
+         )
+         ON CONFLICT(holder_id, date) DO UPDATE SET
+           amount = excluded.amount,
+           updated_at = excluded.updated_at`,
+        [
+          holderId,
+          date,
+          Math.max(0, Number(amount) || 0),
+          date,
+          date,
+          now,
+          now,
+        ],
+        false,
+      )
       await db.commitTransaction()
     } catch (err) {
       try {
@@ -433,6 +505,7 @@ export class NativeRepository implements Repository {
     const db = await this.getDb()
     await db.beginTransaction()
     try {
+      await this.assertUnlocked(db, date)
       await db.run(
         'INSERT OR IGNORE INTO daily_meta (date, start_receipt) VALUES (?, 1)',
         [date],
@@ -448,16 +521,17 @@ export class NativeRepository implements Repository {
         ),
       )
       const now = new Date().toISOString()
+      const statements: { statement: string; values: unknown[] }[] = []
       for (const entry of entries) {
         const receiptNo = Math.floor(Number(entry.receiptNo) || 0)
         if (receiptNo <= 0) throw new Error('INVALID_RECEIPT')
         if (used.has(receiptNo)) throw new Error('DUPLICATE_RECEIPT')
         used.add(receiptNo)
-        await db.run(
-          `INSERT INTO collections
+        statements.push({
+          statement: `INSERT INTO collections
             (holder_id, date, amount, receipt_no, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, ?)`,
-          [
+          values: [
             entry.holderId,
             date,
             Math.max(0, Number(entry.amount) || 0),
@@ -465,8 +539,11 @@ export class NativeRepository implements Repository {
             now,
             now,
           ],
-          false,
-        )
+        })
+      }
+      // Send the whole scan batch in one bridge call.
+      if (statements.length > 0) {
+        await db.executeSet(statements, false)
       }
       await db.commitTransaction()
     } catch (err) {
@@ -483,6 +560,7 @@ export class NativeRepository implements Repository {
     const db = await this.getDb()
     await db.beginTransaction()
     try {
+      await this.assertUnlocked(db, date)
       await db.run(
         'DELETE FROM collections WHERE holder_id = ? AND date = ?',
         [holderId, date],
@@ -505,8 +583,10 @@ export class NativeRepository implements Repository {
     const value = Math.max(1, Math.floor(Number(start) || 1))
     await db.beginTransaction()
     try {
+      await this.assertUnlocked(db, date)
       await db.run(
-        'INSERT OR REPLACE INTO daily_meta (date, start_receipt) VALUES (?, ?)',
+        `INSERT INTO daily_meta (date, start_receipt) VALUES (?, ?)
+         ON CONFLICT(date) DO UPDATE SET start_receipt = excluded.start_receipt`,
         [date, value],
         false,
       )
@@ -526,23 +606,22 @@ export class NativeRepository implements Repository {
     db: SQLiteDBConnection,
     date: string,
   ): Promise<void> {
-    const meta = await db.query(
-      'SELECT start_receipt FROM daily_meta WHERE date = ?',
-      [date],
+    // One statement instead of one bridge round-trip per collection row.
+    await db.run(
+      `UPDATE collections
+          SET receipt_no =
+              COALESCE(
+                (SELECT start_receipt FROM daily_meta WHERE date = ?), 1
+              ) + (
+                SELECT COUNT(*)
+                  FROM collections c2
+                 WHERE c2.date = collections.date
+                   AND c2.id < collections.id
+              )
+        WHERE date = ?`,
+      [date, date],
+      false,
     )
-    const start = Math.max(1, Number(meta.values?.[0]?.start_receipt ?? 1))
-    const rows = await db.query(
-      'SELECT id FROM collections WHERE date = ? ORDER BY id ASC',
-      [date],
-    )
-    const values = rows.values ?? []
-    for (let i = 0; i < values.length; i += 1) {
-      await db.run(
-        'UPDATE collections SET receipt_no = ? WHERE id = ?',
-        [start + i, values[i].id],
-        false,
-      )
-    }
   }
 
   async getMonthlyReport(month: string): Promise<MonthlyReport> {
@@ -625,7 +704,7 @@ export class NativeRepository implements Repository {
         ORDER BY id ASC`,
     )
     const metaRes = await db.query(
-      'SELECT date, start_receipt FROM daily_meta ORDER BY date ASC',
+      'SELECT date, start_receipt, locked FROM daily_meta ORDER BY date ASC',
     )
 
     const collections = ((collectionsRes.values ?? []) as ExportCollectionRow[]).map(
@@ -640,8 +719,10 @@ export class NativeRepository implements Repository {
     )
 
     const dailyMeta: Record<string, number> = {}
+    const locks: Record<string, boolean> = {}
     for (const row of (metaRes.values ?? []) as MetaRow[]) {
       dailyMeta[row.date] = Number(row.start_receipt)
+      if (Number(row.locked ?? 0) === 1) locks[row.date] = true
     }
 
     return {
@@ -649,6 +730,7 @@ export class NativeRepository implements Repository {
       exportedAt: new Date().toISOString(),
       profile,
       setupComplete: settings.setupComplete === '1',
+      locks,
       holders: ((holdersRes.values ?? []) as HolderRow[]).map((row) => ({
         id: Number(row.id),
         name: row.name,
@@ -669,31 +751,31 @@ export class NativeRepository implements Repository {
     const db = await this.getDb()
     await db.beginTransaction()
     try {
-      await db.run('DELETE FROM collections', [], false)
-      await db.run('DELETE FROM holders', [], false)
-      await db.run('DELETE FROM daily_meta', [], false)
-      await db.run('DELETE FROM settings', [], false)
+      const statements: { statement: string; values: unknown[] }[] = [
+        { statement: 'DELETE FROM collections', values: [] },
+        { statement: 'DELETE FROM holders', values: [] },
+        { statement: 'DELETE FROM daily_meta', values: [] },
+        { statement: 'DELETE FROM settings', values: [] },
+      ]
 
-      const profile = data.profile
-      if (profile) {
-        await db.run(
-          "INSERT INTO settings (key, value) VALUES ('profile', ?)",
-          [JSON.stringify(profile)],
-          false,
-        )
+      if (data.profile) {
+        statements.push({
+          statement: "INSERT INTO settings (key, value) VALUES ('profile', ?)",
+          values: [JSON.stringify(data.profile)],
+        })
       }
-      await db.run(
-        "INSERT INTO settings (key, value) VALUES ('setupComplete', ?)",
-        [data.setupComplete ? '1' : '0'],
-        false,
-      )
+      statements.push({
+        statement:
+          "INSERT INTO settings (key, value) VALUES ('setupComplete', ?)",
+        values: [data.setupComplete ? '1' : '0'],
+      })
 
       for (const holder of data.holders) {
-        await db.run(
-          `INSERT INTO holders
+        statements.push({
+          statement: `INSERT INTO holders
             (id, name, name_en, account_no, default_amount, phone, active, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
+          values: [
             holder.id,
             holder.name,
             holder.nameEn ?? '',
@@ -704,16 +786,15 @@ export class NativeRepository implements Repository {
             holder.createdAt,
             holder.updatedAt,
           ],
-          false,
-        )
+        })
       }
 
       for (const collection of data.collections) {
-        await db.run(
-          `INSERT INTO collections
+        statements.push({
+          statement: `INSERT INTO collections
             (holder_id, date, amount, receipt_no, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, ?)`,
-          [
+          values: [
             collection.holderId,
             collection.date,
             Math.max(0, Number(collection.amount) || 0),
@@ -721,19 +802,183 @@ export class NativeRepository implements Repository {
             collection.createdAt,
             collection.updatedAt,
           ],
-          false,
-        )
+        })
       }
 
-      for (const [date, start] of Object.entries(data.dailyMeta ?? {})) {
-        await db.run(
-          'INSERT OR REPLACE INTO daily_meta (date, start_receipt) VALUES (?, ?)',
-          [date, Math.max(1, Math.floor(Number(start) || 1))],
-          false,
-        )
+      const metaDates = new Set([
+        ...Object.keys(data.dailyMeta ?? {}),
+        ...Object.keys(data.locks ?? {}),
+      ])
+      for (const date of metaDates) {
+        const start = data.dailyMeta?.[date] ?? 1
+        statements.push({
+          statement:
+            'INSERT OR REPLACE INTO daily_meta (date, start_receipt, locked) VALUES (?, ?, ?)',
+          values: [
+            date,
+            Math.max(1, Math.floor(Number(start) || 1)),
+            data.locks?.[date] ? 1 : 0,
+          ],
+        })
       }
 
+      // One bridge call for the whole restore instead of one per row.
+      await db.executeSet(statements, false)
       await db.commitTransaction()
+    } catch (err) {
+      try {
+        await db.rollbackTransaction()
+      } catch {
+        void 0
+      }
+      throw err
+    }
+  }
+
+  async exportCollections(
+    start: string,
+    end: string,
+  ): Promise<CollectionExport> {
+    const db = await this.getDb()
+    const metaRes = await db.query(
+      `SELECT date, start_receipt, locked FROM daily_meta
+        WHERE date >= ? AND date <= ?
+        ORDER BY date ASC`,
+      [start, end],
+    )
+    const dailyMeta: Record<string, number> = {}
+    const locks: Record<string, boolean> = {}
+    for (const row of (metaRes.values ?? []) as MetaRow[]) {
+      dailyMeta[row.date] = Number(row.start_receipt)
+      if (Number(row.locked ?? 0) === 1) locks[row.date] = true
+    }
+
+    const res = await db.query(
+      `SELECT c.date, c.amount, c.receipt_no, h.account_no, h.name, h.name_en
+         FROM collections c
+         JOIN holders h ON h.id = c.holder_id
+        WHERE c.date >= ? AND c.date <= ?
+        ORDER BY c.date ASC, c.receipt_no ASC, c.id ASC`,
+      [start, end],
+    )
+    const collections = ((res.values ?? []) as ExportRow[]).map((row) => ({
+      accountNo: row.account_no,
+      name: row.name_en && row.name_en !== '' ? row.name_en : row.name,
+      date: row.date,
+      amount: Number(row.amount),
+      receiptNo: Number(row.receipt_no),
+    }))
+
+    return {
+      type: 'collection-export',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      range: { start, end },
+      dailyMeta,
+      locks,
+      collections,
+    }
+  }
+
+  async importCollections(
+    data: CollectionExport,
+  ): Promise<CollectionImportResult> {
+    const db = await this.getDb()
+    await db.beginTransaction()
+    try {
+      const holdersRes = await db.query(
+        'SELECT id, name, name_en, account_no, default_amount, phone, active, created_at, updated_at FROM holders',
+      )
+      const holderByAccount = new Map<string, number>()
+      for (const row of (holdersRes.values ?? []) as HolderRow[]) {
+        holderByAccount.set(String(row.account_no).trim(), Number(row.id))
+      }
+
+      const lockedRes = await db.query(
+        'SELECT date FROM daily_meta WHERE locked = 1',
+      )
+      const lockedDates = new Set(
+        ((lockedRes.values ?? []) as { date: string }[]).map((row) => row.date),
+      )
+
+      const now = new Date().toISOString()
+      const rows = [...data.collections].sort(
+        (a, b) =>
+          a.date.localeCompare(b.date) || a.receiptNo - b.receiptNo,
+      )
+      const minReceipt = new Map<string, number>()
+      const affected = new Set<string>()
+      const upserts: { statement: string; values: unknown[] }[] = []
+      let imported = 0
+      let skipped = 0
+
+      for (const row of rows) {
+        if (lockedDates.has(row.date)) {
+          skipped += 1
+          continue
+        }
+        const holderId = holderByAccount.get(String(row.accountNo).trim())
+        if (!holderId) {
+          skipped += 1
+          continue
+        }
+        const receiptNo = Math.max(0, Math.floor(Number(row.receiptNo) || 0))
+        const previous = minReceipt.get(row.date)
+        if (receiptNo > 0 && (previous === undefined || receiptNo < previous)) {
+          minReceipt.set(row.date, receiptNo)
+        }
+        affected.add(row.date)
+        upserts.push({
+          statement: `INSERT INTO collections
+              (holder_id, date, amount, receipt_no, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?)
+             ON CONFLICT(holder_id, date) DO UPDATE SET
+               amount = excluded.amount,
+               receipt_no = excluded.receipt_no,
+               updated_at = excluded.updated_at`,
+          values: [
+            holderId,
+            row.date,
+            Math.max(0, Number(row.amount) || 0),
+            receiptNo,
+            now,
+            now,
+          ],
+        })
+        imported += 1
+      }
+
+      const metaDates = new Set([
+        ...affected,
+        ...Object.keys(data.locks ?? {}),
+      ])
+      const meta: { statement: string; values: unknown[] }[] = []
+      for (const date of metaDates) {
+        const fromFile = data.dailyMeta?.[date]
+        const start =
+          fromFile !== undefined
+            ? Math.max(1, Math.floor(Number(fromFile) || 1))
+            : Math.max(1, minReceipt.get(date) ?? 1)
+        const lockFlag = data.locks?.[date] ? 1 : 0
+        meta.push({
+          statement: `INSERT INTO daily_meta (date, start_receipt, locked)
+             VALUES (?, ?, ?)
+             ON CONFLICT(date) DO UPDATE SET
+               start_receipt = daily_meta.start_receipt,
+               locked = CASE WHEN excluded.locked = 1 THEN 1 ELSE daily_meta.locked END`,
+          values: [date, start, lockFlag],
+        })
+      }
+
+      const statements = [...meta, ...upserts]
+      if (statements.length > 0) {
+        await db.executeSet(statements, false)
+      }
+      for (const date of affected) {
+        await this.renumberDate(db, date)
+      }
+      await db.commitTransaction()
+      return { imported, skipped, dates: affected.size }
     } catch (err) {
       try {
         await db.rollbackTransaction()
@@ -772,7 +1017,8 @@ export class NativeRepository implements Repository {
         )
       }
       await db.run(
-        'INSERT OR REPLACE INTO daily_meta (date, start_receipt) VALUES (?, 1)',
+        `INSERT INTO daily_meta (date, start_receipt) VALUES (?, 1)
+         ON CONFLICT(date) DO UPDATE SET start_receipt = excluded.start_receipt`,
         [date],
         false,
       )

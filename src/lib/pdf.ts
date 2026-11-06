@@ -11,7 +11,15 @@ export interface PdfGeneratorPlugin {
     html: string
     fileName: string
     baseUrl?: string
+    saveToDownloads?: boolean
   }): Promise<PdfGeneratorResult>
+
+  share(options: {
+    uri: string
+    fileName: string
+    text?: string
+    packageName?: string
+  }): Promise<void>
 }
 
 export const PdfGenerator = registerPlugin<PdfGeneratorPlugin>('PdfGenerator')
