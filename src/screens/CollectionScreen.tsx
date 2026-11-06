@@ -692,11 +692,10 @@ export function CollectionScreen({
             <span className="c">{s.receiptShort}</span>
             <span className="r list-amount-head">
               <span>{s.amount}</span>
-              <span className="list-count">
-                {formatDigits(visibleHolders.length, lang)}
-              </span>
             </span>
-            <span />
+            <span className="list-count-cell">
+              {formatDigits(visibleHolders.length, lang)}
+            </span>
           </div>
 
           {visibleHolders.length === 0 ? (

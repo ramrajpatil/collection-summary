@@ -677,10 +677,10 @@ body {
 
 .list-head {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) 42px 78px 35px;
+  grid-template-columns: 24px minmax(0, 1fr) 36px 76px 34px;
   align-items: center;
-  gap: 8px;
-  padding: 0 10px 2px;
+  gap: 6px;
+  padding: 0 8px 2px;
   font-size: 0.62rem;
   letter-spacing: 0.3px;
   color: var(--faint);
@@ -690,17 +690,18 @@ body {
   text-align: center;
 }
 
-.list-head .r {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 6px;
-  padding-left: 14px;
+.list-head .list-amount-head {
+  padding-left: 10px;
   white-space: nowrap;
 }
 
-.list-head .list-count {
+.list-head .list-count-cell {
+  text-align: right;
+  padding-right: 2px;
   font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
 }
 
 .list {
@@ -711,10 +712,10 @@ body {
 
 .row {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) 42px 78px 35px;
+  grid-template-columns: 24px minmax(0, 1fr) 36px 76px 34px;
   align-items: center;
-  gap: 8px;
-  padding: 11px 10px;
+  gap: 6px;
+  padding: 10px 8px;
   border-radius: 20px;
   background: linear-gradient(160deg, var(--panel-a), var(--panel-b));
   border: 1px solid var(--panel-border);
@@ -741,10 +742,10 @@ body {
 .sr {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 9px;
-  font-size: 0.7rem;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  font-size: 0.68rem;
   color: var(--muted);
   background: var(--chip-bg);
   border: 1px solid var(--chip-border);
@@ -775,9 +776,9 @@ body {
 .receipt {
   display: grid;
   place-items: center;
-  height: 28px;
-  border-radius: 9px;
-  font-size: 0.72rem;
+  height: 24px;
+  border-radius: 8px;
+  font-size: 0.68rem;
   font-weight: 700;
   color: var(--faint);
   background: var(--chip-bg);
@@ -799,11 +800,11 @@ body {
 }
 
 .collect {
-  width: 35px;
-  height: 35px;
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
-  border-radius: 11px;
+  border-radius: 10px;
   cursor: pointer;
   color: var(--danger-ink);
   background: var(--danger-soft);
@@ -1650,7 +1651,7 @@ select option {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  padding: 8px 14px;
+  padding: 8px 6px 8px 10px;
   border: none;
   border-radius: 12px;
   background: transparent;
