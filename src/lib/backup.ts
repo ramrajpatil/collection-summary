@@ -1,6 +1,8 @@
 import { Capacitor } from '@capacitor/core'
 import { FileSaver } from './filesaver'
 import type {
+  BackupBalance,
+  BackupBalanceReduction,
   BackupCollection,
   BackupData,
   BackupHolder,
@@ -47,6 +49,33 @@ function parseHolder(value: unknown): BackupHolder | null {
     active: value.active !== false,
     createdAt: asString(value.createdAt, now),
     updatedAt: asString(value.updatedAt, now),
+  }
+}
+
+function parseBalance(value: unknown): BackupBalance | null {
+  if (!isRecord(value)) return null
+  const holderId = asNumber(value.holderId)
+  if (!holderId) return null
+  return {
+    holderId,
+    openingAmount: asNumber(value.openingAmount),
+    openingDate:
+      value.openingDate == null ? null : asString(value.openingDate),
+  }
+}
+
+function parseBalanceReduction(
+  value: unknown,
+): BackupBalanceReduction | null {
+  if (!isRecord(value)) return null
+  const holderId = asNumber(value.holderId)
+  const date = asString(value.date)
+  if (!holderId || !date) return null
+  return {
+    holderId,
+    date,
+    amount: asNumber(value.amount),
+    createdAt: asString(value.createdAt, new Date().toISOString()),
   }
 }
 
@@ -110,6 +139,15 @@ export function parseBackup(text: string): BackupData {
     }
   }
 
+  const balances = (Array.isArray(raw.balances) ? raw.balances : [])
+    .map(parseBalance)
+    .filter((row): row is BackupBalance => row !== null)
+  const balanceReductions = (
+    Array.isArray(raw.balanceReductions) ? raw.balanceReductions : []
+  )
+    .map(parseBalanceReduction)
+    .filter((row): row is BackupBalanceReduction => row !== null)
+
   return {
     version: asNumber(raw.version) || BACKUP_VERSION,
     exportedAt: asString(raw.exportedAt, new Date().toISOString()),
@@ -119,6 +157,8 @@ export function parseBackup(text: string): BackupData {
     collections,
     dailyMeta,
     locks,
+    balances,
+    balanceReductions,
   }
 }
 

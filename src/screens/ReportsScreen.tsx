@@ -18,9 +18,13 @@ import {
   sharePdf,
 } from '../lib/sheets'
 import {
+  CalendarIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   DocIcon,
+  PercentIcon,
+  UsersIcon,
+  WalletIcon,
 } from '../components/Icons'
 import { Toast } from '../components/Toast'
 import { currentMonth, shiftMonth } from '../lib/reports'
@@ -220,24 +224,44 @@ export function ReportsScreen({ repo, profile }: ReportsScreenProps) {
         </div>
       ) : (
         <>
-          <div className="report-cards">
-            <div className="report-card">
-              <small>{s.monthlyTotal}</small>
-              <b>{formatRupees(report.total, lang)}</b>
+          <div className="stats">
+            <div className="stat">
+              <div className="stat-text">
+                <small>{s.monthlyTotal}</small>
+                <b>{formatRupees(report.total, lang)}</b>
+              </div>
+              <span className="stat-icon amount">
+                <WalletIcon />
+              </span>
             </div>
-            <div className="report-card highlight">
-              <small>
-                {s.commission} · {s.commissionRate}
-              </small>
-              <b>{formatRupees(report.commission, lang)}</b>
+            <div className="stat highlight">
+              <div className="stat-text">
+                <small>
+                  {s.commission} · {s.commissionRate}
+                </small>
+                <b>{formatRupees(report.commission, lang)}</b>
+              </div>
+              <span className="stat-icon commission">
+                <PercentIcon />
+              </span>
             </div>
-            <div className="report-card">
-              <small>{s.days}</small>
-              <b>{formatDigits(report.days, lang)}</b>
+            <div className="stat">
+              <div className="stat-text">
+                <small>{s.days}</small>
+                <b>{formatDigits(report.days, lang)}</b>
+              </div>
+              <span className="stat-icon days">
+                <CalendarIcon />
+              </span>
             </div>
-            <div className="report-card">
-              <small>{s.accounts}</small>
-              <b>{formatDigits(report.accounts, lang)}</b>
+            <div className="stat">
+              <div className="stat-text">
+                <small>{s.accounts}</small>
+                <b>{formatDigits(report.accounts, lang)}</b>
+              </div>
+              <span className="stat-icon accounts">
+                <UsersIcon />
+              </span>
             </div>
           </div>
 

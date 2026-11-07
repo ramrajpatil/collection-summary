@@ -6,6 +6,11 @@ import { getRepo } from './lib/db'
 import { runBackHandler } from './lib/backButton'
 import { tapFeedback } from './lib/haptics'
 import { getGeminiKey, setGeminiKey } from './lib/gemini'
+import {
+  loadNotifySettings,
+  saveNotifySettings,
+  type NotifySettings,
+} from './lib/notifications'
 import type { Profile } from './lib/models'
 import type { Repository } from './lib/repo'
 import { STRINGS, useLanguage } from './lib/i18n'
@@ -61,6 +66,8 @@ export default function App() {
   const [settingsDraft, setSettingsDraft] = useState<Settings>(
     defaultSettings(lang),
   )
+  const [notifySettings, setNotifySettings] =
+    useState<NotifySettings>(loadNotifySettings)
   const [geminiKeyDraft, setGeminiKeyDraft] = useState('')
   const [showGeminiKey, setShowGeminiKey] = useState(false)
   const [settingsError, setSettingsError] = useState('')
@@ -69,6 +76,12 @@ export default function App() {
   function selectTab(next: Tab) {
     setTabbarHidden(false)
     setTab(next)
+  }
+
+  function toggleNotify(key: 'sms' | 'whatsapp') {
+    const next = { ...notifySettings, [key]: !notifySettings[key] }
+    setNotifySettings(next)
+    saveNotifySettings(next)
   }
 
   useEffect(() => {
@@ -616,6 +629,33 @@ export default function App() {
           {settingsError ? (
             <p className="form-error">{settingsError}</p>
           ) : null}
+
+          <div className="field">
+            <span className="field-label">{s.notifications}</span>
+            <label className="toggle-row">
+              <span>{s.smsNotifications}</span>
+              <input
+                type="checkbox"
+                checked={notifySettings.sms}
+                onChange={() => toggleNotify('sms')}
+              />
+              <span className="toggle-switch" aria-hidden>
+                <span />
+              </span>
+            </label>
+            <label className="toggle-row">
+              <span>{s.whatsappNotifications}</span>
+              <input
+                type="checkbox"
+                checked={notifySettings.whatsapp}
+                onChange={() => toggleNotify('whatsapp')}
+              />
+              <span className="toggle-switch" aria-hidden>
+                <span />
+              </span>
+            </label>
+            <p className="field-hint">{s.notificationsHint}</p>
+          </div>
 
           <div className="field">
             <span className="field-label">{s.dataBackup}</span>

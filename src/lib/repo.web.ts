@@ -1,10 +1,13 @@
 import type {
   BackupData,
+  BalanceJournalEntry,
+  BalanceReduction,
   CollectionExport,
   CollectionImportResult,
   DayData,
   DayEntry,
   Holder,
+  HolderBalance,
   HolderHistory,
   HolderInput,
   MonthlyReport,
@@ -46,6 +49,14 @@ interface WebCollection {
   updatedAt: string
 }
 
+interface WebBalanceReduction {
+  id: number
+  holderId: number
+  date: string
+  amount: number
+  createdAt: string
+}
+
 interface WebState {
   profile: Profile | null
   setupComplete: boolean
@@ -53,8 +64,11 @@ interface WebState {
   collections: WebCollection[]
   dailyMeta: Record<string, number>
   locks: Record<string, boolean>
+  balances: Record<number, { openingAmount: number; openingDate: string | null }>
+  balanceReductions: WebBalanceReduction[]
   nextHolderId: number
   nextCollectionId: number
+  nextReductionId: number
 }
 
 function emptyState(): WebState {
@@ -65,8 +79,11 @@ function emptyState(): WebState {
     collections: [],
     dailyMeta: {},
     locks: {},
+    balances: {},
+    balanceReductions: [],
     nextHolderId: 1,
     nextCollectionId: 1,
+    nextReductionId: 1,
   }
 }
 
@@ -93,6 +110,17 @@ function readState(): WebState {
           : {},
       locks:
         parsed.locks && typeof parsed.locks === 'object' ? parsed.locks : {},
+      balances:
+        parsed.balances && typeof parsed.balances === 'object'
+          ? parsed.balances
+          : {},
+      balanceReductions: Array.isArray(parsed.balanceReductions)
+        ? parsed.balanceReductions
+        : [],
+      nextReductionId:
+        typeof parsed.nextReductionId === 'number'
+          ? parsed.nextReductionId
+          : 1,
       nextHolderId:
         typeof parsed.nextHolderId === 'number' ? parsed.nextHolderId : 1,
       nextCollectionId:
@@ -236,6 +264,10 @@ export class WebRepository implements Repository {
   async deleteHolder(id: number): Promise<void> {
     this.state.holders = this.state.holders.filter((row) => row.id !== id)
     this.state.collections = this.state.collections.filter(
+      (row) => row.holderId !== id,
+    )
+    delete this.state.balances[id]
+    this.state.balanceReductions = this.state.balanceReductions.filter(
       (row) => row.holderId !== id,
     )
     this.persist()
@@ -438,6 +470,112 @@ export class WebRepository implements Repository {
     }
   }
 
+  async getHolderBalance(id: number): Promise<HolderBalance> {
+    const opening = this.state.balances[id]
+    const reductions = this.state.balanceReductions
+      .filter((row) => row.holderId === id)
+      .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id)
+      .map(
+        (row): BalanceReduction => ({
+          id: row.id,
+          date: row.date,
+          amount: row.amount,
+          createdAt: row.createdAt,
+        }),
+      )
+    const openingAmount = opening?.openingAmount ?? 0
+    const openingDate = opening?.openingDate ?? null
+    const hasOpening = openingDate !== null && openingAmount > 0
+    const collections = this.state.collections
+      .filter((row) => row.holderId === id)
+      .filter((row) => (hasOpening ? row.date >= openingDate! : false))
+      .sort((a, b) => a.date.localeCompare(b.date) || a.id - b.id)
+    const totalReduced = reductions.reduce(
+      (sum, reduction) => sum + reduction.amount,
+      0,
+    )
+    const totalCollected = collections.reduce(
+      (sum, row) => sum + row.amount,
+      0,
+    )
+
+    const journal: BalanceJournalEntry[] = []
+    if (openingDate !== null || openingAmount > 0) {
+      const date = openingDate ?? new Date().toISOString().slice(0, 10)
+      journal.push({
+        key: 'opening',
+        type: 'opening',
+        date,
+        amount: openingAmount,
+        reference: null,
+        createdAt: date,
+      })
+    }
+    for (const reduction of reductions) {
+      journal.push({
+        key: `reduction-${reduction.id}`,
+        type: 'reduction',
+        date: reduction.date,
+        amount: -reduction.amount,
+        reference: null,
+        createdAt: reduction.createdAt,
+      })
+    }
+    for (const row of collections) {
+      journal.push({
+        key: `collection-${row.id}`,
+        type: 'collection',
+        date: row.date,
+        amount: row.amount,
+        reference: String(row.receiptNo),
+        createdAt: row.createdAt,
+      })
+    }
+    journal.sort(
+      (a, b) =>
+        b.date.localeCompare(a.date) ||
+        b.createdAt.localeCompare(a.createdAt),
+    )
+
+    return {
+      openingAmount,
+      openingDate,
+      reductions,
+      journal,
+      current: hasOpening
+        ? openingAmount + totalCollected - totalReduced
+        : 0,
+    }
+  }
+
+  async setOpeningBalance(
+    holderId: number,
+    amount: number,
+    date: string,
+  ): Promise<void> {
+    this.state.balances[holderId] = {
+      openingAmount: Math.max(0, Number(amount) || 0),
+      openingDate: date,
+    }
+    this.persist()
+  }
+
+  async addBalanceReduction(
+    holderId: number,
+    amount: number,
+    date: string,
+  ): Promise<void> {
+    this.state.balanceReductions.push({
+      id: this.state.nextReductionId,
+      holderId,
+      date,
+      amount: Math.max(0, Number(amount) || 0),
+      createdAt: new Date().toISOString(),
+    })
+    this.state.nextReductionId += 1
+    this.persist()
+  }
+
   async exportBackup(): Promise<BackupData> {
     return {
       version: 1,
@@ -455,6 +593,17 @@ export class WebRepository implements Repository {
       })),
       dailyMeta: { ...this.state.dailyMeta },
       locks: { ...this.state.locks },
+      balances: Object.entries(this.state.balances).map(([holderId, row]) => ({
+        holderId: Number(holderId),
+        openingAmount: row.openingAmount,
+        openingDate: row.openingDate,
+      })),
+      balanceReductions: this.state.balanceReductions.map((row) => ({
+        holderId: row.holderId,
+        date: row.date,
+        amount: row.amount,
+        createdAt: row.createdAt,
+      })),
     }
   }
 
@@ -480,6 +629,26 @@ export class WebRepository implements Repository {
       updatedAt: row.updatedAt,
     }))
 
+    const balances: Record<
+      number,
+      { openingAmount: number; openingDate: string | null }
+    > = {}
+    for (const row of data.balances ?? []) {
+      balances[row.holderId] = {
+        openingAmount: Math.max(0, Number(row.openingAmount) || 0),
+        openingDate: row.openingDate,
+      }
+    }
+    const balanceReductions: WebBalanceReduction[] = (
+      data.balanceReductions ?? []
+    ).map((row, index) => ({
+      id: index + 1,
+      holderId: row.holderId,
+      date: row.date,
+      amount: Math.max(0, Number(row.amount) || 0),
+      createdAt: row.createdAt,
+    }))
+
     this.state = {
       profile: data.profile ? { ...data.profile } : null,
       setupComplete: data.setupComplete === true,
@@ -487,8 +656,11 @@ export class WebRepository implements Repository {
       collections,
       dailyMeta: { ...(data.dailyMeta ?? {}) },
       locks: { ...(data.locks ?? {}) },
+      balances,
+      balanceReductions,
       nextHolderId: holders.reduce((max, row) => Math.max(max, row.id), 0) + 1,
       nextCollectionId: collections.length + 1,
+      nextReductionId: balanceReductions.length + 1,
     }
     this.persist()
   }

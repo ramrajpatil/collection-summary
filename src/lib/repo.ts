@@ -4,6 +4,7 @@ import type {
   CollectionImportResult,
   DayData,
   Holder,
+  HolderBalance,
   HolderHistory,
   HolderInput,
   MonthlyReport,
@@ -49,6 +50,17 @@ export interface Repository {
   setStartReceipt(date: string, start: number): Promise<void>
   getMonthlyReport(month: string): Promise<MonthlyReport>
   getHolderHistory(id: number): Promise<HolderHistory | null>
+  getHolderBalance(id: number): Promise<HolderBalance>
+  setOpeningBalance(
+    holderId: number,
+    amount: number,
+    date: string,
+  ): Promise<void>
+  addBalanceReduction(
+    holderId: number,
+    amount: number,
+    date: string,
+  ): Promise<void>
   exportBackup(): Promise<BackupData>
   importBackup(data: BackupData): Promise<void>
   exportCollections(start: string, end: string): Promise<CollectionExport>

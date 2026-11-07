@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Capacitor } from '@capacitor/core'
-import type { HolderHistory, Profile } from '../lib/models'
+import type {
+  BalanceJournalEntry,
+  HolderBalance,
+  HolderHistory,
+  Profile,
+} from '../lib/models'
 import type { Repository } from '../lib/repo'
 import { STRINGS, useLanguage } from '../lib/i18n'
 import { pushBackHandler } from '../lib/backButton'
@@ -9,6 +14,7 @@ import {
   formatDigits,
   formatReceipt,
   formatRupees,
+  todayIso,
 } from '../lib/marathi'
 import { holderName } from '../lib/names'
 import {
@@ -26,6 +32,7 @@ import {
   whatsappUrl,
 } from '../lib/reminders'
 import { BottomSheet } from '../components/BottomSheet'
+import { DatePicker } from '../components/DatePicker'
 import { Toast } from '../components/Toast'
 import {
   ChatIcon,
@@ -33,7 +40,9 @@ import {
   CopyIcon,
   DocIcon,
   EditIcon,
+  MinusIcon,
   PhoneIcon,
+  WalletIcon,
 } from '../components/Icons'
 
 interface HolderDetailScreenProps {
@@ -59,6 +68,18 @@ export function HolderDetailScreen({
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState('')
   const [reminderOpen, setReminderOpen] = useState(false)
+  const [balance, setBalance] = useState<HolderBalance | null>(null)
+  const [balanceToken, setBalanceToken] = useState(0)
+  const [balanceBusy, setBalanceBusy] = useState(false)
+  const [balanceError, setBalanceError] = useState('')
+  const [openingOpen, setOpeningOpen] = useState(false)
+  const [openingAmount, setOpeningAmount] = useState('')
+  const [openingDate, setOpeningDate] = useState(todayIso())
+  const [openingPicker, setOpeningPicker] = useState(false)
+  const [reductionOpen, setReductionOpen] = useState(false)
+  const [reductionAmount, setReductionAmount] = useState('')
+  const [reductionDate, setReductionDate] = useState(todayIso())
+  const [reductionPicker, setReductionPicker] = useState(false)
 
   useEffect(() => {
     const state = { cancelled: false }
@@ -83,18 +104,58 @@ export function HolderDetailScreen({
   }, [repo, holderId, s.failed])
 
   useEffect(() => {
+    let cancelled = false
+    repo
+      .getHolderBalance(holderId)
+      .then((next) => {
+        if (!cancelled) setBalance(next)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [repo, holderId, balanceToken])
+
+  useEffect(() => {
     if (!status) return
     const timer = window.setTimeout(() => setStatus(''), 6000)
     return () => window.clearTimeout(timer)
   }, [status])
 
   useEffect(() => {
-    if (!reminderOpen) return
+    if (
+      !reminderOpen &&
+      !openingOpen &&
+      !reductionOpen &&
+      !openingPicker &&
+      !reductionPicker
+    ) {
+      return
+    }
     return pushBackHandler(() => {
-      setReminderOpen(false)
+      if (openingPicker) {
+        setOpeningPicker(false)
+        return true
+      }
+      if (reductionPicker) {
+        setReductionPicker(false)
+        return true
+      }
+      if (reminderOpen) {
+        setReminderOpen(false)
+        return true
+      }
+      if (openingOpen) {
+        setOpeningOpen(false)
+        return true
+      }
+      if (reductionOpen) {
+        setReductionOpen(false)
+        return true
+      }
       return true
     })
-  }, [reminderOpen])
+  }, [reminderOpen, openingOpen, reductionOpen, openingPicker, reductionPicker])
 
   const phone = normalizePhone(history?.holder.phone)
   const message = history
@@ -140,6 +201,70 @@ export function HolderDetailScreen({
     } catch {
       setStatus(s.failed)
     }
+  }
+
+  function openOpeningSheet() {
+    setOpeningAmount(
+      balance?.openingAmount ? String(balance.openingAmount) : '',
+    )
+    setOpeningDate(balance?.openingDate ?? todayIso())
+    setBalanceError('')
+    setOpeningOpen(true)
+  }
+
+  async function saveOpeningBalance() {
+    if (balanceBusy) return
+    const amount = Number(openingAmount)
+    if (!Number.isFinite(amount) || amount < 0) {
+      setBalanceError(s.amountInvalid)
+      return
+    }
+    setBalanceBusy(true)
+    setBalanceError('')
+    try {
+      await repo.setOpeningBalance(holderId, amount, openingDate)
+      setOpeningOpen(false)
+      setStatus(s.balanceSaved)
+      setBalanceToken((token) => token + 1)
+    } catch (err) {
+      setBalanceError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBalanceBusy(false)
+    }
+  }
+
+  function openReductionSheet() {
+    setReductionAmount('')
+    setReductionDate(todayIso())
+    setBalanceError('')
+    setReductionOpen(true)
+  }
+
+  async function saveReduction() {
+    if (balanceBusy) return
+    const amount = Number(reductionAmount)
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setBalanceError(s.amountInvalid)
+      return
+    }
+    setBalanceBusy(true)
+    setBalanceError('')
+    try {
+      await repo.addBalanceReduction(holderId, amount, reductionDate)
+      setReductionOpen(false)
+      setStatus(s.balanceSaved)
+      setBalanceToken((token) => token + 1)
+    } catch (err) {
+      setBalanceError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBalanceBusy(false)
+    }
+  }
+
+  function journalLabel(type: BalanceJournalEntry['type']): string {
+    if (type === 'opening') return s.openingBalance
+    if (type === 'reduction') return s.balanceReduction
+    return s.collectionEntry
   }
 
   return (
@@ -212,14 +337,14 @@ export function HolderDetailScreen({
 
           <div className="detail-actions">
             {phone ? (
-              <>
+              <div className="detail-action-row">
                 <button
                   type="button"
                   className="btn-ghost"
                   onClick={() => openExternal(telUrl(phone))}
                 >
                   <PhoneIcon />
-                  {s.callHolder}
+                  <span className="action-label">{s.callHolder}</span>
                 </button>
                 <button
                   type="button"
@@ -227,29 +352,101 @@ export function HolderDetailScreen({
                   onClick={() => openExternal(whatsappUrl(phone, message))}
                 >
                   <ChatIcon />
-                  {s.whatsapp}
+                  <span className="action-label">{s.whatsapp}</span>
                 </button>
-              </>
+              </div>
             ) : null}
-            <button
-              type="button"
-              className="btn-ghost"
-              disabled={!phone}
-              onClick={() => setReminderOpen(true)}
-            >
-              <ChatIcon />
-              {s.reminder}
-            </button>
-            <button
-              type="button"
-              className="btn-primary"
-              disabled={busy || history.entries.length === 0}
-              onClick={() => void generateStatement()}
-            >
-              {busy ? <span className="spinner" /> : <DocIcon />}
-              {s.statementPdf}
-            </button>
+            <div className="detail-action-row">
+              <button
+                type="button"
+                className="btn-ghost"
+                disabled={!phone}
+                onClick={() => setReminderOpen(true)}
+              >
+                <ChatIcon />
+                <span className="action-label">{s.reminder}</span>
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={busy || history.entries.length === 0}
+                onClick={() => void generateStatement()}
+              >
+                {busy ? <span className="spinner" /> : <DocIcon />}
+                <span className="action-label">{s.sendReport}</span>
+              </button>
+            </div>
+            <div className="detail-action-row">
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={openOpeningSheet}
+              >
+                <WalletIcon />
+                <span className="action-label">{s.openingBalance}</span>
+              </button>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={openReductionSheet}
+              >
+                <MinusIcon />
+                <span className="action-label">{s.reduceBalance}</span>
+              </button>
+            </div>
           </div>
+
+          {balance ? (
+            <section className="balance-card">
+              <div className="balance-top">
+                <div>
+                  <small>{s.currentBalance}</small>
+                  <b>{formatRupees(balance.current, lang)}</b>
+                </div>
+                <div className="balance-opening">
+                  <small>{s.openingBalance}</small>
+                  <span>
+                    {balance.openingAmount
+                      ? formatRupees(balance.openingAmount, lang)
+                      : '—'}
+                  </span>
+                  <small>
+                    {balance.openingDate
+                      ? `${s.recordedOn}: ${formatDate(balance.openingDate, lang)}`
+                      : s.noOpeningBalance}
+                  </small>
+                </div>
+              </div>
+              {balance.journal.length > 0 ? (
+                <div className="balance-list">
+                  <div className="balance-list-head">
+                    <span>{s.balanceJournal}</span>
+                    <span>{formatDigits(balance.journal.length, lang)}</span>
+                  </div>
+                  {balance.journal.map((entry) => (
+                    <div className="balance-row" key={entry.key}>
+                      <span>
+                        {journalLabel(entry.type)}
+                        <small>
+                          {formatDate(entry.date, lang)}
+                          {entry.reference
+                            ? ` · ${s.receiptShort} ${formatReceipt(
+                                entry.reference,
+                                lang,
+                              )}`
+                            : ''}
+                        </small>
+                      </span>
+                      <b className={entry.amount >= 0 ? 'credit' : 'debit'}>
+                        {entry.amount >= 0 ? '+' : '−'}{' '}
+                        {formatRupees(Math.abs(entry.amount), lang)}
+                      </b>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </section>
+          ) : null}
 
           {!phone ? (
             <p className="field-hint">{s.reminderNeedsPhone}</p>
@@ -345,6 +542,132 @@ export function HolderDetailScreen({
             </button>
           </div>
         </BottomSheet>
+      ) : null}
+
+      {openingOpen ? (
+        <BottomSheet
+          title={s.setOpeningBalance}
+          closeLabel={s.close}
+          onClose={() => setOpeningOpen(false)}
+          footer={
+            <>
+              <button
+                type="button"
+                className="btn-ghost"
+                disabled={balanceBusy}
+                onClick={() => setOpeningOpen(false)}
+              >
+                {s.cancel}
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={balanceBusy}
+                onClick={() => void saveOpeningBalance()}
+              >
+                {balanceBusy ? <span className="spinner" /> : null}
+                {s.save}
+              </button>
+            </>
+          }
+        >
+          <div className="field">
+            <label htmlFor="openingAmount">{s.amount}</label>
+            <input
+              id="openingAmount"
+              type="number"
+              min={0}
+              step="1"
+              inputMode="decimal"
+              value={openingAmount}
+              onChange={(event) => setOpeningAmount(event.target.value)}
+            />
+          </div>
+          <div className="field">
+            <span className="field-label">{s.recordedOn}</span>
+            <button
+              type="button"
+              className="export-date"
+              onClick={() => setOpeningPicker(true)}
+            >
+              <small>{s.dateLabel}</small>
+              <b>{formatDate(openingDate, lang)}</b>
+            </button>
+          </div>
+          {balanceError ? <p className="form-error">{balanceError}</p> : null}
+        </BottomSheet>
+      ) : null}
+
+      {reductionOpen ? (
+        <BottomSheet
+          title={s.reduceBalance}
+          closeLabel={s.close}
+          onClose={() => setReductionOpen(false)}
+          footer={
+            <>
+              <button
+                type="button"
+                className="btn-ghost"
+                disabled={balanceBusy}
+                onClick={() => setReductionOpen(false)}
+              >
+                {s.cancel}
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={balanceBusy}
+                onClick={() => void saveReduction()}
+              >
+                {balanceBusy ? <span className="spinner" /> : null}
+                {s.save}
+              </button>
+            </>
+          }
+        >
+          <div className="field">
+            <label htmlFor="reductionAmount">{s.amount}</label>
+            <input
+              id="reductionAmount"
+              type="number"
+              min={0}
+              step="1"
+              inputMode="decimal"
+              value={reductionAmount}
+              onChange={(event) => setReductionAmount(event.target.value)}
+            />
+          </div>
+          <div className="field">
+            <span className="field-label">{s.recordedOn}</span>
+            <button
+              type="button"
+              className="export-date"
+              onClick={() => setReductionPicker(true)}
+            >
+              <small>{s.dateLabel}</small>
+              <b>{formatDate(reductionDate, lang)}</b>
+            </button>
+          </div>
+          {balanceError ? <p className="form-error">{balanceError}</p> : null}
+        </BottomSheet>
+      ) : null}
+
+      {openingPicker ? (
+        <DatePicker
+          value={openingDate}
+          max={todayIso()}
+          onSelect={setOpeningDate}
+          onClose={() => setOpeningPicker(false)}
+        />
+      ) : null}
+
+      {reductionPicker ? (
+        <DatePicker
+          value={reductionDate}
+          max={todayIso()}
+          onSelect={setReductionDate}
+          onClose={() => setReductionPicker(false)}
+        />
       ) : null}
     </>
   )

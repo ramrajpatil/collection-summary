@@ -41,6 +41,8 @@ const sample: BackupData = {
   ],
   dailyMeta: { '2026-11-04': 1 },
   locks: { '2026-11-04': true },
+  balances: [],
+  balanceReductions: [],
 }
 
 describe('backup round trip', () => {

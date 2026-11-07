@@ -205,6 +205,18 @@ export interface Strings {
   lastCollection: string
   noHistory: string
   statementPdf: string
+  sendReport: string
+  currentBalance: string
+  openingBalance: string
+  setOpeningBalance: string
+  reduceBalance: string
+  recordedOn: string
+  balanceReductions: string
+  balanceSaved: string
+  noOpeningBalance: string
+  balanceJournal: string
+  balanceReduction: string
+  collectionEntry: string
   callHolder: string
   reminder: string
   whatsapp: string
@@ -220,6 +232,10 @@ export interface Strings {
   filterCollected: string
 
   dataBackup: string
+  notifications: string
+  smsNotifications: string
+  whatsappNotifications: string
+  notificationsHint: string
   backupExport: string
   backupExportHint: string
   backupImport: string
@@ -271,6 +287,8 @@ export interface Strings {
   lockedBadge: string
   lockedNote: string
   dayLockedError: string
+  entryLockTitle: string
+  entryLockHint: string
 }
 
 export const STRINGS: Record<Lang, Strings> = {
@@ -478,21 +496,38 @@ export const STRINGS: Record<Lang, Strings> = {
     lastCollection: 'शेवटची',
     noHistory: 'अजून वसुली नोंदलेली नाही.',
     statementPdf: 'स्टेटमेंट PDF',
+    sendReport: 'रिपोर्ट पाठवा',
+    currentBalance: 'सध्याची शिल्लक',
+    openingBalance: 'सुरुवातीची शिल्लक',
+    setOpeningBalance: 'सुरुवातीची शिल्लक ठेवा',
+    reduceBalance: 'शिल्लक कमी करा',
+    recordedOn: 'नोंदणी दिनांक',
+    balanceReductions: 'शिल्लक कपाती',
+    balanceSaved: 'शिल्लक जतन झाली.',
+    noOpeningBalance: 'सुरुवातीची शिल्लक सेट केलेली नाही.',
+    balanceJournal: 'शिल्लक जर्नल',
+    balanceReduction: 'शिल्लक कपात',
+    collectionEntry: 'वसुली',
     callHolder: 'कॉल करा',
-    reminder: 'स्मरण',
+    reminder: 'रिमाइंडर',
     whatsapp: 'व्हॉट्सअ‍ॅप',
     sms: 'एसएमएस',
-    sendReminder: 'स्मरण पाठवा',
+    sendReminder: 'रिमाइंडर पाठवा',
     copy: 'कॉपी',
     copied: 'कॉपी झाले.',
     reminderNeedsPhone: 'या खातेदाराचा मोबाइल क्रमांक नाही.',
-    reminderTitle: 'वसुली स्मरण',
+    reminderTitle: 'वसुली रिमाइंडर',
 
     searchCollection: 'नाव किंवा खाते क्रमांक शोधा',
     filterPending: 'बाकी',
     filterCollected: 'वसुली झाली',
 
     dataBackup: 'डेटा व बॅकअप',
+    notifications: 'सूचना',
+    smsNotifications: 'SMS सूचना',
+    whatsappNotifications: 'WhatsApp सूचना',
+    notificationsHint:
+      'वसुली नोंदवल्यावर खातेदाराला संदेश पाठवा. WhatsApp मध्ये संदेश तयार होईल; पाठवण्यासाठी Send दाबा.',
     backupExport: 'बॅकअप जतन करा',
     backupExportHint:
       'सर्व खातेदार व वसुली एका फाइलमध्ये जतन होते; ती जपून ठेवा किंवा दुसऱ्या फोनवर हलवा.',
@@ -548,6 +583,9 @@ export const STRINGS: Record<Lang, Strings> = {
     lockedBadge: 'लॉक',
     lockedNote: 'हा दिवस लॉक केलेला आहे. बदल करता येणार नाहीत.',
     dayLockedError: 'हा दिवस लॉक आहे.',
+    entryLockTitle: 'बदलासाठी लॉक उघडा',
+    entryLockHint:
+      'ही रक्कम आधीच नोंदवली आहे. बदल किंवा काढण्यासाठी मास्टर पासवर्ड टाका.',
   },
   en: {
     appName: 'Collection Summary',
@@ -750,6 +788,18 @@ export const STRINGS: Record<Lang, Strings> = {
     lastCollection: 'Last',
     noHistory: 'No collections recorded yet.',
     statementPdf: 'Statement PDF',
+    sendReport: 'Send report',
+    currentBalance: 'Current balance',
+    openingBalance: 'Opening balance',
+    setOpeningBalance: 'Set opening balance',
+    reduceBalance: 'Reduce balance',
+    recordedOn: 'Recorded on',
+    balanceReductions: 'Balance reductions',
+    balanceSaved: 'Balance saved.',
+    noOpeningBalance: 'No opening balance set.',
+    balanceJournal: 'Balance journal',
+    balanceReduction: 'Balance reduction',
+    collectionEntry: 'Collection',
     callHolder: 'Call',
     reminder: 'Reminder',
     whatsapp: 'WhatsApp',
@@ -765,6 +815,11 @@ export const STRINGS: Record<Lang, Strings> = {
     filterCollected: 'Collected',
 
     dataBackup: 'Data & backup',
+    notifications: 'Notifications',
+    smsNotifications: 'SMS notifications',
+    whatsappNotifications: 'WhatsApp notifications',
+    notificationsHint:
+      'Send a message to the holder after a collection. WhatsApp opens with the message ready; tap Send.',
     backupExport: 'Save backup',
     backupExportHint:
       'Saves every holder and collection into one file you can keep safe or move to another phone.',
@@ -821,6 +876,9 @@ export const STRINGS: Record<Lang, Strings> = {
     lockedBadge: 'LOCKED',
     lockedNote: 'This day is locked. No edits are allowed.',
     dayLockedError: 'This day is locked.',
+    entryLockTitle: 'Unlock to edit',
+    entryLockHint:
+      'This amount is already collected. Enter the master password to edit or remove it.',
   },
 }
 

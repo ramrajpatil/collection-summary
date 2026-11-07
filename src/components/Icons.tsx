@@ -132,6 +132,25 @@ export function ShareIcon(props: IconProps) {
   )
 }
 
+export function PercentIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M19 5 5 19" />
+      <circle cx="7.5" cy="7.5" r="2.5" />
+      <circle cx="16.5" cy="16.5" r="2.5" />
+    </Svg>
+  )
+}
+
+export function ClockIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </Svg>
+  )
+}
+
 export function CalendarIcon(props: IconProps) {
   return (
     <Svg {...props}>

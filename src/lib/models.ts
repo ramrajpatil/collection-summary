@@ -88,6 +88,32 @@ export interface HolderHistory {
   lastDate: string | null
 }
 
+export interface BalanceReduction {
+  id: number
+  date: string
+  amount: number
+  createdAt: string
+}
+
+export type BalanceJournalType = 'opening' | 'reduction' | 'collection'
+
+export interface BalanceJournalEntry {
+  key: string
+  type: BalanceJournalType
+  date: string
+  amount: number
+  reference: string | null
+  createdAt: string
+}
+
+export interface HolderBalance {
+  openingAmount: number
+  openingDate: string | null
+  reductions: BalanceReduction[]
+  journal: BalanceJournalEntry[]
+  current: number
+}
+
 export interface BackupHolder {
   id: number
   name: string
@@ -109,6 +135,19 @@ export interface BackupCollection {
   updatedAt: string
 }
 
+export interface BackupBalance {
+  holderId: number
+  openingAmount: number
+  openingDate: string | null
+}
+
+export interface BackupBalanceReduction {
+  holderId: number
+  date: string
+  amount: number
+  createdAt: string
+}
+
 export interface BackupData {
   version: number
   exportedAt: string
@@ -118,6 +157,8 @@ export interface BackupData {
   collections: BackupCollection[]
   dailyMeta: Record<string, number>
   locks: Record<string, boolean>
+  balances: BackupBalance[]
+  balanceReductions: BackupBalanceReduction[]
 }
 
 export interface CollectionExportRow {

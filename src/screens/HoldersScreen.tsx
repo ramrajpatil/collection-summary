@@ -13,6 +13,8 @@ import { holderName, upperName } from '../lib/names'
 import { BottomSheet } from '../components/BottomSheet'
 import { Toast } from '../components/Toast'
 import {
+  CheckIcon,
+  ChevronRightIcon,
   EditIcon,
   PlusIcon,
   SearchIcon,
@@ -49,6 +51,7 @@ export function HoldersScreen({
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<HolderStatus>('active')
   const [sort, setSort] = useState<HolderSort>('account')
+  const [sortOpen, setSortOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState('')
@@ -115,6 +118,14 @@ export function HoldersScreen({
       return true
     })
   }, [sheetOpen, busy])
+
+  useEffect(() => {
+    if (!sortOpen) return
+    return pushBackHandler(() => {
+      setSortOpen(false)
+      return true
+    })
+  }, [sortOpen])
 
   useEffect(() => {
     if (editHolderId == null) return
@@ -242,17 +253,67 @@ export function HoldersScreen({
         </button>
       </div>
 
-      <div className="searchbar glass">
-        <SearchIcon />
-        <input
-          type="search"
-          value={search}
-          autoComplete="off"
-          autoCorrect="off"
-          spellCheck={false}
-          placeholder={s.searchHolders}
-          onChange={(event) => setSearch(event.target.value)}
-        />
+      <div className="search-filter-row">
+        <div className="searchbar glass">
+          <SearchIcon />
+          <input
+            type="search"
+            value={search}
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+            placeholder={s.searchHolders}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        </div>
+        <div className="filter-dropdown-wrapper">
+          <button
+            type="button"
+            className="filter-select glass"
+            aria-label={sort === 'name' ? s.sortName : s.sortAccount}
+            aria-expanded={sortOpen}
+            onClick={() => setSortOpen((prev) => !prev)}
+          >
+            <span>{sort === 'name' ? s.sortName : s.sortAccount}</span>
+            <ChevronRightIcon
+              className={`filter-chevron${sortOpen ? ' open' : ''}`}
+            />
+          </button>
+          {sortOpen ? (
+            <>
+              <div
+                className="dropdown-backdrop"
+                onClick={() => setSortOpen(false)}
+              />
+              <div className="dropdown-menu" role="menu">
+                {(
+                  [
+                    { id: 'account', label: s.sortAccount },
+                    { id: 'name', label: s.sortName },
+                  ] as const
+                ).map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    role="menuitem"
+                    className={`dropdown-item${
+                      sort === option.id ? ' active' : ''
+                    }`}
+                    onClick={() => {
+                      setSort(option.id)
+                      setSortOpen(false)
+                    }}
+                  >
+                    <span>{option.label}</span>
+                    {sort === option.id ? (
+                      <CheckIcon className="dropdown-check" />
+                    ) : null}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : null}
+        </div>
       </div>
 
       <div className="filter-row">
@@ -279,15 +340,6 @@ export function HoldersScreen({
             {s.filterAll}
           </button>
         </div>
-        <select
-          className="select"
-          value={sort}
-          aria-label={sort === 'name' ? s.sortName : s.sortAccount}
-          onChange={(event) => setSort(event.target.value as HolderSort)}
-        >
-          <option value="account">{s.sortAccount}</option>
-          <option value="name">{s.sortName}</option>
-        </select>
       </div>
 
       <div className="list-summary">

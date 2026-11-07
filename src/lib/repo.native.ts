@@ -5,11 +5,14 @@ import {
 } from '@capacitor-community/sqlite'
 import type {
   BackupData,
+  BalanceJournalEntry,
+  BalanceReduction,
   CollectionExport,
   CollectionImportResult,
   DayData,
   DayEntry,
   Holder,
+  HolderBalance,
   HolderHistory,
   HolderInput,
   MonthlyReport,
@@ -63,6 +66,23 @@ CREATE TABLE IF NOT EXISTS daily_meta (
   start_receipt INTEGER NOT NULL DEFAULT 1,
   locked INTEGER NOT NULL DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS holder_balances (
+  holder_id INTEGER PRIMARY KEY NOT NULL,
+  opening_amount REAL NOT NULL DEFAULT 0,
+  opening_date TEXT,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY(holder_id) REFERENCES holders(id) ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS balance_reductions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  holder_id INTEGER NOT NULL,
+  date TEXT NOT NULL,
+  amount REAL NOT NULL,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY(holder_id) REFERENCES holders(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_balance_reductions_holder
+  ON balance_reductions(holder_id, date);
 `
 
 interface HolderRow {
@@ -126,6 +146,26 @@ interface MetaRow {
 
 interface LockRow {
   locked: number
+}
+
+interface BalanceRow {
+  opening_amount: number
+  opening_date: string | null
+}
+
+interface ReductionRow {
+  id: number
+  date: string
+  amount: number
+  created_at: string
+}
+
+interface CollectionJournalRow {
+  id: number
+  date: string
+  amount: number
+  receipt_no: number
+  created_at: string
 }
 
 interface ExportRow {
@@ -676,6 +716,139 @@ export class NativeRepository implements Repository {
     }
   }
 
+  async getHolderBalance(id: number): Promise<HolderBalance> {
+    const db = await this.getDb()
+    const openingRes = await db.query(
+      'SELECT opening_amount, opening_date FROM holder_balances WHERE holder_id = ?',
+      [id],
+    )
+    const opening = openingRes.values?.[0] as BalanceRow | undefined
+    const reductionsRes = await db.query(
+      `SELECT id, date, amount, created_at
+         FROM balance_reductions
+        WHERE holder_id = ?
+        ORDER BY date DESC, id DESC`,
+      [id],
+    )
+    const reductions = ((reductionsRes.values ?? []) as ReductionRow[]).map(
+      (row): BalanceReduction => ({
+        id: Number(row.id),
+        date: row.date,
+        amount: Number(row.amount),
+        createdAt: row.created_at,
+      }),
+    )
+    const collectionsRes = await db.query(
+      `SELECT id, date, amount, receipt_no, created_at
+         FROM collections
+        WHERE holder_id = ?
+        ORDER BY date ASC, id ASC`,
+      [id],
+    )
+    const collections = (collectionsRes.values ?? []) as CollectionJournalRow[]
+
+    const openingAmount = Number(opening?.opening_amount ?? 0)
+    const openingDate = opening?.opening_date ?? null
+    const hasOpening = openingDate !== null && openingAmount > 0
+    const countedCollections = hasOpening
+      ? collections.filter((row) => row.date >= openingDate!)
+      : []
+    const totalReduced = reductions.reduce(
+      (sum, reduction) => sum + reduction.amount,
+      0,
+    )
+    const totalCollected = countedCollections.reduce(
+      (sum, row) => sum + Number(row.amount),
+      0,
+    )
+
+    const journal: BalanceJournalEntry[] = []
+    if (openingDate !== null || openingAmount > 0) {
+      const date =
+        openingDate ?? new Date().toISOString().slice(0, 10)
+      journal.push({
+        key: 'opening',
+        type: 'opening',
+        date,
+        amount: openingAmount,
+        reference: null,
+        createdAt: date,
+      })
+    }
+    for (const reduction of reductions) {
+      journal.push({
+        key: `reduction-${reduction.id}`,
+        type: 'reduction',
+        date: reduction.date,
+        amount: -reduction.amount,
+        reference: null,
+        createdAt: reduction.createdAt,
+      })
+    }
+    for (const row of countedCollections) {
+      journal.push({
+        key: `collection-${row.id}`,
+        type: 'collection',
+        date: row.date,
+        amount: Number(row.amount),
+        reference: String(row.receipt_no),
+        createdAt: row.created_at,
+      })
+    }
+    journal.sort(
+      (a, b) =>
+        b.date.localeCompare(a.date) ||
+        b.createdAt.localeCompare(a.createdAt),
+    )
+
+    return {
+      openingAmount,
+      openingDate,
+      reductions,
+      journal,
+      current: hasOpening
+        ? openingAmount + totalCollected - totalReduced
+        : 0,
+    }
+  }
+
+  async setOpeningBalance(
+    holderId: number,
+    amount: number,
+    date: string,
+  ): Promise<void> {
+    const db = await this.getDb()
+    await db.run(
+      `INSERT INTO holder_balances
+        (holder_id, opening_amount, opening_date, updated_at)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT(holder_id) DO UPDATE SET
+         opening_amount = excluded.opening_amount,
+         opening_date = excluded.opening_date,
+         updated_at = excluded.updated_at`,
+      [holderId, Math.max(0, Number(amount) || 0), date, new Date().toISOString()],
+    )
+  }
+
+  async addBalanceReduction(
+    holderId: number,
+    amount: number,
+    date: string,
+  ): Promise<void> {
+    const db = await this.getDb()
+    await db.run(
+      `INSERT INTO balance_reductions
+        (holder_id, date, amount, created_at)
+       VALUES (?, ?, ?, ?)`,
+      [
+        holderId,
+        date,
+        Math.max(0, Number(amount) || 0),
+        new Date().toISOString(),
+      ],
+    )
+  }
+
   async exportBackup(): Promise<BackupData> {
     const db = await this.getDb()
     const settingsRes = await db.query('SELECT key, value FROM settings')
@@ -725,12 +898,35 @@ export class NativeRepository implements Repository {
       if (Number(row.locked ?? 0) === 1) locks[row.date] = true
     }
 
+    const balancesRes = await db.query(
+      'SELECT holder_id, opening_amount, opening_date FROM holder_balances ORDER BY holder_id ASC',
+    )
+    const reductionsRes = await db.query(
+      `SELECT holder_id, date, amount, created_at
+         FROM balance_reductions
+        ORDER BY holder_id ASC, date ASC`,
+    )
+    const balances = (balancesRes.values ?? []).map((row) => ({
+      holderId: Number(row.holder_id),
+      openingAmount: Number(row.opening_amount),
+      openingDate:
+        row.opening_date == null ? null : String(row.opening_date),
+    }))
+    const balanceReductions = (reductionsRes.values ?? []).map((row) => ({
+      holderId: Number(row.holder_id),
+      date: String(row.date),
+      amount: Number(row.amount),
+      createdAt: String(row.created_at),
+    }))
+
     return {
       version: 1,
       exportedAt: new Date().toISOString(),
       profile,
       setupComplete: settings.setupComplete === '1',
       locks,
+      balances,
+      balanceReductions,
       holders: ((holdersRes.values ?? []) as HolderRow[]).map((row) => ({
         id: Number(row.id),
         name: row.name,
@@ -752,6 +948,8 @@ export class NativeRepository implements Repository {
     await db.beginTransaction()
     try {
       const statements: { statement: string; values: unknown[] }[] = [
+        { statement: 'DELETE FROM balance_reductions', values: [] },
+        { statement: 'DELETE FROM holder_balances', values: [] },
         { statement: 'DELETE FROM collections', values: [] },
         { statement: 'DELETE FROM holders', values: [] },
         { statement: 'DELETE FROM daily_meta', values: [] },
@@ -801,6 +999,34 @@ export class NativeRepository implements Repository {
             Math.max(0, Number(collection.receiptNo) || 0),
             collection.createdAt,
             collection.updatedAt,
+          ],
+        })
+      }
+
+      for (const balance of data.balances ?? []) {
+        statements.push({
+          statement: `INSERT INTO holder_balances
+            (holder_id, opening_amount, opening_date, updated_at)
+           VALUES (?, ?, ?, ?)`,
+          values: [
+            balance.holderId,
+            Math.max(0, Number(balance.openingAmount) || 0),
+            balance.openingDate,
+            new Date().toISOString(),
+          ],
+        })
+      }
+
+      for (const reduction of data.balanceReductions ?? []) {
+        statements.push({
+          statement: `INSERT INTO balance_reductions
+            (holder_id, date, amount, created_at)
+           VALUES (?, ?, ?, ?)`,
+          values: [
+            reduction.holderId,
+            reduction.date,
+            Math.max(0, Number(reduction.amount) || 0),
+            reduction.createdAt,
           ],
         })
       }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Capacitor } from '@capacitor/core'
 import type { DayData, Holder, Profile } from '../lib/models'
 import type { Repository } from '../lib/repo'
@@ -14,6 +14,10 @@ import {
 } from '../lib/marathi'
 import { holderName } from '../lib/names'
 import { verifyMasterPassword } from '../lib/lock'
+import {
+  loadNotifySettings,
+  sendCollectionNotifications,
+} from '../lib/notifications'
 import { pushBackHandler } from '../lib/backButton'
 import {
   buildDailySheetHtml,
@@ -31,6 +35,7 @@ import {
   CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ClockIcon,
   DownloadIcon,
   LockIcon,
   MinusIcon,
@@ -39,6 +44,7 @@ import {
   ShareIcon,
   UnlockIcon,
   UsersIcon,
+  WalletIcon,
 } from '../components/Icons'
 
 interface CollectionScreenProps {
@@ -80,6 +86,11 @@ export function CollectionScreen({
   const [unlockOpen, setUnlockOpen] = useState(false)
   const [unlockPassword, setUnlockPassword] = useState('')
   const [unlockError, setUnlockError] = useState('')
+  const [editPassOpen, setEditPassOpen] = useState(false)
+  const [editPassInput, setEditPassInput] = useState('')
+  const [editPassError, setEditPassError] = useState('')
+  const entryEditUnlocked = useRef(false)
+  const pendingEdit = useRef<(() => void) | null>(null)
   const [startDraft, setStartDraft] = useState('0001')
   const [amountTarget, setAmountTarget] = useState<AmountTarget | null>(null)
   const [amountError, setAmountError] = useState('')
@@ -104,11 +115,39 @@ export function CollectionScreen({
       return
     }
     setLoading(true)
+    entryEditUnlocked.current = false
     setDate(next)
   }
 
   function shiftDay(delta: number) {
     changeDate(shiftIsoDate(date, delta))
+  }
+
+  function closeEditPassword() {
+    setEditPassOpen(false)
+    setEditPassInput('')
+    setEditPassError('')
+    pendingEdit.current = null
+  }
+
+  function requestEditPassword(action: () => void) {
+    pendingEdit.current = action
+    setEditPassInput('')
+    setEditPassError('')
+    setEditPassOpen(true)
+  }
+
+  function submitEditPassword() {
+    if (!verifyMasterPassword(editPassInput)) {
+      setEditPassError(s.unlockWrong)
+      return
+    }
+    entryEditUnlocked.current = true
+    setEditPassOpen(false)
+    setEditPassInput('')
+    const action = pendingEdit.current
+    pendingEdit.current = null
+    action?.()
   }
 
   useEffect(() => {
@@ -169,10 +208,15 @@ export function CollectionScreen({
       !calendarOpen &&
       !filterOpen &&
       !unlockOpen &&
-      !lockConfirmOpen
+      !lockConfirmOpen &&
+      !editPassOpen
     )
       return
     return pushBackHandler(() => {
+      if (editPassOpen) {
+        closeEditPassword()
+        return true
+      }
       if (unlockOpen) {
         setUnlockOpen(false)
         return true
@@ -193,7 +237,14 @@ export function CollectionScreen({
       setCalendarOpen(false)
       return true
     })
-  }, [amountTarget, calendarOpen, filterOpen, unlockOpen, lockConfirmOpen])
+  }, [
+    amountTarget,
+    calendarOpen,
+    filterOpen,
+    unlockOpen,
+    lockConfirmOpen,
+    editPassOpen,
+  ])
 
   const entryByHolder = useMemo(() => {
     const map = new Map<number, DayData['entries'][number]>()
@@ -224,6 +275,7 @@ export function CollectionScreen({
   const total = day?.entries.reduce((sum, entry) => sum + entry.amount, 0) ?? 0
   const collectedCount = day?.entries.length ?? 0
   const pendingCount = holders.length - collectedCount
+  const receiptLocked = collectedCount > 0
 
   const visibleHolders = useMemo(() => {
     const query = search.trim().toLocaleLowerCase()
@@ -240,10 +292,32 @@ export function CollectionScreen({
     })
   }, [holders, entryByHolder, search, filter])
 
+  async function notifyCollection(holder: Holder, amount: number) {
+    const settings = loadNotifySettings()
+    if (!settings.sms && !settings.whatsapp) return
+    try {
+      const next = await repo.getHolderBalance(holder.id)
+      void sendCollectionNotifications({
+        profile,
+        holder,
+        amount,
+        dateIso: date,
+        balance: next.current,
+        settings,
+      })
+    } catch {
+      void 0
+    }
+  }
+
   async function toggle(holder: Holder) {
     if (busy) return
     if (locked) {
       setStatus(s.dayLockedError)
+      return
+    }
+    if (entryByHolder.has(holder.id) && !entryEditUnlocked.current) {
+      requestEditPassword(() => void toggle(holder))
       return
     }
     setBusy(true)
@@ -253,6 +327,7 @@ export function CollectionScreen({
         await repo.deleteCollection(holder.id, date)
       } else {
         await repo.saveCollection(holder.id, date, holder.defaultAmount)
+        await notifyCollection(holder, holder.defaultAmount)
       }
       refresh()
     } catch (err) {
@@ -270,6 +345,7 @@ export function CollectionScreen({
       setStatus(s.dayLockedError)
       return
     }
+    if (receiptLocked) return
     const next = Math.floor(Number(value))
     if (!Number.isFinite(next) || next < 1) {
       setStartDraft(padReceipt(day.startReceipt))
@@ -299,6 +375,10 @@ export function CollectionScreen({
       return
     }
     const entry = entryByHolder.get(holder.id)
+    if (entry && !entryEditUnlocked.current) {
+      requestEditPassword(() => openAmount(holder))
+      return
+    }
     setAmountError('')
     setAmountTarget({
       holder,
@@ -313,6 +393,10 @@ export function CollectionScreen({
       setAmountError(s.dayLockedError)
       return
     }
+    if (amountTarget.collected && !entryEditUnlocked.current) {
+      requestEditPassword(() => void saveAmount())
+      return
+    }
     const amount = Number(amountTarget.amount)
     if (!Number.isFinite(amount) || amount < 0) {
       setAmountError(s.amountInvalid)
@@ -320,7 +404,9 @@ export function CollectionScreen({
     }
     setBusy(true)
     try {
-      await repo.saveCollection(amountTarget.holder.id, date, amount)
+      const holder = amountTarget.holder
+      await repo.saveCollection(holder.id, date, amount)
+      await notifyCollection(holder, amount)
       setAmountTarget(null)
       setStatus(s.amountSaved)
       refresh()
@@ -335,6 +421,10 @@ export function CollectionScreen({
     if (!amountTarget) return
     if (locked) {
       setAmountError(s.dayLockedError)
+      return
+    }
+    if (!entryEditUnlocked.current) {
+      requestEditPassword(() => void removeAmount())
       return
     }
     setBusy(true)
@@ -530,7 +620,7 @@ export function CollectionScreen({
               <button
                 type="button"
                 aria-label={s.startingReceipt}
-                disabled={busy || locked}
+                disabled={busy || locked || receiptLocked}
                 onClick={() =>
                   void commitStart(
                     (Number(startDraft) || day?.startReceipt || 1) - 1,
@@ -549,7 +639,7 @@ export function CollectionScreen({
                 autoCorrect="off"
                 spellCheck={false}
                 value={formatDigits(startDraft, lang)}
-                disabled={busy || locked}
+                disabled={busy || locked || receiptLocked}
                 onChange={(event) =>
                   setStartDraft(
                     toLatinDigits(event.target.value)
@@ -567,7 +657,7 @@ export function CollectionScreen({
               <button
                 type="button"
                 aria-label={s.startingReceipt}
-                disabled={busy || locked}
+                disabled={busy || locked || receiptLocked}
                 onClick={() =>
                   void commitStart(
                     (Number(startDraft) || day?.startReceipt || 1) + 1,
@@ -582,23 +672,43 @@ export function CollectionScreen({
 
         <div className="stats">
           <div className="stat">
-            <small>{s.totalAccounts}</small>
-            <b>{formatDigits(holders.length, lang)}</b>
+            <div className="stat-text">
+              <small>{s.totalAccounts}</small>
+              <b>{formatDigits(holders.length, lang)}</b>
+            </div>
+            <span className="stat-icon accounts">
+              <UsersIcon />
+            </span>
           </div>
           <div className="stat">
-            <small>{s.collected}</small>
-            <b>
-              {formatDigits(collectedCount, lang)} /{' '}
-              {formatDigits(holders.length, lang)}
-            </b>
+            <div className="stat-text">
+              <small>{s.collected}</small>
+              <b>
+                {formatDigits(collectedCount, lang)} /{' '}
+                {formatDigits(holders.length, lang)}
+              </b>
+            </div>
+            <span className="stat-icon collected">
+              <CheckIcon />
+            </span>
           </div>
           <div className="stat">
-            <small>{s.uncollected}</small>
-            <b>{formatDigits(pendingCount, lang)}</b>
+            <div className="stat-text">
+              <small>{s.uncollected}</small>
+              <b>{formatDigits(pendingCount, lang)}</b>
+            </div>
+            <span className="stat-icon pending">
+              <ClockIcon />
+            </span>
           </div>
           <div className="stat">
-            <small>{isToday ? s.todayAmount : s.dayAmount}</small>
-            <b>{formatRupees(total, lang)}</b>
+            <div className="stat-text">
+              <small>{isToday ? s.todayAmount : s.dayAmount}</small>
+              <b>{formatRupees(total, lang)}</b>
+            </div>
+            <span className="stat-icon amount">
+              <WalletIcon />
+            </span>
           </div>
         </div>
       </section>
@@ -922,6 +1032,54 @@ export function CollectionScreen({
               </button>
             ) : null}
           </div>
+        </BottomSheet>
+      ) : null}
+
+      {editPassOpen ? (
+        <BottomSheet
+          title={s.entryLockTitle}
+          closeLabel={s.close}
+          onClose={closeEditPassword}
+          footer={
+            <>
+              <button
+                type="button"
+                className="btn-ghost"
+                disabled={busy}
+                onClick={closeEditPassword}
+              >
+                {s.cancel}
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={busy}
+                onClick={submitEditPassword}
+              >
+                {s.unlock}
+              </button>
+            </>
+          }
+        >
+          <p className="field-hint">{s.entryLockHint}</p>
+          <div className="field">
+            <label htmlFor="editPassword">{s.masterPassword}</label>
+            <input
+              id="editPassword"
+              type="password"
+              value={editPassInput}
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              onChange={(event) => setEditPassInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') submitEditPassword()
+              }}
+            />
+          </div>
+          {editPassError ? (
+            <p className="form-error">{editPassError}</p>
+          ) : null}
         </BottomSheet>
       ) : null}
 
