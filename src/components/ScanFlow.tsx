@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Capacitor } from '@capacitor/core'
 import { Camera } from '@capacitor/camera'
 import type { DayEntry, Holder } from '../lib/models'
@@ -13,15 +13,17 @@ import {
 } from '../lib/marathi'
 import { holderName } from '../lib/names'
 import { pushBackHandler } from '../lib/backButton'
+import { readTextFile } from '../lib/backup'
+import { parseScanImport } from '../lib/scanImport'
 import {
   getGeminiKey,
   prepareScannedImage,
   recognizeWithGemini,
-  type GeminiEntry,
 } from '../lib/gemini'
 import {
   CameraIcon,
   CloseIcon,
+  DocIcon,
   EditIcon,
   PlusIcon,
   TrashIcon,
@@ -49,16 +51,23 @@ interface ScanRow {
 
 type RowStatus = 'blank' | 'matched' | 'missing' | 'already' | 'duplicate'
 
+interface ScanRowSource {
+  accountNo?: string | number | null
+  amount?: string | number | null
+}
+
 let rowSequence = 0
 
-function createRow(entry?: GeminiEntry): ScanRow {
+function createRow(entry?: ScanRowSource): ScanRow {
   rowSequence += 1
+  const accountNo = entry?.accountNo == null ? '' : String(entry.accountNo)
+  const amount = entry?.amount == null ? '' : String(entry.amount)
   return {
     key: `scan-${rowSequence}`,
-    accountNo: entry?.accountNo ?? '',
-    amount: entry?.amount == null ? '' : String(entry.amount),
-    rawAccountNo: entry ? String(entry.accountNo) : '',
-    rawAmount: entry ? String(entry.amount) : '',
+    accountNo,
+    amount,
+    rawAccountNo: accountNo,
+    rawAmount: amount,
   }
 }
 
@@ -103,7 +112,9 @@ export function ScanFlow({
   const [rows, setRows] = useState<ScanRow[]>([])
   const [startDraft, setStartDraft] = useState(String(startReceipt))
   const [error, setError] = useState('')
+  const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
+  const fileRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     let active = true
@@ -199,6 +210,32 @@ export function ScanFlow({
       setRows([createRow()])
     }
     setPhase('review')
+  }
+
+  function startImport() {
+    setError('')
+    setNote('')
+    fileRef.current?.click()
+  }
+
+  async function handleImportFile(file: File | undefined) {
+    if (!file) return
+    setError('')
+    setNote('')
+    try {
+      const text = await readTextFile(file)
+      const { entries, skipped } = parseScanImport(text)
+      setRows(entries.map((entry) => createRow(entry)))
+      if (skipped > 0) {
+        setNote(`${s.scanImportSkipped}: ${formatDigits(skipped, lang)}`)
+      }
+      setPhase('review')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      setError(
+        message === 'SCAN_IMPORT_EMPTY' ? s.scanEmpty : s.scanImportInvalid,
+      )
+    }
   }
 
   function updateRow(key: string, patch: Partial<ScanRow>) {
@@ -321,6 +358,18 @@ export function ScanFlow({
         </button>
       </header>
 
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".json,application/json"
+        style={{ display: 'none' }}
+        onChange={(event) => {
+          const file = event.target.files?.[0]
+          event.target.value = ''
+          void handleImportFile(file)
+        }}
+      />
+
       <div className="scan-body">
         {phase === 'intro' ? (
           <div className="scan-intro">
@@ -357,6 +406,15 @@ export function ScanFlow({
                 <EditIcon />
                 {s.scanManual}
               </button>
+
+              <button
+                type="button"
+                className="btn-ghost scan-cta"
+                onClick={startImport}
+              >
+                <DocIcon />
+                {s.scanImport}
+              </button>
             </div>
           </div>
         ) : null}
@@ -371,6 +429,7 @@ export function ScanFlow({
         {phase === 'review' ? (
           <div className="scan-review">
             {error ? <p className="form-error">{error}</p> : null}
+            {note ? <p className="scan-note">{note}</p> : null}
             {rows.length === 0 ? (
               <p className="scan-empty">{s.scanEmpty}</p>
             ) : null}

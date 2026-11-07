@@ -164,6 +164,9 @@ export interface Strings {
   scanMatched: string
   scanRetry: string
   scanManual: string
+  scanImport: string
+  scanImportInvalid: string
+  scanImportSkipped: string
   noEntries: string
   pdfSaved: string
   pdfFailed: string
@@ -457,6 +460,9 @@ export const STRINGS: Record<Lang, Strings> = {
     scanMatched: 'जुळले',
     scanRetry: 'पुन्हा स्कॅन करा',
     scanManual: 'मॅन्युअली नोंदी भरा',
+    scanImport: 'JSON आयात करा',
+    scanImportInvalid: 'ही वैध JSON यादी नाही.',
+    scanImportSkipped: 'वगळले',
     noEntries: 'आज कोणतीही वसुली नोंदलेली नाही.',
     pdfSaved: 'PDF तयार झाला.',
     pdfFailed: 'PDF तयार करता आला नाही.',
@@ -751,6 +757,9 @@ export const STRINGS: Record<Lang, Strings> = {
     scanMatched: 'Matched',
     scanRetry: 'Scan again',
     scanManual: 'Enter manually',
+    scanImport: 'Import JSON',
+    scanImportInvalid: 'That file is not a valid JSON list.',
+    scanImportSkipped: 'Skipped',
     noEntries: 'No collections recorded today.',
     pdfSaved: 'PDF generated.',
     pdfFailed: 'Could not generate the PDF.',
