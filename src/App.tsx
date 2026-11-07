@@ -64,6 +64,8 @@ export default function App() {
 
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [backupOpen, setBackupOpen] = useState(false)
+  const [smsPermissionOpen, setSmsPermissionOpen] = useState(false)
+  const [smsPermissionBlocked, setSmsPermissionBlocked] = useState(false)
   const [settingsDraft, setSettingsDraft] = useState<Settings>(
     defaultSettings(lang),
   )
@@ -83,6 +85,21 @@ export default function App() {
     const next = { ...notifySettings, [key]: !notifySettings[key] }
     setNotifySettings(next)
     saveNotifySettings(next)
+  }
+
+  async function allowSmsPermission() {
+    try {
+      await SmsSender.request()
+      setSmsPermissionOpen(false)
+      setSmsPermissionBlocked(false)
+    } catch {
+      setSmsPermissionBlocked(true)
+    }
+  }
+
+  function openSmsSettings() {
+    setSmsPermissionOpen(false)
+    void SmsSender.openSettings().catch(() => {})
   }
 
   useEffect(() => {
@@ -118,9 +135,19 @@ export default function App() {
 
   useEffect(() => {
     if (!ready || !setupComplete || !Capacitor.isNativePlatform()) return
-    // Ask once at startup so a collected amount can send the SMS automatically.
-    void SmsSender.request().catch(() => {})
-  }, [ready, setupComplete])
+    if (!notifySettings.sms) return
+    let cancelled = false
+    void SmsSender.check()
+      .then(({ state }) => {
+        if (cancelled || state === 'granted') return
+        setSmsPermissionBlocked(state === 'denied')
+        setSmsPermissionOpen(true)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [ready, setupComplete, notifySettings.sms])
 
   useEffect(() => {
     let lastY = window.scrollY
@@ -447,6 +474,57 @@ export default function App() {
           <span>{s.tabExport}</span>
         </button>
       </nav>
+
+      {smsPermissionOpen ? (
+        <BottomSheet
+          title={s.smsPermissionTitle}
+          closeLabel={s.close}
+          onClose={() => setSmsPermissionOpen(false)}
+          footer={
+            smsPermissionBlocked ? (
+              <>
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  onClick={() => setSmsPermissionOpen(false)}
+                >
+                  {s.cancel}
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={openSmsSettings}
+                >
+                  {s.smsPermissionOpenSettings}
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  onClick={() => setSmsPermissionOpen(false)}
+                >
+                  {s.smsPermissionNotNow}
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => void allowSmsPermission()}
+                >
+                  {s.smsPermissionAllow}
+                </button>
+              </>
+            )
+          }
+        >
+          <p className="field-hint">
+            {smsPermissionBlocked
+              ? s.smsPermissionBlocked
+              : s.smsPermissionHint}
+          </p>
+        </BottomSheet>
+      ) : null}
 
       {settingsOpen ? (
         <BottomSheet

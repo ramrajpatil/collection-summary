@@ -1,8 +1,12 @@
 package collection.summary.build;
 
 import android.Manifest;
+import android.content.Intent;
+import android.net.Uri;
+import android.provider.Settings;
 import android.telephony.SmsManager;
 
+import com.getcapacitor.JSObject;
 import com.getcapacitor.PermissionState;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -19,6 +23,32 @@ import java.util.ArrayList;
                 @Permission(alias = "sms", strings = { Manifest.permission.SEND_SMS })
         })
 public class SmsSenderPlugin extends Plugin {
+
+    @PluginMethod
+    public void check(PluginCall call) {
+        PermissionState state = getPermissionState("sms");
+        JSObject result = new JSObject();
+        if (state == PermissionState.GRANTED) {
+            result.put("state", "granted");
+        } else if (state == PermissionState.DENIED) {
+            result.put("state", "denied");
+        } else {
+            result.put("state", "prompt");
+        }
+        call.resolve(result);
+    }
+
+    @PluginMethod
+    public void openSettings(PluginCall call) {
+        try {
+            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            intent.setData(Uri.parse("package:" + getContext().getPackageName()));
+            getActivity().startActivity(intent);
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("SETTINGS_FAILED: " + e.getMessage(), e);
+        }
+    }
 
     @PluginMethod
     public void request(PluginCall call) {
