@@ -11,6 +11,7 @@ import {
   saveNotifySettings,
   type NotifySettings,
 } from './lib/notifications'
+import { SmsSender } from './lib/sms'
 import type { Profile } from './lib/models'
 import type { Repository } from './lib/repo'
 import { STRINGS, useLanguage } from './lib/i18n'
@@ -114,6 +115,12 @@ export default function App() {
     void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {})
     applySystemTheme(theme)
   }, [theme])
+
+  useEffect(() => {
+    if (!ready || !setupComplete || !Capacitor.isNativePlatform()) return
+    // Ask once at startup so a collected amount can send the SMS automatically.
+    void SmsSender.request().catch(() => {})
+  }, [ready, setupComplete])
 
   useEffect(() => {
     let lastY = window.scrollY

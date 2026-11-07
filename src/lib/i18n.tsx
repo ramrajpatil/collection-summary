@@ -527,7 +527,7 @@ export const STRINGS: Record<Lang, Strings> = {
     smsNotifications: 'SMS सूचना',
     whatsappNotifications: 'WhatsApp सूचना',
     notificationsHint:
-      'वसुली नोंदवल्यावर खातेदाराला संदेश पाठवा. WhatsApp किंवा SMS ॲपमध्ये संदेश तयार होईल; पाठवण्यासाठी Send दाबा.',
+      'वसुली नोंदवल्यावर खातेदाराला SMS स्वयंचलित पाठवला जातो. WhatsApp मध्ये संदेश तयार होईल; पाठवण्यासाठी Send दाबा.',
     backupExport: 'बॅकअप जतन करा',
     backupExportHint:
       'सर्व खातेदार व वसुली एका फाइलमध्ये जतन होते; ती जपून ठेवा किंवा दुसऱ्या फोनवर हलवा.',
@@ -819,7 +819,7 @@ export const STRINGS: Record<Lang, Strings> = {
     smsNotifications: 'SMS notifications',
     whatsappNotifications: 'WhatsApp notifications',
     notificationsHint:
-      'Send a message to the holder after a collection. WhatsApp or your SMS app opens with the message ready; tap Send.',
+      'After a collection, the SMS is sent automatically. WhatsApp opens with the message ready; tap Send.',
     backupExport: 'Save backup',
     backupExportHint:
       'Saves every holder and collection into one file you can keep safe or move to another phone.',
