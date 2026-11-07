@@ -485,10 +485,9 @@ export class WebRepository implements Repository {
       )
     const openingAmount = opening?.openingAmount ?? 0
     const openingDate = opening?.openingDate ?? null
-    const hasOpening = openingDate !== null && openingAmount > 0
     const collections = this.state.collections
       .filter((row) => row.holderId === id)
-      .filter((row) => (hasOpening ? row.date >= openingDate! : false))
+      .filter((row) => (openingDate ? row.date >= openingDate : true))
       .sort((a, b) => a.date.localeCompare(b.date) || a.id - b.id)
     const totalReduced = reductions.reduce(
       (sum, reduction) => sum + reduction.amount,
@@ -542,9 +541,7 @@ export class WebRepository implements Repository {
       openingDate,
       reductions,
       journal,
-      current: hasOpening
-        ? openingAmount + totalCollected - totalReduced
-        : 0,
+      current: openingAmount + totalCollected - totalReduced,
     }
   }
 

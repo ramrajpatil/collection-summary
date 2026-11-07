@@ -744,18 +744,27 @@ export class NativeRepository implements Repository {
 
     const openingAmount = Number(opening?.opening_amount ?? 0)
     const openingDate = opening?.opening_date ?? null
-    const hasOpening = openingDate !== null && openingAmount > 0
 
-    // Only the collections on/after the opening date count toward the balance,
-    // so filter in SQL instead of loading the holder's entire history.
+    // Collections on/after the opening date count toward the balance. If no
+    // opening date was recorded, every collection counts.
     let countedCollections: CollectionJournalRow[] = []
-    if (hasOpening) {
+    if (openingDate !== null) {
       const collectionsRes = await db.query(
         `SELECT id, date, amount, receipt_no, created_at
            FROM collections
           WHERE holder_id = ? AND date >= ?
           ORDER BY date ASC, id ASC`,
         [id, openingDate],
+      )
+      countedCollections = (collectionsRes.values ??
+        []) as CollectionJournalRow[]
+    } else {
+      const collectionsRes = await db.query(
+        `SELECT id, date, amount, receipt_no, created_at
+           FROM collections
+          WHERE holder_id = ?
+          ORDER BY date ASC, id ASC`,
+        [id],
       )
       countedCollections = (collectionsRes.values ??
         []) as CollectionJournalRow[]
@@ -814,9 +823,7 @@ export class NativeRepository implements Repository {
       openingDate,
       reductions,
       journal,
-      current: hasOpening
-        ? openingAmount + totalCollected - totalReduced
-        : 0,
+      current: openingAmount + totalCollected - totalReduced,
     }
   }
 
