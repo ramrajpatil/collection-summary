@@ -236,12 +236,6 @@ export interface Strings {
   smsNotifications: string
   whatsappNotifications: string
   notificationsHint: string
-  smsPermissionTitle: string
-  smsPermissionHint: string
-  smsPermissionBlocked: string
-  smsPermissionAllow: string
-  smsPermissionNotNow: string
-  smsPermissionOpenSettings: string
   backupExport: string
   backupExportHint: string
   backupImport: string
@@ -533,15 +527,7 @@ export const STRINGS: Record<Lang, Strings> = {
     smsNotifications: 'SMS सूचना',
     whatsappNotifications: 'WhatsApp सूचना',
     notificationsHint:
-      'वसुली नोंदवल्यावर खातेदाराला SMS स्वयंचलित पाठवला जातो. WhatsApp मध्ये संदेश तयार होईल; पाठवण्यासाठी Send दाबा.',
-    smsPermissionTitle: 'SMS परवानगी',
-    smsPermissionHint:
-      'वसुली नोंदवल्यावर खातेदाराला SMS स्वयंचलित पाठवण्यासाठी SMS परवानगी द्या.',
-    smsPermissionBlocked:
-      'SMS परवानगी बंद आहे. सेटिंग्जमध्ये जाऊन SMS परवानगी सुरू करा.',
-    smsPermissionAllow: 'परवानगी द्या',
-    smsPermissionNotNow: 'आता नको',
-    smsPermissionOpenSettings: 'सेटिंग्ज उघडा',
+      'वसुली नोंदवल्यावर खातेदाराला संदेश पाठवा. WhatsApp किंवा SMS ॲपमध्ये संदेश तयार होईल; पाठवण्यासाठी Send दाबा.',
     backupExport: 'बॅकअप जतन करा',
     backupExportHint:
       'सर्व खातेदार व वसुली एका फाइलमध्ये जतन होते; ती जपून ठेवा किंवा दुसऱ्या फोनवर हलवा.',
@@ -833,15 +819,7 @@ export const STRINGS: Record<Lang, Strings> = {
     smsNotifications: 'SMS notifications',
     whatsappNotifications: 'WhatsApp notifications',
     notificationsHint:
-      'After a collection, the SMS is sent automatically. WhatsApp opens with the message ready; tap Send.',
-    smsPermissionTitle: 'SMS permission',
-    smsPermissionHint:
-      'Allow SMS access so the collection message can be sent to the holder automatically.',
-    smsPermissionBlocked:
-      'SMS permission is blocked. Open your phone settings and allow SMS for this app.',
-    smsPermissionAllow: 'Allow',
-    smsPermissionNotNow: 'Not now',
-    smsPermissionOpenSettings: 'Open settings',
+      'Send a message to the holder after a collection. WhatsApp or your SMS app opens with the message ready; tap Send.',
     backupExport: 'Save backup',
     backupExportHint:
       'Saves every holder and collection into one file you can keep safe or move to another phone.',

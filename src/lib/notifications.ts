@@ -1,4 +1,3 @@
-import { Capacitor } from '@capacitor/core'
 import type { Holder, Profile } from './models'
 import {
   formatDate,
@@ -6,7 +5,6 @@ import {
   toDevanagariDigits,
 } from './marathi'
 import { normalizePhone, openExternal, smsUrl, whatsappUrl } from './reminders'
-import { SmsSender } from './sms'
 
 const SMS_KEY = 'collection-summary.notify.sms'
 const WHATSAPP_KEY = 'collection-summary.notify.whatsapp'
@@ -20,7 +18,7 @@ export function loadNotifySettings(): NotifySettings {
   try {
     const sms = localStorage.getItem(SMS_KEY)
     return {
-      // Automatic collection SMS is on unless the agent explicitly turned it off.
+      // Collection SMS is on by default and opens the SMS app prefilled.
       sms: sms === null ? true : sms === '1',
       whatsapp: localStorage.getItem(WHATSAPP_KEY) === '1',
     }
@@ -74,24 +72,13 @@ export async function sendCollectionNotifications(options: {
     balance: options.balance,
   })
 
+  // Opening the SMS composer needs no SEND_SMS permission, which keeps the
+  // app clear of Play Protect's restricted-SMS policy. The agent taps Send.
   if (options.settings.sms) {
-    if (Capacitor.isNativePlatform()) {
-      try {
-        await SmsSender.send({ phone: `+${phone}`, message })
-      } catch {
-        // Permission denied or send failed: fall back to the SMS composer.
-        try {
-          openExternal(smsUrl(phone, message))
-        } catch {
-          void 0
-        }
-      }
-    } else {
-      try {
-        openExternal(smsUrl(phone, message))
-      } catch {
-        void 0
-      }
+    try {
+      openExternal(smsUrl(phone, message))
+    } catch {
+      void 0
     }
   }
 

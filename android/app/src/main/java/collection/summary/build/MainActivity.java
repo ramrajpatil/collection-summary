@@ -15,7 +15,6 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(PdfGeneratorPlugin.class);
         registerPlugin(SystemUiPlugin.class);
         registerPlugin(FileSaverPlugin.class);
-        registerPlugin(SmsSenderPlugin.class);
         super.onCreate(savedInstanceState);
 
         getWindow().setBackgroundDrawable(new ColorDrawable(Color.parseColor("#04050a")));
