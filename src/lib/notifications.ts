@@ -44,12 +44,16 @@ export function buildCollectionMessage(options: {
   now?: Date
 }): string {
   const now = options.now ?? new Date()
-  const hours = toDevanagariDigits(String(now.getHours()).padStart(2, '0'))
+  const rawHours = now.getHours()
+  const period = rawHours < 12 ? 'AM' : 'PM'
+  const hours = toDevanagariDigits(
+    String(rawHours % 12 || 12).padStart(2, '0'),
+  )
   const minutes = toDevanagariDigits(String(now.getMinutes()).padStart(2, '0'))
   return [
     options.societyName,
     `आजची वसुली: ${formatRupees(options.amount, 'mr')}`,
-    `दिनांक: ${formatDate(options.dateIso, 'mr')} · वेळ: ${hours}:${minutes}`,
+    `दिनांक: ${formatDate(options.dateIso, 'mr')} · वेळ: ${hours}:${minutes} ${period}`,
     `आत्तापर्यंत शिल्लक: ${formatRupees(options.balance, 'mr')}`,
     'धन्यवाद.',
   ].join('\n')
