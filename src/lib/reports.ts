@@ -54,6 +54,62 @@ export interface ReportSourceRow {
   amount: number
 }
 
+export interface MonthlyHolderSummaryRow {
+  holderId: number
+  name: string
+  nameEn: string
+  accountNo: string
+  days: number
+  total: number
+}
+
+export interface MonthlyDaySummaryRow {
+  date: string
+  total: number
+  count: number
+}
+
+export function buildMonthlyReportFromSummary(
+  month: string,
+  holderRows: MonthlyHolderSummaryRow[],
+  dayRows: MonthlyDaySummaryRow[],
+): MonthlyReport {
+  const { start, end } = commissionPeriod(month)
+  const holders = holderRows
+    .map((holder) => ({
+      holderId: holder.holderId,
+      name: holder.name,
+      nameEn: holder.nameEn,
+      accountNo: holder.accountNo,
+      days: holder.days,
+      total: round2(holder.total),
+      commission: commissionFor(holder.total),
+    }))
+    .sort((a, b) => compareAccountNo(a.accountNo, b.accountNo))
+
+  const daily = dayRows
+    .map((day) => ({
+      date: day.date,
+      total: round2(day.total),
+      count: day.count,
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date))
+
+  const total = holderRows.reduce((sum, holder) => sum + holder.total, 0)
+
+  return {
+    month,
+    periodStart: start,
+    periodEnd: end,
+    total: round2(total),
+    commission: commissionFor(total),
+    days: daily.length,
+    accounts: holders.length,
+    holders,
+    daily,
+  }
+}
+
 export function buildMonthlyReport(
   month: string,
   rows: ReportSourceRow[],

@@ -59,7 +59,7 @@
   --danger-soft: rgba(255, 107, 129, 0.16);
   --danger-border: rgba(255, 107, 129, 0.42);
   --danger-ink: #ffd7dd;
-  --aurora-opacity: 0.75;
+  --aurora-opacity: 0.6;
   --aurora-blend: screen;
   --scrim: rgba(2, 4, 10, 0.55);
   color-scheme: dark;
@@ -94,7 +94,7 @@
   --danger-soft: rgba(225, 29, 72, 0.12);
   --danger-border: rgba(225, 29, 72, 0.4);
   --danger-ink: #e11d48;
-  --aurora-opacity: 0.4;
+  --aurora-opacity: 0.32;
   --aurora-blend: normal;
   --scrim: rgba(15, 23, 42, 0.32);
   color-scheme: light;
@@ -165,57 +165,46 @@ body {
 
 .aurora {
   position: fixed;
-  inset: -25%;
+  inset: 0;
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
   opacity: var(--aurora-opacity);
-  transform: translateZ(0);
+  background:
+    radial-gradient(
+      46vmax 46vmax at 22% 24%,
+      rgba(90, 140, 255, 0.55),
+      transparent 68%
+    ),
+    radial-gradient(
+      40vmax 40vmax at 78% 38%,
+      rgba(180, 110, 255, 0.45),
+      transparent 66%
+    ),
+    radial-gradient(
+      44vmax 44vmax at 42% 88%,
+      rgba(60, 230, 200, 0.4),
+      transparent 68%
+    );
+  background-blend-mode: var(--aurora-blend);
+  transform: translate3d(0, 0, 0) scale(1.15);
+  animation: drift 26s var(--ease) infinite alternate;
+  will-change: transform;
 }
 
 .aurora span {
-  position: absolute;
-  display: block;
-  border-radius: 50%;
-  mix-blend-mode: var(--aurora-blend);
-  animation: drift 22s var(--ease) infinite alternate;
-}
-
-.aurora span:nth-child(1) {
-  width: 46vmax;
-  height: 46vmax;
-  left: 4%;
-  top: 6%;
-  background: radial-gradient(circle, rgba(90, 140, 255, 0.55), transparent 68%);
-}
-
-.aurora span:nth-child(2) {
-  width: 40vmax;
-  height: 40vmax;
-  right: 0%;
-  top: 22%;
-  background: radial-gradient(circle, rgba(180, 110, 255, 0.45), transparent 66%);
-  animation-delay: -7s;
-}
-
-.aurora span:nth-child(3) {
-  width: 44vmax;
-  height: 44vmax;
-  left: 24%;
-  bottom: -6%;
-  background: radial-gradient(circle, rgba(60, 230, 200, 0.4), transparent 68%);
-  animation-delay: -13s;
+  display: none;
 }
 
 @keyframes drift {
   0% {
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(-2%, -1.5%, 0) scale(1.15);
   }
   50% {
-    transform: translate3d(6%, -4%, 0) scale(1.12);
+    transform: translate3d(2%, 1.5%, 0) scale(1.2);
   }
   100% {
-    transform: translate3d(-5%, 5%, 0) scale(0.96);
+    transform: translate3d(-1.5%, 2%, 0) scale(1.16);
   }
 }
 
@@ -239,6 +228,21 @@ body {
     inset 0 1px 0 var(--glass-inset);
   -webkit-backdrop-filter: blur(10px) saturate(140%);
   backdrop-filter: blur(10px) saturate(140%);
+}
+
+/* Native WebView: keep the liquid-glass look on floating chrome only, where
+   the blur is visible; scrolling content cards use the same translucent
+   gradient without a per-frame backdrop re-blur. */
+[data-platform='native'] .glass {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+[data-platform='native'] .topbar,
+[data-platform='native'] .tabbar,
+[data-platform='native'] .dock {
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
+  backdrop-filter: blur(10px) saturate(150%);
 }
 
 .topbar {
@@ -820,11 +824,15 @@ body {
   border-radius: 20px;
   background: linear-gradient(160deg, var(--panel-a), var(--panel-b));
   border: 1px solid var(--panel-border);
+  content-visibility: auto;
+  contain-intrinsic-size: auto 62px;
   transition:
     transform 0.4s var(--spring),
-    background 0.35s var(--ease),
     border-color 0.35s var(--ease);
-  animation: rise 0.6s var(--ease) both;
+}
+
+.row.enter {
+  animation: rise 0.42s var(--ease) both;
 }
 
 .row:active {
@@ -1667,10 +1675,13 @@ select option {
   border-radius: 20px;
   background: linear-gradient(160deg, var(--panel-a), var(--panel-b));
   border: 1px solid var(--panel-border);
-  animation: rise 0.55s var(--ease) both;
-  transition:
-    transform 0.4s var(--spring),
-    background 0.3s var(--ease);
+  content-visibility: auto;
+  contain-intrinsic-size: auto 62px;
+  transition: transform 0.4s var(--spring);
+}
+
+.holder-row.enter {
+  animation: rise 0.4s var(--ease) both;
 }
 
 .holder-row:active {
@@ -2105,6 +2116,8 @@ select option {
   border-radius: 18px;
   background: linear-gradient(160deg, var(--panel-a), var(--panel-b));
   border: 1px solid var(--panel-border);
+  content-visibility: auto;
+  contain-intrinsic-size: auto 64px;
 }
 
 .report-holder-main {
@@ -2159,6 +2172,8 @@ select option {
   border-radius: 16px;
   background: var(--chip-bg);
   border: 1px solid var(--panel-border);
+  content-visibility: auto;
+  contain-intrinsic-size: auto 65px;
 }
 
 .report-day b {
@@ -2851,7 +2866,12 @@ select option {
   gap: 8px;
   padding: 11px 12px;
   border-radius: 16px;
-  animation: rise 0.5s var(--ease) both;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 48px;
+}
+
+.history-row.enter {
+  animation: rise 0.38s var(--ease) both;
 }
 
 .history-row .c {
@@ -3264,6 +3284,8 @@ select option {
   justify-content: space-between;
   gap: 8px;
   font-size: 0.76rem;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 35px;
 }
 
 .balance-row b {

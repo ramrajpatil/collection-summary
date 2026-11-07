@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { Capacitor } from '@capacitor/core'
 import type { DayData, Holder, Profile } from '../lib/models'
 import type { Repository } from '../lib/repo'
@@ -54,10 +54,23 @@ interface CollectionScreenProps {
 }
 
 const QUICK_AMOUNTS = [100, 200, 300, 400, 500, 1000, 1500]
+const ENTER_ROW_LIMIT = 8
 
 function padReceipt(value: number | string): string {
   const digits = String(value).replace(/\D/g, '')
   return digits ? digits.padStart(4, '0') : ''
+}
+
+function renumberEntries(
+  entries: DayData['entries'],
+  startReceipt: number,
+): DayData['entries'] {
+  return [...entries]
+    .sort(
+      (a, b) =>
+        a.receiptNo - b.receiptNo || a.collectionId - b.collectionId,
+    )
+    .map((entry, index) => ({ ...entry, receiptNo: startReceipt + index }))
 }
 
 interface AmountTarget {
@@ -277,8 +290,10 @@ export function CollectionScreen({
   const pendingCount = holders.length - collectedCount
   const receiptLocked = collectedCount > 0
 
+  const deferredSearch = useDeferredValue(search)
+
   const visibleHolders = useMemo(() => {
-    const query = search.trim().toLocaleLowerCase()
+    const query = deferredSearch.trim().toLocaleLowerCase()
     return holders.filter((holder) => {
       const entry = entryByHolder.get(holder.id)
       if (filter === 'collected' && !entry) return false
@@ -290,7 +305,7 @@ export function CollectionScreen({
       }
       return true
     })
-  }, [holders, entryByHolder, search, filter])
+  }, [holders, entryByHolder, deferredSearch, filter])
 
   async function notifyCollection(holder: Holder, amount: number) {
     const settings = loadNotifySettings()
@@ -316,21 +331,56 @@ export function CollectionScreen({
       setStatus(s.dayLockedError)
       return
     }
-    if (entryByHolder.has(holder.id) && !entryEditUnlocked.current) {
+    const existing = entryByHolder.get(holder.id)
+    if (existing && !entryEditUnlocked.current) {
       requestEditPassword(() => void toggle(holder))
       return
+    }
+    const previous = day
+    if (day) {
+      if (existing) {
+        setDay({
+          ...day,
+          entries: renumberEntries(
+            day.entries.filter((entry) => entry.holderId !== holder.id),
+            day.startReceipt,
+          ),
+        })
+      } else {
+        setDay({
+          ...day,
+          entries: renumberEntries(
+            [
+              ...day.entries,
+              {
+                collectionId: -1,
+                holderId: holder.id,
+                name: holder.name,
+                nameEn: holder.nameEn,
+                accountNo: holder.accountNo,
+                amount: holder.defaultAmount,
+                receiptNo: nextReceipt,
+                defaultAmount: holder.defaultAmount,
+                createdAt: todayIso(),
+              },
+            ],
+            day.startReceipt,
+          ),
+        })
+      }
     }
     setBusy(true)
     setStatus('')
     try {
-      if (entryByHolder.has(holder.id)) {
+      if (existing) {
         await repo.deleteCollection(holder.id, date)
       } else {
         await repo.saveCollection(holder.id, date, holder.defaultAmount)
-        await notifyCollection(holder, holder.defaultAmount)
+        void notifyCollection(holder, holder.defaultAmount)
       }
       refresh()
     } catch (err) {
+      setDay(previous)
       setStatus(
         `${s.failed}: ${err instanceof Error ? err.message : String(err)}`,
       )
@@ -402,15 +452,41 @@ export function CollectionScreen({
       setAmountError(s.amountInvalid)
       return
     }
+    const holder = amountTarget.holder
+    const previous = day
+    if (day) {
+      const entries = amountTarget.collected
+        ? day.entries.map((entry) =>
+            entry.holderId === holder.id ? { ...entry, amount } : entry,
+          )
+        : renumberEntries(
+            [
+              ...day.entries,
+              {
+                collectionId: -1,
+                holderId: holder.id,
+                name: holder.name,
+                nameEn: holder.nameEn,
+                accountNo: holder.accountNo,
+                amount,
+                receiptNo: nextReceipt,
+                defaultAmount: holder.defaultAmount,
+                createdAt: todayIso(),
+              },
+            ],
+            day.startReceipt,
+          )
+      setDay({ ...day, entries })
+    }
     setBusy(true)
     try {
-      const holder = amountTarget.holder
       await repo.saveCollection(holder.id, date, amount)
-      await notifyCollection(holder, amount)
+      void notifyCollection(holder, amount)
       setAmountTarget(null)
       setStatus(s.amountSaved)
       refresh()
     } catch (err) {
+      setDay(previous)
       setAmountError(err instanceof Error ? err.message : String(err))
     } finally {
       setBusy(false)
@@ -427,13 +503,25 @@ export function CollectionScreen({
       requestEditPassword(() => void removeAmount())
       return
     }
+    const holder = amountTarget.holder
+    const previous = day
+    if (day) {
+      setDay({
+        ...day,
+        entries: renumberEntries(
+          day.entries.filter((entry) => entry.holderId !== holder.id),
+          day.startReceipt,
+        ),
+      })
+    }
     setBusy(true)
     try {
-      await repo.deleteCollection(amountTarget.holder.id, date)
+      await repo.deleteCollection(holder.id, date)
       setAmountTarget(null)
       setStatus(s.amountSaved)
       refresh()
     } catch (err) {
+      setDay(previous)
       setAmountError(err instanceof Error ? err.message : String(err))
     } finally {
       setBusy(false)
@@ -821,8 +909,14 @@ export function CollectionScreen({
               return (
                 <div
                   key={holder.id}
-                  className={`row${isDone ? ' done' : ''}`}
-                  style={{ animationDelay: `${Math.min(index, 12) * 0.03}s` }}
+                  className={`row${index < ENTER_ROW_LIMIT ? ' enter' : ''}${
+                    isDone ? ' done' : ''
+                  }`}
+                  style={
+                    index < ENTER_ROW_LIMIT
+                      ? { animationDelay: `${index * 0.03}s` }
+                      : undefined
+                  }
                 >
                   <div className="sr">{formatDigits(index + 1, lang)}</div>
                   <div className="who">

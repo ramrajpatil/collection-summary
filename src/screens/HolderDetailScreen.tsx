@@ -53,6 +53,8 @@ interface HolderDetailScreenProps {
   onEdit: () => void
 }
 
+const ENTER_ROW_LIMIT = 8
+
 export function HolderDetailScreen({
   repo,
   profile,
@@ -476,9 +478,15 @@ export function HolderDetailScreen({
             <section className="history-list">
               {history.entries.map((entry, index) => (
                 <div
-                  className="history-row glass"
+                  className={`history-row glass${
+                    index < ENTER_ROW_LIMIT ? ' enter' : ''
+                  }`}
                   key={`${entry.date}-${entry.receiptNo}`}
-                  style={{ animationDelay: `${Math.min(index, 12) * 0.02}s` }}
+                  style={
+                    index < ENTER_ROW_LIMIT
+                      ? { animationDelay: `${index * 0.02}s` }
+                      : undefined
+                  }
                 >
                   <span className="c">{formatDigits(index + 1, lang)}</span>
                   <b>{formatDate(entry.date, lang)}</b>

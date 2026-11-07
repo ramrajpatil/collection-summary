@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildMonthlyReport,
+  buildMonthlyReportFromSummary,
   commissionFor,
   commissionPeriod,
   shiftMonth,
@@ -91,6 +92,75 @@ describe('buildMonthlyReport', () => {
       total: 1199,
     })
     expect(report.daily.map((day) => day.total)).toEqual([300, 50, 999])
+  })
+})
+
+describe('buildMonthlyReportFromSummary', () => {
+  it('matches buildMonthlyReport output for the same data', () => {
+    const rows = [
+      {
+        holderId: 1,
+        name: 'A',
+        nameEn: '',
+        accountNo: '001',
+        date: '2026-03-01',
+        amount: 100,
+      },
+      {
+        holderId: 1,
+        name: 'A',
+        nameEn: '',
+        accountNo: '001',
+        date: '2026-03-02',
+        amount: 50.25,
+      },
+      {
+        holderId: 2,
+        name: 'B',
+        nameEn: '',
+        accountNo: '002',
+        date: '2026-03-01',
+        amount: 200,
+      },
+      {
+        holderId: 2,
+        name: 'B',
+        nameEn: '',
+        accountNo: '002',
+        date: '2026-03-31',
+        amount: 999,
+      },
+    ]
+
+    const expected = buildMonthlyReport('2026-03', rows)
+    const actual = buildMonthlyReportFromSummary(
+      '2026-03',
+      [
+        {
+          holderId: 1,
+          name: 'A',
+          nameEn: '',
+          accountNo: '001',
+          days: 2,
+          total: 150.25,
+        },
+        {
+          holderId: 2,
+          name: 'B',
+          nameEn: '',
+          accountNo: '002',
+          days: 2,
+          total: 1199,
+        },
+      ],
+      [
+        { date: '2026-03-01', total: 300, count: 2 },
+        { date: '2026-03-02', total: 50.25, count: 1 },
+        { date: '2026-03-31', total: 999, count: 1 },
+      ],
+    )
+
+    expect(actual).toEqual(expected)
   })
 })
 

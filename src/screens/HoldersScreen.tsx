@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import type { Holder, HolderInput } from '../lib/models'
 import type {
   HolderSort,
@@ -37,6 +37,8 @@ const EMPTY_DRAFT: HolderInput = {
   phone: '',
   active: true,
 }
+
+const ENTER_ROW_LIMIT = 8
 
 export function HoldersScreen({
   repo,
@@ -95,15 +97,17 @@ export function HoldersScreen({
     return map
   }, [holders])
 
+  const deferredSearch = useDeferredValue(search)
+
   const visibleHolders = useMemo(() => {
-    const query = search.trim().toLocaleLowerCase()
+    const query = deferredSearch.trim().toLocaleLowerCase()
     if (!query) return holders
     return holders.filter((holder) =>
       `${holder.name} ${holder.nameEn} ${holder.accountNo}`
         .toLocaleLowerCase()
         .includes(query),
     )
-  }, [holders, search])
+  }, [holders, deferredSearch])
 
   useEffect(() => {
     if (!status) return
@@ -376,8 +380,14 @@ export function HoldersScreen({
           {visibleHolders.map((holder, index) => (
             <div
               key={holder.id}
-              className={`holder-row${holder.active ? '' : ' inactive'}`}
-              style={{ animationDelay: `${Math.min(index, 12) * 0.025}s` }}
+              className={`holder-row${index < ENTER_ROW_LIMIT ? ' enter' : ''}${
+                holder.active ? '' : ' inactive'
+              }`}
+              style={
+                index < ENTER_ROW_LIMIT
+                  ? { animationDelay: `${index * 0.025}s` }
+                  : undefined
+              }
             >
               <button
                 type="button"

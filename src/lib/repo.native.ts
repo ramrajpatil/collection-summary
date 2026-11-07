@@ -27,7 +27,7 @@ import type {
 } from './repo'
 import { DEMO_COLLECTED_COUNT, DEMO_HOLDERS } from './demo'
 import { todayIso } from './marathi'
-import { buildMonthlyReport, commissionPeriod } from './reports'
+import { buildMonthlyReportFromSummary, commissionPeriod } from './reports'
 
 const DB_NAME = 'collection_summary'
 const DB_VERSION = 1
@@ -85,6 +85,18 @@ CREATE INDEX IF NOT EXISTS idx_balance_reductions_holder
   ON balance_reductions(holder_id, date);
 `
 
+const RENUMBER_DATE_SQL = `UPDATE collections
+    SET receipt_no =
+        COALESCE(
+          (SELECT start_receipt FROM daily_meta WHERE date = ?), 1
+        ) + (
+          SELECT COUNT(*)
+            FROM collections c2
+           WHERE c2.date = collections.date
+             AND c2.id < collections.id
+        )
+  WHERE date = ?`
+
 interface HolderRow {
   id: number
   name: string
@@ -109,13 +121,19 @@ interface DayRow {
   default_amount: number
 }
 
-interface ReportRow {
+interface MonthlyHolderRow {
   holder_id: number
-  date: string
-  amount: number
   name: string
   name_en: string | null
   account_no: string
+  days: number
+  total: number
+}
+
+interface MonthlyDayRow {
+  date: string
+  total: number
+  count: number
 }
 
 interface TableColumnRow {
@@ -491,51 +509,45 @@ export class NativeRepository implements Repository {
     amount: number,
   ): Promise<void> {
     const db = await this.getDb()
-    await db.beginTransaction()
-    try {
-      await this.assertUnlocked(db, date)
-      await db.run(
-        'INSERT OR IGNORE INTO daily_meta (date, start_receipt) VALUES (?, 1)',
-        [date],
-        false,
-      )
-      const now = new Date().toISOString()
-      // Compute the next receipt in SQL so adding a collection stays O(1);
-      // only deletes and start-receipt changes need a full renumber.
-      await db.run(
-        `INSERT INTO collections
-          (holder_id, date, amount, receipt_no, created_at, updated_at)
-         VALUES (
-           ?, ?, ?,
-           MAX(
-             COALESCE((SELECT start_receipt FROM daily_meta WHERE date = ?), 1),
-             COALESCE((SELECT MAX(receipt_no) FROM collections WHERE date = ?), 0) + 1
-           ),
-           ?, ?
-         )
-         ON CONFLICT(holder_id, date) DO UPDATE SET
-           amount = excluded.amount,
-           updated_at = excluded.updated_at`,
-        [
-          holderId,
-          date,
-          Math.max(0, Number(amount) || 0),
-          date,
-          date,
-          now,
-          now,
-        ],
-        false,
-      )
-      await db.commitTransaction()
-    } catch (err) {
-      try {
-        await db.rollbackTransaction()
-      } catch {
-        void 0
-      }
-      throw err
-    }
+    await this.assertUnlocked(db, date)
+    const now = new Date().toISOString()
+    // Compute the next receipt in SQL so adding a collection stays O(1);
+    // only deletes and start-receipt changes need a full renumber. Both
+    // statements go over the bridge in one transaction call.
+    await db.executeSet(
+      [
+        {
+          statement:
+            'INSERT OR IGNORE INTO daily_meta (date, start_receipt) VALUES (?, 1)',
+          values: [date],
+        },
+        {
+          statement: `INSERT INTO collections
+            (holder_id, date, amount, receipt_no, created_at, updated_at)
+           VALUES (
+             ?, ?, ?,
+             MAX(
+               COALESCE((SELECT start_receipt FROM daily_meta WHERE date = ?), 1),
+               COALESCE((SELECT MAX(receipt_no) FROM collections WHERE date = ?), 0) + 1
+             ),
+             ?, ?
+           )
+           ON CONFLICT(holder_id, date) DO UPDATE SET
+             amount = excluded.amount,
+             updated_at = excluded.updated_at`,
+          values: [
+            holderId,
+            date,
+            Math.max(0, Number(amount) || 0),
+            date,
+            date,
+            now,
+            now,
+          ],
+        },
+      ],
+      true,
+    )
   }
 
   async saveCollectionsWithReceipts(
@@ -598,48 +610,35 @@ export class NativeRepository implements Repository {
 
   async deleteCollection(holderId: number, date: string): Promise<void> {
     const db = await this.getDb()
-    await db.beginTransaction()
-    try {
-      await this.assertUnlocked(db, date)
-      await db.run(
-        'DELETE FROM collections WHERE holder_id = ? AND date = ?',
-        [holderId, date],
-        false,
-      )
-      await this.renumberDate(db, date)
-      await db.commitTransaction()
-    } catch (err) {
-      try {
-        await db.rollbackTransaction()
-      } catch {
-        void 0
-      }
-      throw err
-    }
+    await this.assertUnlocked(db, date)
+    // Delete + renumber in a single transaction call.
+    await db.executeSet(
+      [
+        {
+          statement: 'DELETE FROM collections WHERE holder_id = ? AND date = ?',
+          values: [holderId, date],
+        },
+        { statement: RENUMBER_DATE_SQL, values: [date, date] },
+      ],
+      true,
+    )
   }
 
   async setStartReceipt(date: string, start: number): Promise<void> {
     const db = await this.getDb()
     const value = Math.max(1, Math.floor(Number(start) || 1))
-    await db.beginTransaction()
-    try {
-      await this.assertUnlocked(db, date)
-      await db.run(
-        `INSERT INTO daily_meta (date, start_receipt) VALUES (?, ?)
-         ON CONFLICT(date) DO UPDATE SET start_receipt = excluded.start_receipt`,
-        [date, value],
-        false,
-      )
-      await this.renumberDate(db, date)
-      await db.commitTransaction()
-    } catch (err) {
-      try {
-        await db.rollbackTransaction()
-      } catch {
-        void 0
-      }
-      throw err
-    }
+    await this.assertUnlocked(db, date)
+    await db.executeSet(
+      [
+        {
+          statement: `INSERT INTO daily_meta (date, start_receipt) VALUES (?, ?)
+           ON CONFLICT(date) DO UPDATE SET start_receipt = excluded.start_receipt`,
+          values: [date, value],
+        },
+        { statement: RENUMBER_DATE_SQL, values: [date, date] },
+      ],
+      true,
+    )
   }
 
   private async renumberDate(
@@ -647,43 +646,47 @@ export class NativeRepository implements Repository {
     date: string,
   ): Promise<void> {
     // One statement instead of one bridge round-trip per collection row.
-    await db.run(
-      `UPDATE collections
-          SET receipt_no =
-              COALESCE(
-                (SELECT start_receipt FROM daily_meta WHERE date = ?), 1
-              ) + (
-                SELECT COUNT(*)
-                  FROM collections c2
-                 WHERE c2.date = collections.date
-                   AND c2.id < collections.id
-              )
-        WHERE date = ?`,
-      [date, date],
-      false,
-    )
+    await db.run(RENUMBER_DATE_SQL, [date, date], false)
   }
 
   async getMonthlyReport(month: string): Promise<MonthlyReport> {
     const db = await this.getDb()
     const { start, end } = commissionPeriod(month)
-    const res = await db.query(
-      `SELECT c.holder_id, c.date, c.amount, h.name, h.name_en, h.account_no
-         FROM collections c
-         JOIN holders h ON h.id = c.holder_id
-        WHERE c.date >= ? AND c.date <= ?
-        ORDER BY c.date ASC, c.id ASC`,
+    const holderRes = await db.query(
+      `SELECT c.holder_id, h.name, h.name_en, h.account_no, c.days, c.total
+         FROM (
+           SELECT holder_id, COUNT(*) AS days, SUM(amount) AS total
+             FROM collections
+            WHERE date >= ? AND date <= ?
+            GROUP BY holder_id
+         ) c
+         JOIN holders h ON h.id = c.holder_id`,
       [start, end],
     )
-    const rows = ((res.values ?? []) as ReportRow[]).map((row) => ({
-      holderId: Number(row.holder_id),
-      name: row.name,
-      nameEn: row.name_en ?? '',
-      accountNo: row.account_no,
+    const dayRes = await db.query(
+      `SELECT date, SUM(amount) AS total, COUNT(*) AS count
+         FROM collections
+        WHERE date >= ? AND date <= ?
+        GROUP BY date
+        ORDER BY date ASC`,
+      [start, end],
+    )
+    const holders = ((holderRes.values ?? []) as MonthlyHolderRow[]).map(
+      (row) => ({
+        holderId: Number(row.holder_id),
+        name: row.name,
+        nameEn: row.name_en ?? '',
+        accountNo: row.account_no,
+        days: Number(row.days),
+        total: Number(row.total),
+      }),
+    )
+    const daily = ((dayRes.values ?? []) as MonthlyDayRow[]).map((row) => ({
       date: row.date,
-      amount: Number(row.amount),
+      total: Number(row.total),
+      count: Number(row.count),
     }))
-    return buildMonthlyReport(month, rows)
+    return buildMonthlyReportFromSummary(month, holders, daily)
   }
 
   async getHolderHistory(id: number): Promise<HolderHistory | null> {
@@ -738,21 +741,26 @@ export class NativeRepository implements Repository {
         createdAt: row.created_at,
       }),
     )
-    const collectionsRes = await db.query(
-      `SELECT id, date, amount, receipt_no, created_at
-         FROM collections
-        WHERE holder_id = ?
-        ORDER BY date ASC, id ASC`,
-      [id],
-    )
-    const collections = (collectionsRes.values ?? []) as CollectionJournalRow[]
 
     const openingAmount = Number(opening?.opening_amount ?? 0)
     const openingDate = opening?.opening_date ?? null
     const hasOpening = openingDate !== null && openingAmount > 0
-    const countedCollections = hasOpening
-      ? collections.filter((row) => row.date >= openingDate!)
-      : []
+
+    // Only the collections on/after the opening date count toward the balance,
+    // so filter in SQL instead of loading the holder's entire history.
+    let countedCollections: CollectionJournalRow[] = []
+    if (hasOpening) {
+      const collectionsRes = await db.query(
+        `SELECT id, date, amount, receipt_no, created_at
+           FROM collections
+          WHERE holder_id = ? AND date >= ?
+          ORDER BY date ASC, id ASC`,
+        [id, openingDate],
+      )
+      countedCollections = (collectionsRes.values ??
+        []) as CollectionJournalRow[]
+    }
+
     const totalReduced = reductions.reduce(
       (sum, reduction) => sum + reduction.amount,
       0,
