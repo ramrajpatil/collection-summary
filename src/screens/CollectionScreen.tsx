@@ -37,6 +37,8 @@ import {
   ChevronRightIcon,
   ClockIcon,
   DownloadIcon,
+  EyeIcon,
+  EyeOffIcon,
   LockIcon,
   MinusIcon,
   PlusIcon,
@@ -99,9 +101,11 @@ export function CollectionScreen({
   const [unlockOpen, setUnlockOpen] = useState(false)
   const [unlockPassword, setUnlockPassword] = useState('')
   const [unlockError, setUnlockError] = useState('')
+  const [showUnlockPassword, setShowUnlockPassword] = useState(false)
   const [editPassOpen, setEditPassOpen] = useState(false)
   const [editPassInput, setEditPassInput] = useState('')
   const [editPassError, setEditPassError] = useState('')
+  const [showEditPassword, setShowEditPassword] = useState(false)
   const entryEditUnlocked = useRef(false)
   const pendingEdit = useRef<(() => void) | null>(null)
   const [startDraft, setStartDraft] = useState('0001')
@@ -140,6 +144,8 @@ export function CollectionScreen({
     setEditPassOpen(false)
     setEditPassInput('')
     setEditPassError('')
+    setShowEditPassword(false)
+    entryEditUnlocked.current = false
     pendingEdit.current = null
   }
 
@@ -147,6 +153,7 @@ export function CollectionScreen({
     pendingEdit.current = action
     setEditPassInput('')
     setEditPassError('')
+    setShowEditPassword(false)
     setEditPassOpen(true)
   }
 
@@ -158,6 +165,7 @@ export function CollectionScreen({
     entryEditUnlocked.current = true
     setEditPassOpen(false)
     setEditPassInput('')
+    setShowEditPassword(false)
     const action = pendingEdit.current
     pendingEdit.current = null
     action?.()
@@ -231,7 +239,7 @@ export function CollectionScreen({
         return true
       }
       if (unlockOpen) {
-        setUnlockOpen(false)
+        closeUnlock()
         return true
       }
       if (lockConfirmOpen) {
@@ -243,6 +251,7 @@ export function CollectionScreen({
         return true
       }
       if (amountTarget) {
+        entryEditUnlocked.current = false
         setAmountTarget(null)
         setAmountError('')
         return true
@@ -385,6 +394,7 @@ export function CollectionScreen({
         `${s.failed}: ${err instanceof Error ? err.message : String(err)}`,
       )
     } finally {
+      entryEditUnlocked.current = false
       setBusy(false)
     }
   }
@@ -482,6 +492,7 @@ export function CollectionScreen({
     try {
       await repo.saveCollection(holder.id, date, amount)
       void notifyCollection(holder, amount)
+      entryEditUnlocked.current = false
       setAmountTarget(null)
       setStatus(s.amountSaved)
       refresh()
@@ -517,6 +528,7 @@ export function CollectionScreen({
     setBusy(true)
     try {
       await repo.deleteCollection(holder.id, date)
+      entryEditUnlocked.current = false
       setAmountTarget(null)
       setStatus(s.amountSaved)
       refresh()
@@ -550,9 +562,17 @@ export function CollectionScreen({
     }
   }
 
+  function closeUnlock() {
+    setUnlockOpen(false)
+    setUnlockPassword('')
+    setUnlockError('')
+    setShowUnlockPassword(false)
+  }
+
   function openUnlock() {
     setUnlockPassword('')
     setUnlockError('')
+    setShowUnlockPassword(false)
     setUnlockOpen(true)
   }
 
@@ -566,8 +586,7 @@ export function CollectionScreen({
     setUnlockError('')
     try {
       await repo.setDayLocked(date, false)
-      setUnlockOpen(false)
-      setUnlockPassword('')
+      closeUnlock()
       setStatus(s.dayUnlocked)
       refresh()
     } catch (err) {
@@ -1052,7 +1071,10 @@ export function CollectionScreen({
         <BottomSheet
           title={s.editAmount}
           closeLabel={s.close}
-          onClose={() => setAmountTarget(null)}
+          onClose={() => {
+            entryEditUnlocked.current = false
+            setAmountTarget(null)
+          }}
         >
           <div className="amount-holder">
             <b>
@@ -1158,18 +1180,31 @@ export function CollectionScreen({
           <p className="field-hint">{s.entryLockHint}</p>
           <div className="field">
             <label htmlFor="editPassword">{s.masterPassword}</label>
-            <input
-              id="editPassword"
-              type="password"
-              value={editPassInput}
-              autoComplete="off"
-              autoCorrect="off"
-              spellCheck={false}
-              onChange={(event) => setEditPassInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') submitEditPassword()
-              }}
-            />
+            <div className="input-group">
+              <input
+                id="editPassword"
+                type={showEditPassword ? 'text' : 'password'}
+                value={editPassInput}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                onChange={(event) => setEditPassInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') submitEditPassword()
+                }}
+              />
+              <button
+                type="button"
+                className="input-toggle-btn"
+                aria-label={
+                  showEditPassword ? s.hidePassword : s.showPassword
+                }
+                title={showEditPassword ? s.hidePassword : s.showPassword}
+                onClick={() => setShowEditPassword((value) => !value)}
+              >
+                {showEditPassword ? <EyeOffIcon /> : <EyeIcon />}
+              </button>
+            </div>
           </div>
           {editPassError ? (
             <p className="form-error">{editPassError}</p>
@@ -1212,14 +1247,14 @@ export function CollectionScreen({
         <BottomSheet
           title={s.unlockDay}
           closeLabel={s.close}
-          onClose={() => setUnlockOpen(false)}
+          onClose={closeUnlock}
           footer={
             <>
               <button
                 type="button"
                 className="btn-ghost"
                 disabled={busy}
-                onClick={() => setUnlockOpen(false)}
+                onClick={closeUnlock}
               >
                 {s.cancel}
               </button>
@@ -1238,18 +1273,33 @@ export function CollectionScreen({
           <p className="field-hint">{s.unlockHint}</p>
           <div className="field">
             <label htmlFor="unlockPassword">{s.masterPassword}</label>
-            <input
-              id="unlockPassword"
-              type="password"
-              value={unlockPassword}
-              autoComplete="off"
-              autoCorrect="off"
-              spellCheck={false}
-              onChange={(event) => setUnlockPassword(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') void submitUnlock()
-              }}
-            />
+            <div className="input-group">
+              <input
+                id="unlockPassword"
+                type={showUnlockPassword ? 'text' : 'password'}
+                value={unlockPassword}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                onChange={(event) => setUnlockPassword(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') void submitUnlock()
+                }}
+              />
+              <button
+                type="button"
+                className="input-toggle-btn"
+                aria-label={
+                  showUnlockPassword ? s.hidePassword : s.showPassword
+                }
+                title={
+                  showUnlockPassword ? s.hidePassword : s.showPassword
+                }
+                onClick={() => setShowUnlockPassword((value) => !value)}
+              >
+                {showUnlockPassword ? <EyeOffIcon /> : <EyeIcon />}
+              </button>
+            </div>
           </div>
           {unlockError ? (
             <p className="form-error">{unlockError}</p>

@@ -156,6 +156,8 @@ export interface Strings {
   clear: string
   showKey: string
   hideKey: string
+  showPassword: string
+  hidePassword: string
   scanSaved: string
   scanFixUnknown: string
   scanFixAmount: string
@@ -446,6 +448,8 @@ export const STRINGS: Record<Lang, Strings> = {
     clear: 'साफ करा',
     showKey: 'की दाखवा',
     hideKey: 'की लपवा',
+    showPassword: 'पासवर्ड दाखवा',
+    hidePassword: 'पासवर्ड लपवा',
     scanSaved: 'नोंदी वसुलीत जोडल्या.',
     scanFixUnknown:
       'अपरिचित खाते क्रमांक दुरुस्त करा किंवा काढून टाका.',
@@ -739,6 +743,8 @@ export const STRINGS: Record<Lang, Strings> = {
     clear: 'Clear',
     showKey: 'Show key',
     hideKey: 'Hide key',
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
     scanSaved: 'entries added.',
     scanFixUnknown: 'Fix or remove the unknown account numbers.',
     scanFixAmount: 'Enter an amount for every entry.',
