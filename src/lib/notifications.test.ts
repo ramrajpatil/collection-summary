@@ -14,8 +14,7 @@ describe('collection notification message', () => {
     expect(lines[0]).toBe('Test Society')
     expect(lines[1]).toBe('आजची वसुली: ₹ ५०')
     expect(lines[2]).toBe('दिनांक: ०७ नोव्हेंबर २०२६ · वेळ: ०२:०५ PM')
-    expect(lines[3]).toBe('आत्तापर्यंत शिल्लक: ₹ ७५०')
-    expect(lines[4]).toBe('धन्यवाद.')
+    expect(lines[3]).toBe('धन्यवाद.')
   })
 
   it('formats midnight and noon in 12-hour time', () => {

@@ -54,7 +54,6 @@ export function buildCollectionMessage(options: {
     options.societyName,
     `आजची वसुली: ${formatRupees(options.amount, 'mr')}`,
     `दिनांक: ${formatDate(options.dateIso, 'mr')} · वेळ: ${hours}:${minutes} ${period}`,
-    `आत्तापर्यंत शिल्लक: ${formatRupees(options.balance, 'mr')}`,
     'धन्यवाद.',
   ].join('\n')
 }

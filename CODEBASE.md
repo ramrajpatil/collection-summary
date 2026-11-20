@@ -225,7 +225,9 @@ All three land on the same review screen:
   - Society name
   - Today's collection amount
   - Date and **12-hour time with AM/PM**
-  - Current balance so far
+- **NOTE:** The current balance/total line (`आत्तापर्यंत शिल्लक`) was intentionally
+  hidden from the message. Add it back to `buildCollectionMessage` in
+  `src/lib/notifications.ts` whenever needed.
 - No background/SMS permission is requested, which avoids Play Protect blocks
 
 ### 7. Data Backup (`DataBackupSheet.tsx`)
@@ -355,6 +357,8 @@ sendCollectionNotifications({ profile, holder, amount, dateIso, balance, setting
 - SMS: opens the SMS composer, no `SEND_SMS` permission
 - WhatsApp: opens the chat with the message prefilled
 - Time format: 12-hour with AM/PM (e.g. `वेळ: ०२:०५ PM`)
+- **TODO:** Balance/total is hidden for now; re-add the `आत्तापर्यंत शिल्लक`
+  line in `buildCollectionMessage` when required.
 
 ---
 
