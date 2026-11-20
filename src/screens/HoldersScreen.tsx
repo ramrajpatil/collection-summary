@@ -1,4 +1,10 @@
-import { useDeferredValue, useEffect, useMemo, useState } from 'react'
+import {
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import type { Holder, HolderInput } from '../lib/models'
 import type {
   HolderSort,
@@ -9,7 +15,7 @@ import { isAccountExistsError } from '../lib/db'
 import { pushBackHandler } from '../lib/backButton'
 import { STRINGS, useLanguage } from '../lib/i18n'
 import { formatDigits, formatRupees } from '../lib/marathi'
-import { holderName, upperName } from '../lib/names'
+import { holderName, toEnglishName, toMarathiName, upperName } from '../lib/names'
 import { BottomSheet } from '../components/BottomSheet'
 import { Toast } from '../components/Toast'
 import {
@@ -63,6 +69,7 @@ export function HoldersScreen({
   const [error, setError] = useState('')
   const [nextAccount, setNextAccount] = useState('')
   const [reloadToken, setReloadToken] = useState(0)
+  const composingRef = useRef(false)
 
   const refresh = () => setReloadToken((token) => token + 1)
 
@@ -182,6 +189,29 @@ export function HoldersScreen({
     setSheetOpen(false)
   }
 
+  function updateMarathiName(value: string, sync = true) {
+    setDraft((prev) => ({
+      ...prev,
+      name: value,
+      nameEn: sync ? toEnglishName(value) : prev.nameEn,
+    }))
+  }
+
+  function updateEnglishName(value: string, sync = true) {
+    setDraft((prev) => ({
+      ...prev,
+      nameEn: value,
+      name: sync ? toMarathiName(value) : prev.name,
+    }))
+  }
+
+  function normalizeEnglishName() {
+    setDraft((prev) => ({
+      ...prev,
+      nameEn: upperName(prev.nameEn ?? ''),
+    }))
+  }
+
   async function save() {
     if (!draft.name.trim()) {
       setError(s.nameRequired)
@@ -199,10 +229,14 @@ export function HoldersScreen({
     setBusy(true)
     setError('')
     try {
+      const payload: HolderInput = {
+        ...draft,
+        nameEn: upperName(draft.nameEn ?? ''),
+      }
       if (editing) {
-        await repo.updateHolder(editing.id, draft)
+        await repo.updateHolder(editing.id, payload)
       } else {
-        await repo.createHolder(draft)
+        await repo.createHolder(payload)
       }
       setSheetOpen(false)
       setStatus(s.holderSaved)
@@ -469,8 +503,15 @@ export function HoldersScreen({
               autoCorrect="off"
               spellCheck={false}
               onChange={(event) =>
-                setDraft({ ...draft, name: upperName(event.target.value) })
+                updateMarathiName(event.target.value, !composingRef.current)
               }
+              onCompositionStart={() => {
+                composingRef.current = true
+              }}
+              onCompositionEnd={(event) => {
+                composingRef.current = false
+                updateMarathiName(event.currentTarget.value)
+              }}
             />
           </div>
 
@@ -484,11 +525,16 @@ export function HoldersScreen({
               spellCheck={false}
               placeholder={s.holderNameEnHint}
               onChange={(event) =>
-                setDraft({
-                  ...draft,
-                  nameEn: upperName(event.target.value),
-                })
+                updateEnglishName(event.target.value, !composingRef.current)
               }
+              onCompositionStart={() => {
+                composingRef.current = true
+              }}
+              onCompositionEnd={(event) => {
+                composingRef.current = false
+                updateEnglishName(event.currentTarget.value)
+              }}
+              onBlur={normalizeEnglishName}
             />
           </div>
 

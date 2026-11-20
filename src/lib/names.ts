@@ -1,7 +1,52 @@
+import sanscript from '@indic-transliteration/sanscript'
+import { transliterate } from 'marathi-transliterate'
 import type { Lang } from './i18n'
+
+const DEVANAGARI = /[\u0900-\u097F]/
+const IAST_CONSONANTS = 'bcdfghjklmnpqrstvwxyzśṣṇṭḍñṅṛḷ'
 
 export function upperName(value: string): string {
   return value.toUpperCase()
+}
+
+export function isDevanagari(value: string): boolean {
+  return DEVANAGARI.test(value)
+}
+
+export function toMarathiName(value: string): string {
+  if (!value.trim() || isDevanagari(value)) return value
+  return transliterate(value)
+}
+
+export function toEnglishName(value: string): string {
+  if (!value.trim() || !isDevanagari(value)) return upperName(value)
+  const iast = sanscript.t(value, 'devanagari', 'iast')
+  return romanizeIast(iast).toUpperCase()
+}
+
+function romanizeIast(iast: string): string {
+  const schwa = new RegExp(`([${IAST_CONSONANTS}])a\\b`, 'g')
+  return iast
+    .replace(schwa, '$1')
+    .replace(/jñ/g, 'dny')
+    .replace(/ā/g, 'a')
+    .replace(/ī/g, 'i')
+    .replace(/ū/g, 'u')
+    .replace(/ṛ/g, 'ri')
+    .replace(/ṝ/g, 'ri')
+    .replace(/ḷ/g, 'l')
+    .replace(/ṃ/g, 'n')
+    .replace(/ṁ/g, 'n')
+    .replace(/ḥ/g, 'h')
+    .replace(/ñ/g, 'ny')
+    .replace(/ṅ/g, 'ng')
+    .replace(/ṭ/g, 't')
+    .replace(/ḍ/g, 'd')
+    .replace(/ṇ/g, 'n')
+    .replace(/ś/g, 'sh')
+    .replace(/ṣ/g, 'sh')
+    .replace(/ē/g, 'e')
+    .replace(/ō/g, 'o')
 }
 
 export function holderName(

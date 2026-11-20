@@ -40,7 +40,7 @@ collection_printing/
 │   │   ├── i18n.tsx                # Internationalization (Marathi/English)
 │   │   ├── theme.tsx               # Dark/light theme
 │   │   ├── marathi.ts              # Devanagari digits, date formatting
-│   │   ├── names.ts                # Name display helpers
+│   │   ├── names.ts                # Name display + transliteration helpers
 │   │   ├── sort.ts                 # Account number sorting
 │   │   ├── reports.ts              # Monthly report calculations
 │   │   ├── sheets.ts               # PDF HTML generation
@@ -200,6 +200,8 @@ All three land on the same review screen:
 - Sort: By account number (numeric) or name
 - Auto-suggest next account number
 - Full-list serial numbers persist across filters
+- Marathi and English name fields auto-transliterate each other as you type
+  (both stay editable; input is not transformed, so the caret stays put)
 
 ### 4. Holder History, Balance & Statement (`HolderDetailScreen.tsx`)
 - Chronological collection history
@@ -306,6 +308,9 @@ compareAccountNo(a, b)       // Numeric sort: "999" < "1000", "01" == "1"
 ```typescript
 holderName(name, nameEn, lang)   // Marathi name for 'mr', English for 'en'
 upperName(input)                 // Uppercase for storage
+toMarathiName(input)             // Latin -> Devanagari (marathi-transliterate)
+toEnglishName(input)             // Devanagari -> Latin (sanscript IAST + cleanup)
+isDevanagari(input)
 ```
 
 ### `scanImport.ts` - JSON Scanner Import
