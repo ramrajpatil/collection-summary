@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { CollectionExport } from '../lib/models'
+import type { CollectionExport, Profile } from '../lib/models'
 import type { Repository } from '../lib/repo'
 import { STRINGS, useLanguage } from '../lib/i18n'
 import {
@@ -29,6 +29,7 @@ import {
 
 interface ExportScreenProps {
   repo: Repository
+  profile: Profile | null
 }
 
 type RangeMode = 'day' | 'week' | 'month' | 'custom'
@@ -43,10 +44,11 @@ function weekRange(anchor: string, max: string): { start: string; end: string } 
   return { start, end }
 }
 
-export function ExportScreen({ repo }: ExportScreenProps) {
+export function ExportScreen({ repo, profile }: ExportScreenProps) {
   const { lang } = useLanguage()
   const s = STRINGS[lang]
   const today = todayIso()
+  const receiptsEnabled = profile?.receiptsEnabled !== false
 
   const [mode, setMode] = useState<RangeMode>('day')
   const [anchor, setAnchor] = useState(today)
@@ -148,7 +150,7 @@ export function ExportScreen({ repo }: ExportScreenProps) {
       const text =
         extension === 'json'
           ? serializeCollectionExport(activeData)
-          : collectionExportCsv(activeData)
+          : collectionExportCsv(activeData, receiptsEnabled)
       const mimeType =
         extension === 'json' ? 'application/json' : 'text/csv'
       const location = await saveCollectionExportFile(

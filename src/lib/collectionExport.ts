@@ -92,21 +92,32 @@ function csvCell(value: string): string {
   return /[",\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value
 }
 
-export function collectionExportCsv(data: CollectionExport): string {
-  const lines = ['Date,Account No,Name,Receipt No,Amount,Locked']
+export function collectionExportCsv(
+  data: CollectionExport,
+  receiptsEnabled = true,
+): string {
+  const header = receiptsEnabled
+    ? 'Date,Account No,Name,Receipt No,Amount,Locked'
+    : 'Date,Account No,Name,Amount,Locked'
+  const lines = [header]
   for (const row of data.collections) {
-    lines.push(
-      [
-        row.date,
-        row.accountNo,
-        row.name,
-        String(row.receiptNo),
-        String(row.amount),
-        data.locks[row.date] ? 'YES' : 'NO',
-      ]
-        .map(csvCell)
-        .join(','),
-    )
+    const cells = receiptsEnabled
+      ? [
+          row.date,
+          row.accountNo,
+          row.name,
+          String(row.receiptNo),
+          String(row.amount),
+          data.locks[row.date] ? 'YES' : 'NO',
+        ]
+      : [
+          row.date,
+          row.accountNo,
+          row.name,
+          String(row.amount),
+          data.locks[row.date] ? 'YES' : 'NO',
+        ]
+    lines.push(cells.map(csvCell).join(','))
   }
   return `${lines.join('\r\n')}\r\n`
 }

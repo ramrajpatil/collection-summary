@@ -325,7 +325,11 @@ const SHEET_CSS = `
   .sign-name { font-size: 9pt; color: #4b5563; }
 `
 
-export function buildSheetHtml(data: SheetData, lang: Lang = 'mr'): string {
+export function buildSheetHtml(
+  data: SheetData,
+  lang: Lang = 'mr',
+  showReceipt = true,
+): string {
   const s = STRINGS[lang]
   const total = data.rows.reduce((sum, row) => sum + row.amount, 0)
 
@@ -335,7 +339,11 @@ export function buildSheetHtml(data: SheetData, lang: Lang = 'mr'): string {
         <tr>
           <td class="c">${formatDigits(row.sr, lang)}</td>
           <td>${escapeHtml(row.name)}</td>
-          <td class="c">${formatReceipt(row.receiptNo, lang)}</td>
+          ${
+            showReceipt
+              ? `<td class="c">${formatReceipt(row.receiptNo, lang)}</td>`
+              : ''
+          }
           <td class="c">${formatDigits(escapeHtml(row.accountNo), lang)}</td>
           <td class="r">${formatRupees(row.amount, lang)}</td>
         </tr>`,
@@ -356,7 +364,9 @@ export function buildSheetHtml(data: SheetData, lang: Lang = 'mr'): string {
   const columns: Column[] = [
     { label: s.srNo, width: '13mm', align: 'c' },
     { label: s.name, width: '' },
-    { label: s.receiptNo, width: '28mm', align: 'c' },
+    ...(showReceipt
+      ? [{ label: s.receiptNo, width: '28mm', align: 'c' as const }]
+      : []),
     { label: s.accountNo, width: '26mm', align: 'c' },
     { label: s.amount, width: '27mm', align: 'r' },
   ]
@@ -386,7 +396,7 @@ export function buildSheetHtml(data: SheetData, lang: Lang = 'mr'): string {
     <tbody>${rowsHtml}</tbody>
     <tfoot>
       <tr>
-        <td colspan="4">${s.totalCollection} (${formatDigits(data.rows.length, lang)} ${s.accounts})</td>
+        <td colspan="${showReceipt ? 4 : 3}">${s.totalCollection} (${formatDigits(data.rows.length, lang)} ${s.accounts})</td>
         <td class="r">${formatRupees(total, lang)}</td>
       </tr>
     </tfoot>
@@ -412,6 +422,7 @@ export function buildSheetHtml(data: SheetData, lang: Lang = 'mr'): string {
 export function buildStatementHtml(
   data: StatementData,
   lang: Lang = 'mr',
+  showReceipt = true,
 ): string {
   const s = STRINGS[lang]
 
@@ -421,7 +432,11 @@ export function buildStatementHtml(
         <tr>
           <td class="c">${formatDigits(row.sr, lang)}</td>
           <td class="c">${formatDate(row.dateIso, lang)}</td>
-          <td class="c">${formatReceipt(row.receiptNo, lang)}</td>
+          ${
+            showReceipt
+              ? `<td class="c">${formatReceipt(row.receiptNo, lang)}</td>`
+              : ''
+          }
           <td class="r">${formatRupees(row.amount, lang)}</td>
         </tr>`,
     )
@@ -430,7 +445,9 @@ export function buildStatementHtml(
   const columns: Column[] = [
     { label: s.srNo, width: '16mm', align: 'c' },
     { label: s.dateLabel, width: '', align: 'c' },
-    { label: s.receiptNo, width: '32mm', align: 'c' },
+    ...(showReceipt
+      ? [{ label: s.receiptNo, width: '32mm', align: 'c' as const }]
+      : []),
     { label: s.amount, width: '34mm', align: 'r' },
   ]
   const headerHtml = headerBlockHtml(
@@ -465,7 +482,7 @@ export function buildStatementHtml(
     <tbody>${rowsHtml}</tbody>
     <tfoot>
       <tr>
-        <td colspan="3">${s.holderTotal} (${formatDigits(
+        <td colspan="${showReceipt ? 3 : 2}">${s.holderTotal} (${formatDigits(
           data.rows.length,
           lang,
         )} ${s.days})</td>

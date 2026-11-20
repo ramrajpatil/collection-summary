@@ -66,7 +66,7 @@ export async function buildDailySheetHtml(
     agentName: profile.agentName,
     managerName: profile.managerName,
   }
-  return buildSheetHtml(data, lang)
+  return buildSheetHtml(data, lang, profile.receiptsEnabled !== false)
 }
 
 export function buildMonthlySheetHtml(
@@ -139,7 +139,7 @@ export function buildHolderStatementHtml(
     agentName: profile.agentName,
     managerName: profile.managerName,
   }
-  return buildStatementHtml(data, lang)
+  return buildStatementHtml(data, lang, profile.receiptsEnabled !== false)
 }
 
 const PRINT_STYLE = `

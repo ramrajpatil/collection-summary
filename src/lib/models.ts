@@ -3,6 +3,7 @@ export interface Profile {
   address: string
   agentName: string
   managerName: string
+  receiptsEnabled?: boolean
 }
 
 export interface Holder {

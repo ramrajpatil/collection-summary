@@ -189,6 +189,7 @@ All three land on the same review screen:
 - Fuzzy account matching (`"01" == "1"`)
 - Holder names shown
 - Starting receipt field at the top; receipts assigned consecutively
+  (hidden entirely when receipt numbers are turned off in Settings)
 - Date comes from the selected date on the Collection screen
 - Unmatched accounts, invalid amounts, duplicates and already-collected holders block saving
 - JSON import skips unrecognized items and reports the skipped count
@@ -459,11 +460,15 @@ interface Settings {
   address: string
   agentName: string
   managerName: string
+  receiptsEnabled?: boolean   // default true
 }
 ```
 - Profile stored in repository (SQLite/localStorage)
 - **Gemini API key** stored separately in localStorage (never backed up)
 - Theme, language, SMS/WhatsApp notification preferences persisted separately
+- **Receipt numbers** toggle hides receipt numbers everywhere (entry lists,
+  scanner, holder history, PDF sheets and CSV export). Numbers are still stored;
+  only their display is suppressed.
 - Master password lives in `src/lib/lock.ts`
 
 ---
@@ -474,7 +479,7 @@ interface Settings {
 npm run test          # Vitest (unit tests)
 ```
 
-Current test files (49 tests):
+Current test files (57 tests):
 - `marathi.test.ts` - Date/digit formatting
 - `names.test.ts` - Name display logic
 - `sort.test.ts` - Account number sorting
@@ -485,6 +490,7 @@ Current test files (49 tests):
 - `collectionExport.test.ts` - Range export/import helpers
 - `notifications.test.ts` - Notification message + 12-hour time
 - `scanImport.test.ts` - JSON scanner import parser
+- `pdfTemplate.test.ts` - Receipt column toggling in PDF sheets/statements
 
 ---
 

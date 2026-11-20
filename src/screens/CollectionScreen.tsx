@@ -52,6 +52,7 @@ import {
 interface CollectionScreenProps {
   repo: Repository
   profile: Profile
+  receiptsEnabled: boolean
   onGoToHolders: () => void
 }
 
@@ -84,6 +85,7 @@ interface AmountTarget {
 export function CollectionScreen({
   repo,
   profile,
+  receiptsEnabled,
   onGoToHolders,
 }: CollectionScreenProps) {
   const { lang } = useLanguage()
@@ -720,62 +722,64 @@ export function CollectionScreen({
           </button>
         ) : null}
 
-        <div className="hero-meta">
-          <div className="receipt-start">
-            <label htmlFor="startReceipt">{s.startingReceipt}</label>
-            <div className="stepper">
-              <button
-                type="button"
-                aria-label={s.startingReceipt}
-                disabled={busy || locked || receiptLocked}
-                onClick={() =>
-                  void commitStart(
-                    (Number(startDraft) || day?.startReceipt || 1) - 1,
-                  )
-                }
-              >
-                <MinusIcon />
-              </button>
-              <input
-                id="startReceipt"
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={4}
-                autoComplete="off"
-                autoCorrect="off"
-                spellCheck={false}
-                value={formatDigits(startDraft, lang)}
-                disabled={busy || locked || receiptLocked}
-                onChange={(event) =>
-                  setStartDraft(
-                    toLatinDigits(event.target.value)
-                      .replace(/\D/g, '')
-                      .slice(0, 4),
-                  )
-                }
-                onBlur={() => void commitStart(Number(startDraft))}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.currentTarget.blur()
+        {receiptsEnabled ? (
+          <div className="hero-meta">
+            <div className="receipt-start">
+              <label htmlFor="startReceipt">{s.startingReceipt}</label>
+              <div className="stepper">
+                <button
+                  type="button"
+                  aria-label={s.startingReceipt}
+                  disabled={busy || locked || receiptLocked}
+                  onClick={() =>
+                    void commitStart(
+                      (Number(startDraft) || day?.startReceipt || 1) - 1,
+                    )
                   }
-                }}
-              />
-              <button
-                type="button"
-                aria-label={s.startingReceipt}
-                disabled={busy || locked || receiptLocked}
-                onClick={() =>
-                  void commitStart(
-                    (Number(startDraft) || day?.startReceipt || 1) + 1,
-                  )
-                }
-              >
-                <PlusIcon />
-              </button>
+                >
+                  <MinusIcon />
+                </button>
+                <input
+                  id="startReceipt"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={4}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  value={formatDigits(startDraft, lang)}
+                  disabled={busy || locked || receiptLocked}
+                  onChange={(event) =>
+                    setStartDraft(
+                      toLatinDigits(event.target.value)
+                        .replace(/\D/g, '')
+                        .slice(0, 4),
+                    )
+                  }
+                  onBlur={() => void commitStart(Number(startDraft))}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.currentTarget.blur()
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  aria-label={s.startingReceipt}
+                  disabled={busy || locked || receiptLocked}
+                  onClick={() =>
+                    void commitStart(
+                      (Number(startDraft) || day?.startReceipt || 1) + 1,
+                    )
+                  }
+                >
+                  <PlusIcon />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        ) : null}
 
         <div className="stats">
           <div className="stat">
@@ -903,10 +907,15 @@ export function CollectionScreen({
             </div>
           </div>
 
-          <div className="list-head" aria-hidden>
+          <div
+            className={`list-head${receiptsEnabled ? '' : ' no-receipt'}`}
+            aria-hidden
+          >
             <span className="c">{s.srNo}</span>
             <span>{s.name}</span>
-            <span className="c">{s.receiptShort}</span>
+            {receiptsEnabled ? (
+              <span className="c">{s.receiptShort}</span>
+            ) : null}
             <span className="r list-amount-head">
               <span>{s.amount}</span>
             </span>
@@ -928,9 +937,9 @@ export function CollectionScreen({
               return (
                 <div
                   key={holder.id}
-                  className={`row${index < ENTER_ROW_LIMIT ? ' enter' : ''}${
-                    isDone ? ' done' : ''
-                  }`}
+                  className={`row${receiptsEnabled ? '' : ' no-receipt'}${
+                    index < ENTER_ROW_LIMIT ? ' enter' : ''
+                  }${isDone ? ' done' : ''}`}
                   style={
                     index < ENTER_ROW_LIMIT
                       ? { animationDelay: `${index * 0.03}s` }
@@ -945,9 +954,11 @@ export function CollectionScreen({
                       {formatDigits(holder.accountNo, lang)}
                     </small>
                   </div>
-                  <div className={`receipt${isDone ? ' filled' : ''}`}>
-                    {entry ? formatReceipt(entry.receiptNo, lang) : '—'}
-                  </div>
+                  {receiptsEnabled ? (
+                    <div className={`receipt${isDone ? ' filled' : ''}`}>
+                      {entry ? formatReceipt(entry.receiptNo, lang) : '—'}
+                    </div>
+                  ) : null}
                   <button
                     type="button"
                     className={`amount amount-btn${isDone ? ' filled' : ''}`}
@@ -1005,27 +1016,29 @@ export function CollectionScreen({
             if (!busy) setPdfOpen(false)
           }}
         >
-          <div className="field">
-            <span className="field-label">{s.sortPdfBy}</span>
-            <div className="segmented" role="group" aria-label={s.sortPdfBy}>
-              <button
-                type="button"
-                className={pdfSort === 'account' ? 'active' : ''}
-                disabled={busy}
-                onClick={() => setPdfSort('account')}
-              >
-                {s.sortAccount}
-              </button>
-              <button
-                type="button"
-                className={pdfSort === 'receipt' ? 'active' : ''}
-                disabled={busy}
-                onClick={() => setPdfSort('receipt')}
-              >
-                {s.sortReceipt}
-              </button>
+          {receiptsEnabled ? (
+            <div className="field">
+              <span className="field-label">{s.sortPdfBy}</span>
+              <div className="segmented" role="group" aria-label={s.sortPdfBy}>
+                <button
+                  type="button"
+                  className={pdfSort === 'account' ? 'active' : ''}
+                  disabled={busy}
+                  onClick={() => setPdfSort('account')}
+                >
+                  {s.sortAccount}
+                </button>
+                <button
+                  type="button"
+                  className={pdfSort === 'receipt' ? 'active' : ''}
+                  disabled={busy}
+                  onClick={() => setPdfSort('receipt')}
+                >
+                  {s.sortReceipt}
+                </button>
+              </div>
             </div>
-          </div>
+          ) : null}
 
           <div className="pdf-actions">
             <button
@@ -1322,7 +1335,8 @@ export function CollectionScreen({
           date={date}
           lang={lang}
 startReceipt={nextReceipt}
-            collectedHolderIds={collectedHolderIds}
+          receiptsEnabled={receiptsEnabled}
+          collectedHolderIds={collectedHolderIds}
             existingReceipts={existingReceipts}
             existingEntries={day?.entries ?? []}
             onClose={() => setScanOpen(false)}

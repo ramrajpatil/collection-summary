@@ -848,6 +848,11 @@ body {
   );
 }
 
+.list-head.no-receipt,
+.row.no-receipt {
+  grid-template-columns: 24px minmax(0, 1fr) 76px 34px;
+}
+
 .sr {
   display: grid;
   place-items: center;
@@ -2872,6 +2877,11 @@ select option {
 
 .history-row.enter {
   animation: rise 0.38s var(--ease) both;
+}
+
+.history-head.no-receipt,
+.history-row.no-receipt {
+  grid-template-columns: 28px minmax(0, 1fr) 74px;
 }
 
 .history-row .c {

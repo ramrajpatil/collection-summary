@@ -214,7 +214,11 @@ export default function App() {
   }
 
   function openSettings() {
-    setSettingsDraft(profile ?? defaultSettings(lang))
+    const base = profile ?? defaultSettings(lang)
+    setSettingsDraft({
+      ...base,
+      receiptsEnabled: base.receiptsEnabled !== false,
+    })
     setGeminiKeyDraft(getGeminiKey())
     setShowGeminiKey(false)
     setSettingsError('')
@@ -370,6 +374,7 @@ export default function App() {
           <CollectionScreen
             repo={repo}
             profile={profile}
+            receiptsEnabled={profile.receiptsEnabled !== false}
             onGoToHolders={() => selectTab('holders')}
           />
         ) : null}
@@ -400,7 +405,7 @@ export default function App() {
           <ReportsScreen repo={repo} profile={profile} />
         ) : null}
 
-        {tab === 'export' ? <ExportScreen repo={repo} /> : null}
+        {tab === 'export' ? <ExportScreen repo={repo} profile={profile} /> : null}
       </main>
 
       <nav
@@ -655,6 +660,29 @@ export default function App() {
               </span>
             </label>
             <p className="field-hint">{s.notificationsHint}</p>
+          </div>
+
+          <div className="field">
+            <span className="field-label">{s.receiptNumbers}</span>
+            <label className="toggle-row">
+              <span>{s.receiptNumbers}</span>
+              <input
+                type="checkbox"
+                checked={settingsDraft.receiptsEnabled !== false}
+                onChange={() =>
+                  setSettingsDraft({
+                    ...settingsDraft,
+                    receiptsEnabled: !(
+                      settingsDraft.receiptsEnabled !== false
+                    ),
+                  })
+                }
+              />
+              <span className="toggle-switch" aria-hidden>
+                <span />
+              </span>
+            </label>
+            <p className="field-hint">{s.receiptNumbersHint}</p>
           </div>
 
           <div className="field">

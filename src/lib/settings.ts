@@ -12,12 +12,14 @@ export function defaultSettings(lang: Lang): Settings {
         address: 'मु.पो. शिरोळ, ता. शिरोळ, जि. कोल्हापूर',
         agentName: 'सचिन कदम',
         managerName: 'व्यवस्थापक',
+        receiptsEnabled: true,
       }
     : {
         societyName: 'Shri Ganesh Pat Sanstha',
         address: 'Shirol, Tal. Shirol, Dist. Kolhapur',
         agentName: 'Sachin Kadam',
         managerName: 'Manager',
+        receiptsEnabled: true,
       }
 }
 
@@ -34,6 +36,7 @@ export function loadStoredSettings(): Settings | null {
       address: pick(parsed.address, base.address),
       agentName: pick(parsed.agentName, base.agentName),
       managerName: pick(parsed.managerName, base.managerName),
+      receiptsEnabled: parsed.receiptsEnabled !== false,
     }
   } catch {
     return null

@@ -49,6 +49,13 @@ describe('collection export', () => {
     expect(csv).toContain('2026-11-04,002,SURESH,1,250,YES')
   })
 
+  it('drops the receipt column when receipts are disabled', () => {
+    const csv = collectionExportCsv(sample, false)
+    expect(csv.split('\r\n')[0]).toBe('Date,Account No,Name,Amount,Locked')
+    expect(csv).toContain('2026-11-01,001,RAMESH,100,NO')
+    expect(csv).toContain('2026-11-04,002,SURESH,250,YES')
+  })
+
   it('summarizes rows, days, total and file name', () => {
     expect(summarizeCollectionExport(sample)).toEqual({
       start: '2026-11-01',

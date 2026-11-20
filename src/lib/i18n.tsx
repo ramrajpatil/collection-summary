@@ -241,6 +241,8 @@ export interface Strings {
   smsNotifications: string
   whatsappNotifications: string
   notificationsHint: string
+  receiptNumbers: string
+  receiptNumbersHint: string
   backupExport: string
   backupExportHint: string
   backupImport: string
@@ -538,6 +540,9 @@ export const STRINGS: Record<Lang, Strings> = {
     whatsappNotifications: 'WhatsApp सूचना',
     notificationsHint:
       'वसुली नोंदवल्यावर खातेदाराला संदेश पाठवा. WhatsApp किंवा SMS ॲपमध्ये संदेश तयार होईल; पाठवण्यासाठी Send दाबा.',
+    receiptNumbers: 'पावती क्रमांक',
+    receiptNumbersHint:
+      'बंद केल्यास पावती क्रमांक सर्वत्र लपवले जातात — नोंदी, छापलेली पावती व निर्यात यांसह.',
     backupExport: 'बॅकअप जतन करा',
     backupExportHint:
       'सर्व खातेदार व वसुली एका फाइलमध्ये जतन होते; ती जपून ठेवा किंवा दुसऱ्या फोनवर हलवा.',
@@ -835,6 +840,9 @@ export const STRINGS: Record<Lang, Strings> = {
     whatsappNotifications: 'WhatsApp notifications',
     notificationsHint:
       'Send a message to the holder after a collection. WhatsApp or your SMS app opens with the message ready; tap Send.',
+    receiptNumbers: 'Receipt numbers',
+    receiptNumbersHint:
+      'Turn off to hide receipt numbers everywhere — entries, printed sheets and exports.',
     backupExport: 'Save backup',
     backupExportHint:
       'Saves every holder and collection into one file you can keep safe or move to another phone.',

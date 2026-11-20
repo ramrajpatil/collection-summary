@@ -34,6 +34,7 @@ interface ScanFlowProps {
   date: string
   lang: Lang
   startReceipt: number
+  receiptsEnabled: boolean
   collectedHolderIds: number[]
   existingReceipts: number[]
   existingEntries: DayEntry[]
@@ -97,6 +98,7 @@ export function ScanFlow({
   date,
   lang,
   startReceipt,
+  receiptsEnabled,
   collectedHolderIds,
   existingReceipts,
   existingEntries,
@@ -201,7 +203,7 @@ export function ScanFlow({
     missingCount === 0 &&
     invalidAmountCount === 0 &&
     conflictCount === 0 &&
-    !receiptError &&
+    (!receiptsEnabled || !receiptError) &&
     !saving
 
   function startManual() {
@@ -434,21 +436,27 @@ export function ScanFlow({
               <p className="scan-empty">{s.scanEmpty}</p>
             ) : null}
 
-            <div className="scan-start">
-              <label htmlFor="scanStartReceipt">{s.scanReceiptStart}</label>
-              <input
-                id="scanStartReceipt"
-                type="number"
-                min={1}
-                inputMode="numeric"
-                autoComplete="off"
-                spellCheck={false}
-                value={startDraft}
-                onChange={(event) => setStartDraft(event.target.value)}
-              />
-            </div>
-            {receiptError ? (
-              <p className="form-error">{receiptError}</p>
+            {receiptsEnabled ? (
+              <>
+                <div className="scan-start">
+                  <label htmlFor="scanStartReceipt">
+                    {s.scanReceiptStart}
+                  </label>
+                  <input
+                    id="scanStartReceipt"
+                    type="number"
+                    min={1}
+                    inputMode="numeric"
+                    autoComplete="off"
+                    spellCheck={false}
+                    value={startDraft}
+                    onChange={(event) => setStartDraft(event.target.value)}
+                  />
+                </div>
+                {receiptError ? (
+                  <p className="form-error">{receiptError}</p>
+                ) : null}
+              </>
             ) : null}
 
             {existingEntries.length > 0 ? (
@@ -472,9 +480,11 @@ export function ScanFlow({
                       </div>
                       <div className="scan-existing-meta">
                         <b>{formatRupees(entry.amount, lang)}</b>
-                        <small>
-                          {formatReceipt(entry.receiptNo, lang)}
-                        </small>
+                        {receiptsEnabled ? (
+                          <small>
+                            {formatReceipt(entry.receiptNo, lang)}
+                          </small>
+                        ) : null}
                       </div>
                     </div>
                   ))}

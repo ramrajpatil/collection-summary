@@ -64,6 +64,7 @@ export function HolderDetailScreen({
 }: HolderDetailScreenProps) {
   const { lang } = useLanguage()
   const s = STRINGS[lang]
+  const receiptsEnabled = profile.receiptsEnabled !== false
 
   const [history, setHistory] = useState<HolderHistory | null>(null)
   const [loading, setLoading] = useState(true)
@@ -431,7 +432,7 @@ export function HolderDetailScreen({
                         {journalLabel(entry.type)}
                         <small>
                           {formatDate(entry.date, lang)}
-                          {entry.reference
+                          {receiptsEnabled && entry.reference
                             ? ` · ${s.receiptShort} ${formatReceipt(
                                 entry.reference,
                                 lang,
@@ -466,10 +467,17 @@ export function HolderDetailScreen({
               <p>{s.noHistory}</p>
             </div>
           ) : (
-            <div className="list-head history-head" aria-hidden>
+            <div
+              className={`list-head history-head${
+                receiptsEnabled ? '' : ' no-receipt'
+              }`}
+              aria-hidden
+            >
               <span className="c">{s.srNo}</span>
               <span>{s.dateLabel}</span>
-              <span className="c">{s.receiptShort}</span>
+              {receiptsEnabled ? (
+                <span className="c">{s.receiptShort}</span>
+              ) : null}
               <span className="r">{s.amount}</span>
             </div>
           )}
@@ -479,8 +487,8 @@ export function HolderDetailScreen({
               {history.entries.map((entry, index) => (
                 <div
                   className={`history-row glass${
-                    index < ENTER_ROW_LIMIT ? ' enter' : ''
-                  }`}
+                    receiptsEnabled ? '' : ' no-receipt'
+                  }${index < ENTER_ROW_LIMIT ? ' enter' : ''}`}
                   key={`${entry.date}-${entry.receiptNo}`}
                   style={
                     index < ENTER_ROW_LIMIT
@@ -490,9 +498,11 @@ export function HolderDetailScreen({
                 >
                   <span className="c">{formatDigits(index + 1, lang)}</span>
                   <b>{formatDate(entry.date, lang)}</b>
-                  <span className="c">
-                    {formatReceipt(entry.receiptNo, lang)}
-                  </span>
+                  {receiptsEnabled ? (
+                    <span className="c">
+                      {formatReceipt(entry.receiptNo, lang)}
+                    </span>
+                  ) : null}
                   <span className="r">{formatRupees(entry.amount, lang)}</span>
                 </div>
               ))}
