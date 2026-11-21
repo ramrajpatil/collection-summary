@@ -8,7 +8,6 @@ import {
   formatDigits,
   formatReceipt,
   formatRupees,
-  shiftIsoDate,
   toLatinDigits,
   todayIso,
 } from '../lib/marathi'
@@ -32,9 +31,9 @@ import { ScanFlow } from '../components/ScanFlow'
 import { ScrollTopButton } from '../components/ScrollTopButton'
 import { Toast } from '../components/Toast'
 import {
+  CalendarIcon,
   CameraIcon,
   CheckIcon,
-  ChevronLeftIcon,
   ChevronRightIcon,
   ClockIcon,
   DownloadIcon,
@@ -138,10 +137,6 @@ export function CollectionScreen({
     setLoading(true)
     entryEditUnlocked.current = false
     setDate(next)
-  }
-
-  function shiftDay(delta: number) {
-    changeDate(shiftIsoDate(date, delta))
   }
 
   function closeEditPassword() {
@@ -667,7 +662,7 @@ export function CollectionScreen({
         <div className="hero-head">
           <div>
             <h1>{isToday ? s.todayCollection : s.pastCollection}</h1>
-            <p>{locked ? s.lockedNote : s.tapToCollect}</p>
+            {locked ? <p>{s.lockedNote}</p> : null}
           </div>
           <button
             type="button"
@@ -686,38 +681,22 @@ export function CollectionScreen({
         <div className="date-nav">
           <button
             type="button"
-            className="icon-btn"
-            aria-label={s.previousDay}
-            onClick={() => shiftDay(-1)}
-          >
-            <ChevronLeftIcon />
-          </button>
-          <button
-            type="button"
-            className="date-center"
+            className="action-pill date-pill"
             aria-label={s.selectDate}
             onClick={() => setCalendarOpen(true)}
           >
-            <small>{s.dateLabel}</small>
-            <b>{formatDate(date, lang)}</b>
+            <CalendarIcon />
+            <span>{formatDate(date, lang)}</span>
           </button>
           <button
             type="button"
-            className="icon-btn"
-            aria-label={s.nextDay}
-            disabled={date >= today}
-            onClick={() => shiftDay(1)}
-          >
-            <ChevronRightIcon />
-          </button>
-          <button
-            type="button"
-            className="icon-btn scan-open"
+            className="action-pill scan-pill"
             aria-label={s.scanEntries}
             disabled={busy || locked}
             onClick={() => setScanOpen(true)}
           >
             <CameraIcon />
+            <span>{s.scanEntries}</span>
           </button>
         </div>
 

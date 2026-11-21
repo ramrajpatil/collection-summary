@@ -177,6 +177,8 @@ interface HolderBalance {
 - **PDF generation** (daily sheet with denominations breakdown); the labeled
   "प्रिंट करा" printer button sits in the hero next to the receipt stepper and
   opens the share-PDF sheet. The day lock is a labeled "दिवस लॉक करा" pill.
+- The date is picked from a labeled calendar pill and the camera is a matching
+  "स्कॅन करा" pill (no prev/next arrows); all hero buttons share one width/height
 - **Day lock**: lock a whole day; only the master password can unlock it
 - **Collected-amount lock**: editing or removing an already-collected amount requires the master password
 - **One-shot unlock**: the password unlock re-locks after each edit/delete/save/close
