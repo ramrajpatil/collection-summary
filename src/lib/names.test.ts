@@ -54,11 +54,12 @@ describe('holderName', () => {
 })
 
 describe('honorificName', () => {
-  it('prefixes सौ to a Marathi name', () => {
-    expect(honorificName('कविता पाटील', 'mr')).toBe('सौ कविता पाटील')
+  it('prefixes सौ. to a Marathi name', () => {
+    expect(honorificName('कविता पाटील', 'mr')).toBe('सौ. कविता पाटील')
   })
 
   it('does not double a prefix that is already present', () => {
+    expect(honorificName('सौ. कविता पाटील', 'mr')).toBe('सौ. कविता पाटील')
     expect(honorificName('सौ कविता पाटील', 'mr')).toBe('सौ कविता पाटील')
   })
 

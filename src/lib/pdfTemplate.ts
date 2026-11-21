@@ -208,7 +208,8 @@ const SHEET_CSS = `
   }
   .heading { font-size: 12.5pt; font-weight: 700; }
   .date { font-size: 10.5pt; white-space: nowrap; flex-shrink: 0; }
-  .weekday { font-weight: 700; white-space: nowrap; }
+  .date-label { font-weight: 700; }
+  .weekday { white-space: nowrap; }
   .weekday.sunday { color: #c81e1e; }
   .period {
     display: flex;

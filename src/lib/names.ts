@@ -70,7 +70,7 @@ export function honorificName(name: string, lang: Lang): string {
   if (!trimmed) return trimmed
   if (lang === 'mr') {
     if (trimmed.startsWith('सौ')) return trimmed
-    return `सौ ${trimmed}`
+    return `सौ. ${trimmed}`
   }
   if (/^(mrs|mr|ms|smt)\.?\b/i.test(trimmed)) return trimmed
   return `Mrs. ${trimmed}`

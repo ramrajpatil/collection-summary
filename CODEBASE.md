@@ -344,7 +344,7 @@ weekday and heading appear only on the first page; the repeating header on later
 pages (`compactHeaderHtml`) keeps just the society name and address (plus the
 column row).
 
-The manager's signature name is prefixed with the honorific `सौ` (`honorificName`
+The manager's signature name is prefixed with the honorific `सौ.` (`honorificName`
 in `names.ts`) before the templates are rendered.
 
 The native PDF plugin (`PdfGeneratorPlugin.java`) paginates the HTML itself and
