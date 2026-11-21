@@ -43,6 +43,7 @@ import {
   LockIcon,
   MinusIcon,
   PlusIcon,
+  PrinterIcon,
   SearchIcon,
   ShareIcon,
   UnlockIcon,
@@ -729,8 +730,8 @@ export function CollectionScreen({
           </button>
         ) : null}
 
-        {receiptsEnabled ? (
-          <div className="hero-meta">
+        <div className="hero-meta">
+          {receiptsEnabled ? (
             <div className="receipt-start">
               <label htmlFor="startReceipt">{s.startingReceipt}</label>
               <div className="stepper">
@@ -785,8 +786,18 @@ export function CollectionScreen({
                 </button>
               </div>
             </div>
-          </div>
-        ) : null}
+          ) : null}
+          <button
+            type="button"
+            className="icon-btn share-pdf"
+            aria-label={s.sharePdf}
+            title={s.sharePdf}
+            disabled={busy || collectedCount === 0}
+            onClick={() => setPdfOpen(true)}
+          >
+            <PrinterIcon />
+          </button>
+        </div>
 
         <div className="stats">
           <div className="stat">
@@ -1000,18 +1011,6 @@ export function CollectionScreen({
         <div className="dock-total">
           <small>{s.totalCollection}</small>
           <b>{formatRupees(total, lang)}</b>
-        </div>
-        <div className="dock-actions">
-          <button
-            type="button"
-            className="btn-primary"
-            aria-label={s.sharePdf}
-            disabled={busy || collectedCount === 0}
-            onClick={() => setPdfOpen(true)}
-          >
-            <ShareIcon />
-            {s.sharePdf}
-          </button>
         </div>
       </div>
 

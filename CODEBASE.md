@@ -174,7 +174,9 @@ interface HolderBalance {
 - **Quick amount chips** (₹100, 200, 300, 400, 500, 1000, 1500)
 - **Search & filter** (All / Pending / Collected), deferred search for smooth typing
 - **Optimistic updates**: collect/edit/remove reflects immediately; DB write follows
-- **PDF generation** (daily sheet with denominations breakdown)
+- **PDF generation** (daily sheet with denominations breakdown); the printer
+  button sits in the hero next to the receipt stepper (icon styled like the
+  scanner button) and opens the share-PDF sheet
 - **Day lock**: lock a whole day; only the master password can unlock it
 - **Collected-amount lock**: editing or removing an already-collected amount requires the master password
 - **One-shot unlock**: the password unlock re-locks after each edit/delete/save/close
