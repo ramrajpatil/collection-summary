@@ -544,7 +544,7 @@ body {
   background: var(--chip-bg);
   color: var(--text);
   font-family: inherit;
-  font-size: clamp(0.6rem, 2.9vw, 0.68rem);
+  font-size: clamp(0.72rem, 3.3vw, 0.82rem);
   font-weight: 700;
   line-height: 1.4;
   white-space: nowrap;
@@ -562,7 +562,7 @@ body {
 
 .action-pill svg {
   position: absolute;
-  left: 14px;
+  left: 12px;
   top: 50%;
   transform: translateY(-50%);
   width: 14px;
