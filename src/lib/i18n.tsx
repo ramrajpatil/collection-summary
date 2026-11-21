@@ -172,6 +172,7 @@ export interface Strings {
   pdfSaved: string
   pdfFailed: string
   sharePdf: string
+  printKara: string
   shareTitle: string
   shareText: string
   sortReceipt: string
@@ -471,6 +472,7 @@ export const STRINGS: Record<Lang, Strings> = {
     pdfSaved: 'PDF तयार झाला.',
     pdfFailed: 'PDF तयार करता आला नाही.',
     sharePdf: 'PDF शेअर करा',
+    printKara: 'प्रिंट करा',
     shareTitle: 'दैनिक वसुली पत्रक',
     shareText: 'आजचे वसुली पत्रक जोडले आहे.',
     sortReceipt: 'पावती क्र.',
@@ -772,6 +774,7 @@ export const STRINGS: Record<Lang, Strings> = {
     pdfSaved: 'PDF generated.',
     pdfFailed: 'Could not generate the PDF.',
     sharePdf: 'Share PDF',
+    printKara: 'Print',
     shareTitle: 'Daily collection sheet',
     shareText: 'The daily collection sheet is attached.',
     sortReceipt: 'Receipt no.',

@@ -671,13 +671,14 @@ export function CollectionScreen({
           </div>
           <button
             type="button"
-            className={`icon-btn day-lock${locked ? ' locked' : ''}`}
+            className={`action-pill lock-pill${locked ? ' locked' : ''}`}
             aria-label={locked ? s.unlockDay : s.lockDay}
             title={locked ? s.unlockDay : s.lockDay}
             disabled={busy}
             onClick={locked ? openUnlock : openLockConfirm}
           >
             {locked ? <UnlockIcon /> : <LockIcon />}
+            <span>{locked ? s.unlockDay : s.lockDay}</span>
           </button>
         </div>
         {locked ? <p className="lock-note">{s.lockedBadge}</p> : null}
@@ -789,13 +790,14 @@ export function CollectionScreen({
           ) : null}
           <button
             type="button"
-            className="icon-btn share-pdf"
-            aria-label={s.sharePdf}
-            title={s.sharePdf}
+            className="action-pill print-pill"
+            aria-label={s.printKara}
+            title={s.printKara}
             disabled={busy || collectedCount === 0}
             onClick={() => setPdfOpen(true)}
           >
             <PrinterIcon />
+            <span>{s.printKara}</span>
           </button>
         </div>
 
