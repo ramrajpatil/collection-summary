@@ -157,7 +157,7 @@ const SHEET_CSS = `
     src: url('fonts/NotoSansDevanagari-Bold.ttf') format('truetype');
     font-weight: 700;
   }
-  @page { size: A4; margin: 10.8mm 16mm 18mm 22mm; }
+  @page { size: A4; margin: 0mm 16mm 0mm 22mm; }
   * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   html, body { margin: 0; padding: 0; }
   body {

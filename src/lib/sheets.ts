@@ -151,7 +151,7 @@ const PRINT_STYLE = `
       max-width: 210mm;
       min-height: 100vh;
       margin: 0 auto;
-      padding: 10.8mm 16mm 18mm 22mm;
+      padding: 0 16mm 0 22mm;
       box-shadow: 0 0 26px rgba(0,0,0,.18);
     }
     .accent { border-radius: 0; }
@@ -159,7 +159,7 @@ const PRINT_STYLE = `
   @media print {
     html, body { margin: 0; }
     body {
-      padding: 10.8mm 16mm 18mm 22mm;
+      padding: 0 16mm 0 22mm;
       -webkit-box-decoration-break: clone;
       box-decoration-break: clone;
     }

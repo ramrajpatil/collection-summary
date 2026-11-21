@@ -338,6 +338,11 @@ Three templates with embedded CSS for A4 printing:
 
 All use **Noto Sans Devanagari** font via `@font-face`.
 
+The native PDF plugin (`PdfGeneratorPlugin.java`) paginates the HTML itself and
+draws each page into an A4 canvas. Top and bottom page margins are `0` so a page
+fits as many rows as possible; left/right margins remain for filing (`MARGIN_*`
+constants at the top of the plugin).
+
 ### `gemini.ts` - OCR Integration
 ```typescript
 recognizeWithGemini(base64Image, apiKey)  // Returns GeminiEntry[]
