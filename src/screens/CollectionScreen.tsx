@@ -731,61 +731,64 @@ export function CollectionScreen({
           </button>
         ) : null}
 
+        {receiptsEnabled ? (
+          <div className="receipt-label">
+            <label htmlFor="startReceipt">{s.startingReceipt}</label>
+          </div>
+        ) : null}
+
         <div className="hero-meta">
           {receiptsEnabled ? (
-            <div className="receipt-start">
-              <label htmlFor="startReceipt">{s.startingReceipt}</label>
-              <div className="stepper">
-                <button
-                  type="button"
-                  aria-label={s.startingReceipt}
-                  disabled={busy || locked || receiptLocked}
-                  onClick={() =>
-                    void commitStart(
-                      (Number(startDraft) || day?.startReceipt || 1) - 1,
-                    )
+            <div className="stepper">
+              <button
+                type="button"
+                aria-label={s.startingReceipt}
+                disabled={busy || locked || receiptLocked}
+                onClick={() =>
+                  void commitStart(
+                    (Number(startDraft) || day?.startReceipt || 1) - 1,
+                  )
+                }
+              >
+                <MinusIcon />
+              </button>
+              <input
+                id="startReceipt"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={4}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                value={formatDigits(startDraft, lang)}
+                disabled={busy || locked || receiptLocked}
+                onChange={(event) =>
+                  setStartDraft(
+                    toLatinDigits(event.target.value)
+                      .replace(/\D/g, '')
+                      .slice(0, 4),
+                  )
+                }
+                onBlur={() => void commitStart(Number(startDraft))}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.currentTarget.blur()
                   }
-                >
-                  <MinusIcon />
-                </button>
-                <input
-                  id="startReceipt"
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={4}
-                  autoComplete="off"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  value={formatDigits(startDraft, lang)}
-                  disabled={busy || locked || receiptLocked}
-                  onChange={(event) =>
-                    setStartDraft(
-                      toLatinDigits(event.target.value)
-                        .replace(/\D/g, '')
-                        .slice(0, 4),
-                    )
-                  }
-                  onBlur={() => void commitStart(Number(startDraft))}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.currentTarget.blur()
-                    }
-                  }}
-                />
-                <button
-                  type="button"
-                  aria-label={s.startingReceipt}
-                  disabled={busy || locked || receiptLocked}
-                  onClick={() =>
-                    void commitStart(
-                      (Number(startDraft) || day?.startReceipt || 1) + 1,
-                    )
-                  }
-                >
-                  <PlusIcon />
-                </button>
-              </div>
+                }}
+              />
+              <button
+                type="button"
+                aria-label={s.startingReceipt}
+                disabled={busy || locked || receiptLocked}
+                onClick={() =>
+                  void commitStart(
+                    (Number(startDraft) || day?.startReceipt || 1) + 1,
+                  )
+                }
+              >
+                <PlusIcon />
+              </button>
             </div>
           ) : null}
           <button
