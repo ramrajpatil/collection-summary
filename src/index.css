@@ -531,14 +531,14 @@ body {
 }
 
 .action-pill {
-  display: inline-flex;
+  position: relative;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 3px;
   flex-shrink: 0;
   width: calc(50% - 5px);
   height: 42px;
-  padding: 0;
+  padding: 0 8px;
   border-radius: 12px;
   border: 1px solid var(--chip-border);
   background: var(--chip-bg);
@@ -561,9 +561,12 @@ body {
 }
 
 .action-pill svg {
-  flex-shrink: 0;
-  width: 15px;
-  height: 15px;
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
 }
 
 .action-pill:active {
@@ -587,6 +590,7 @@ body {
 .action-pill span {
   min-width: 0;
   overflow: hidden;
+  text-align: center;
   text-overflow: ellipsis;
 }
 
