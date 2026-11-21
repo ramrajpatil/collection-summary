@@ -95,6 +95,7 @@ interface Repository {
   getDay(date: string): Promise<DayData>
   setDayLocked(date: string, locked: boolean): Promise<void>
   saveCollection(holderId: number, date: string, amount: number): Promise<void>
+  updateCollection(holderId: number, date: string, amount: number): Promise<void>
   saveCollectionsWithReceipts(date: string, entries: CollectionInput[]): Promise<void>
   deleteCollection(holderId: number, date: string): Promise<void>
   setStartReceipt(date: string, start: number): Promise<void>
@@ -549,9 +550,17 @@ Current test files (57 tests):
 ### Receipt Numbering
 - Per-day sequential numbering
 - Configurable start receipt (default: 1)
-- `saveCollection` computes the next receipt in SQL (O(1))
+- `saveCollection` computes the next receipt in SQL (O(1)) for new entries
+- Editing an amount uses `updateCollection` (amount-only UPDATE), so it never
+  changes the receipt number or renumbers the day
 - Deletes and start-receipt changes renumber the day in one SQL statement
 - Stored in `daily_meta`
+
+### List UX
+- Bottom sheets lock the page behind them and restore the exact scroll
+  position on close (prevents the keyboard from scrolling the list to top)
+- A floating scroll-to-top button appears on long lists (hidden near the
+  bottom so it never overlaps the tab bar or collection dock)
 
 ### Account Number Sorting
 ```

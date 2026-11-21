@@ -550,6 +550,27 @@ export class NativeRepository implements Repository {
     )
   }
 
+  async updateCollection(
+    holderId: number,
+    date: string,
+    amount: number,
+  ): Promise<void> {
+    const db = await this.getDb()
+    await this.assertUnlocked(db, date)
+    // Amount-only update: the receipt number, created date and row identity
+    // are untouched, so editing an entry never reorders or renumbers the day.
+    await db.run(
+      `UPDATE collections SET amount = ?, updated_at = ?
+        WHERE holder_id = ? AND date = ?`,
+      [
+        Math.max(0, Number(amount) || 0),
+        new Date().toISOString(),
+        holderId,
+        date,
+      ],
+    )
+  }
+
   async saveCollectionsWithReceipts(
     date: string,
     entries: CollectionInput[],

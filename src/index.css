@@ -1378,6 +1378,36 @@ body {
   pointer-events: none;
 }
 
+.scroll-top-btn {
+  position: fixed;
+  right: 18px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
+  z-index: 34;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border-radius: 16px;
+  border: 1px solid var(--stroke);
+  background: linear-gradient(170deg, var(--glass-a), var(--glass-b));
+  color: var(--text);
+  cursor: pointer;
+  box-shadow:
+    0 12px 28px var(--shadow),
+    inset 0 1px 0 var(--glass-inset);
+  animation: rise 0.3s var(--ease) both;
+}
+
+.scroll-top-btn:active {
+  transform: scale(0.94);
+}
+
+.scroll-top-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
 .tab {
   flex: 1;
   display: flex;

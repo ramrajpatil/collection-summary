@@ -33,6 +33,7 @@ import {
 } from '../lib/reminders'
 import { BottomSheet } from '../components/BottomSheet'
 import { DatePicker } from '../components/DatePicker'
+import { ScrollTopButton } from '../components/ScrollTopButton'
 import { Toast } from '../components/Toast'
 import {
   ChatIcon,
@@ -687,6 +688,8 @@ export function HolderDetailScreen({
           onClose={() => setReductionPicker(false)}
         />
       ) : null}
+
+      <ScrollTopButton />
     </>
   )
 }

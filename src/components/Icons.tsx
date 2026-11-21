@@ -176,6 +176,14 @@ export function ChevronRightIcon(props: IconProps) {
   )
 }
 
+export function ArrowUpIcon(props: IconProps) {
+  return (
+    <Svg strokeWidth="2.4" {...props}>
+      <path d="M12 19V5M5 12l7-7 7 7" />
+    </Svg>
+  )
+}
+
 export function UserPlusIcon(props: IconProps) {
   return (
     <Svg {...props}>

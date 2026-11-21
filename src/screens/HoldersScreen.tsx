@@ -17,6 +17,7 @@ import { STRINGS, useLanguage } from '../lib/i18n'
 import { formatDigits, formatRupees } from '../lib/marathi'
 import { holderName, toEnglishName, toMarathiName, upperName } from '../lib/names'
 import { BottomSheet } from '../components/BottomSheet'
+import { ScrollTopButton } from '../components/ScrollTopButton'
 import { Toast } from '../components/Toast'
 import {
   CheckIcon,
@@ -466,6 +467,8 @@ export function HoldersScreen({
           dismissLabel={s.close}
         />
       ) : null}
+
+      <ScrollTopButton />
 
       {sheetOpen ? (
         <BottomSheet

@@ -83,6 +83,7 @@ export interface Strings {
   loading: string
   retry: string
   noData: string
+  scrollToTop: string
   saved: string
   failed: string
   total: string
@@ -376,6 +377,7 @@ export const STRINGS: Record<Lang, Strings> = {
     loading: 'लोड होत आहे...',
     retry: 'पुन्हा प्रयत्न करा',
     noData: 'माहिती नाही',
+    scrollToTop: 'वर जा',
     saved: 'जतन झाले',
     failed: 'अयशस्वी',
     total: 'एकूण',
@@ -679,6 +681,7 @@ export const STRINGS: Record<Lang, Strings> = {
     loading: 'Loading...',
     retry: 'Retry',
     noData: 'No data',
+    scrollToTop: 'Scroll to top',
     saved: 'Saved',
     failed: 'Failed',
     total: 'Total',

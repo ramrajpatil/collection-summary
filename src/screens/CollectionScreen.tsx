@@ -29,6 +29,7 @@ import {
 import { BottomSheet } from '../components/BottomSheet'
 import { DatePicker } from '../components/DatePicker'
 import { ScanFlow } from '../components/ScanFlow'
+import { ScrollTopButton } from '../components/ScrollTopButton'
 import { Toast } from '../components/Toast'
 import {
   CameraIcon,
@@ -465,9 +466,11 @@ export function CollectionScreen({
       return
     }
     const holder = amountTarget.holder
+    const updating =
+      amountTarget.collected || entryByHolder.has(holder.id)
     const previous = day
     if (day) {
-      const entries = amountTarget.collected
+      const entries = updating
         ? day.entries.map((entry) =>
             entry.holderId === holder.id ? { ...entry, amount } : entry,
           )
@@ -492,7 +495,11 @@ export function CollectionScreen({
     }
     setBusy(true)
     try {
-      await repo.saveCollection(holder.id, date, amount)
+      if (updating) {
+        await repo.updateCollection(holder.id, date, amount)
+      } else {
+        await repo.saveCollection(holder.id, date, amount)
+      }
       void notifyCollection(holder, amount)
       entryEditUnlocked.current = false
       setAmountTarget(null)
@@ -1334,21 +1341,21 @@ export function CollectionScreen({
           repo={repo}
           date={date}
           lang={lang}
-startReceipt={nextReceipt}
+          startReceipt={nextReceipt}
           receiptsEnabled={receiptsEnabled}
           collectedHolderIds={collectedHolderIds}
-            existingReceipts={existingReceipts}
-            existingEntries={day?.entries ?? []}
-            onClose={() => setScanOpen(false)}
+          existingReceipts={existingReceipts}
+          existingEntries={day?.entries ?? []}
+          onClose={() => setScanOpen(false)}
           onSaved={(count) => {
             setScanOpen(false)
             refresh()
-            setStatus(
-              `${formatDigits(count, lang)} ${s.scanSaved}`,
-            )
+            setStatus(`${formatDigits(count, lang)} ${s.scanSaved}`)
           }}
         />
       ) : null}
+
+      <ScrollTopButton />
     </>
   )
 }

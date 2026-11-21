@@ -356,6 +356,21 @@ export class WebRepository implements Repository {
     this.persist()
   }
 
+  async updateCollection(
+    holderId: number,
+    date: string,
+    amount: number,
+  ): Promise<void> {
+    this.assertUnlocked(date)
+    const existing = this.state.collections.find(
+      (row) => row.holderId === holderId && row.date === date,
+    )
+    if (!existing) return
+    existing.amount = Math.max(0, Number(amount) || 0)
+    existing.updatedAt = new Date().toISOString()
+    this.persist()
+  }
+
   async saveCollectionsWithReceipts(
     date: string,
     entries: CollectionInput[],

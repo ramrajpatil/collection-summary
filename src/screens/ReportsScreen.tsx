@@ -27,6 +27,7 @@ import {
   WalletIcon,
 } from '../components/Icons'
 import { Toast } from '../components/Toast'
+import { ScrollTopButton } from '../components/ScrollTopButton'
 import { currentMonth, shiftMonth } from '../lib/reports'
 
 interface ReportsScreenProps {
@@ -394,6 +395,8 @@ export function ReportsScreen({ repo, profile }: ReportsScreenProps) {
           dismissLabel={s.close}
         />
       ) : null}
+
+      <ScrollTopButton />
     </>
   )
 }
