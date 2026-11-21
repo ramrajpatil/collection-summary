@@ -534,17 +534,17 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 3px;
   flex-shrink: 0;
   width: calc(50% - 5px);
   height: 38px;
-  padding: 0 8px;
+  padding: 0;
   border-radius: 12px;
   border: 1px solid var(--chip-border);
   background: var(--chip-bg);
   color: var(--text);
   font-family: inherit;
-  font-size: 0.7rem;
+  font-size: clamp(0.6rem, 2.9vw, 0.68rem);
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;
@@ -562,8 +562,8 @@ body {
 
 .action-pill svg {
   flex-shrink: 0;
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
 }
 
 .action-pill:active {
@@ -1005,12 +1005,12 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 13px 20px;
+  gap: 7px;
+  padding: 10px 16px;
   border: none;
-  border-radius: 18px;
+  border-radius: 14px;
   font-family: inherit;
-  font-size: 0.86rem;
+  font-size: 0.82rem;
   font-weight: 700;
   color: #08111f;
   cursor: pointer;
@@ -1034,8 +1034,8 @@ body {
 }
 
 .btn-primary svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 .status {
@@ -1267,14 +1267,18 @@ body {
 }
 
 .btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   flex: 0 0 auto;
-  padding: 13px 18px;
-  border-radius: 18px;
+  padding: 10px 16px;
+  border-radius: 14px;
   border: 1px solid var(--chip-border);
   background: var(--chip-bg);
   color: var(--text);
   font-family: inherit;
-  font-size: 0.86rem;
+  font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;
   box-shadow:
@@ -2459,6 +2463,18 @@ select option {
   width: 100%;
 }
 
+.scan-secondary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.scan-secondary-actions .btn-ghost,
+.scan-secondary-actions .btn-primary {
+  flex: 0 0 auto;
+}
+
 .scan-empty-hint {
   color: var(--muted);
   font-weight: normal;
@@ -2652,6 +2668,7 @@ select option {
 .scan-foot {
   display: flex;
   gap: 10px;
+  justify-content: space-between;
   padding-top: 4px;
 }
 
@@ -2660,7 +2677,7 @@ select option {
 }
 
 .scan-foot .btn-primary {
-  flex: 1;
+  flex: 0 0 auto;
 }
 
 .form-grid {

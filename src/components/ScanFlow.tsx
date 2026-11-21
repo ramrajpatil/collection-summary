@@ -398,25 +398,27 @@ export function ScanFlow({
                 </button>
               ) : null}
 
-              <button
-                type="button"
-                className={`${
-                  native && keyConfigured ? 'btn-ghost' : 'btn-primary'
-                } scan-cta`}
-                onClick={startManual}
-              >
-                <EditIcon />
-                {s.scanManual}
-              </button>
+              <div className="scan-secondary-actions">
+                <button
+                  type="button"
+                  className={
+                    native && keyConfigured ? 'btn-ghost' : 'btn-primary'
+                  }
+                  onClick={startManual}
+                >
+                  <EditIcon />
+                  {s.scanManual}
+                </button>
 
-              <button
-                type="button"
-                className="btn-ghost scan-cta"
-                onClick={startImport}
-              >
-                <DocIcon />
-                {s.scanImport}
-              </button>
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  onClick={startImport}
+                >
+                  <DocIcon />
+                  {s.scanImport}
+                </button>
+              </div>
             </div>
           </div>
         ) : null}
@@ -574,7 +576,11 @@ export function ScanFlow({
               ))}
             </div>
 
-            <button type="button" className="btn-ghost wide" onClick={addRow}>
+            <button
+              type="button"
+              className="btn-ghost centered"
+              onClick={addRow}
+            >
               <PlusIcon />
               {s.scanAdd}
             </button>
