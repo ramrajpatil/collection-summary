@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { formatReceipt, shiftIsoDate, toLatinDigits } from './marathi'
+import {
+  formatReceipt,
+  formatWeekday,
+  isSunday,
+  shiftIsoDate,
+  toLatinDigits,
+} from './marathi'
 
 describe('shiftIsoDate', () => {
   it('moves backwards within a month', () => {
@@ -39,5 +45,34 @@ describe('toLatinDigits', () => {
     expect(toLatinDigits('००४२')).toBe('0042')
     expect(toLatinDigits('०१२३४५६७८९')).toBe('0123456789')
     expect(toLatinDigits('12')).toBe('12')
+  })
+})
+
+describe('formatWeekday', () => {
+  it('returns the Marathi weekday name', () => {
+    expect(formatWeekday('2026-11-01')).toBe('रविवार')
+    expect(formatWeekday('2026-11-20')).toBe('शुक्रवार')
+  })
+
+  it('returns the English weekday name', () => {
+    expect(formatWeekday('2026-11-01', 'en')).toBe('Sunday')
+    expect(formatWeekday('2026-11-20', 'en')).toBe('Friday')
+  })
+
+  it('returns a short form for table rows', () => {
+    expect(formatWeekday('2026-11-01', 'mr', true)).toBe('रवि')
+    expect(formatWeekday('2026-11-01', 'en', true)).toBe('Sun')
+  })
+
+  it('returns an empty string for an invalid date', () => {
+    expect(formatWeekday('not-a-date')).toBe('')
+  })
+})
+
+describe('isSunday', () => {
+  it('detects Sundays and other days', () => {
+    expect(isSunday('2026-11-01')).toBe(true)
+    expect(isSunday('2026-11-20')).toBe(false)
+    expect(isSunday('bad')).toBe(false)
   })
 })

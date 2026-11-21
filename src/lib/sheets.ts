@@ -9,7 +9,7 @@ import type {
 import type { Repository } from './repo'
 import { STRINGS, type Lang } from './i18n'
 import { formatDate, formatMonth } from './marathi'
-import { holderName } from './names'
+import { holderName, honorificName } from './names'
 import {
   buildMonthlyHtml,
   buildSheetHtml,
@@ -64,7 +64,7 @@ export async function buildDailySheetHtml(
     })),
     denominations: computeDenominations(total),
     agentName: profile.agentName,
-    managerName: profile.managerName,
+    managerName: honorificName(profile.managerName, lang),
   }
   return buildSheetHtml(data, lang, profile.receiptsEnabled !== false)
 }
@@ -95,7 +95,7 @@ export function buildMonthlySheetHtml(
     total: report.total,
     commission: report.commission,
     agentName: profile.agentName,
-    managerName: profile.managerName,
+    managerName: honorificName(profile.managerName, lang),
   }
   return buildMonthlyHtml(data, lang)
 }
@@ -137,7 +137,7 @@ export function buildHolderStatementHtml(
     })),
     total: history.total,
     agentName: profile.agentName,
-    managerName: profile.managerName,
+    managerName: honorificName(profile.managerName, lang),
   }
   return buildStatementHtml(data, lang, profile.receiptsEnabled !== false)
 }

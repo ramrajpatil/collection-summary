@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   holderName,
+  honorificName,
   toEnglishName,
   toMarathiName,
   upperName,
@@ -49,5 +50,24 @@ describe('holderName', () => {
 
   it('always shows the primary name in the Marathi UI', () => {
     expect(holderName('रमेश पाटील', 'RAMESH PATIL', 'mr')).toBe('रमेश पाटील')
+  })
+})
+
+describe('honorificName', () => {
+  it('prefixes सौ to a Marathi name', () => {
+    expect(honorificName('कविता पाटील', 'mr')).toBe('सौ कविता पाटील')
+  })
+
+  it('does not double a prefix that is already present', () => {
+    expect(honorificName('सौ कविता पाटील', 'mr')).toBe('सौ कविता पाटील')
+  })
+
+  it('uses an English title for English sheets', () => {
+    expect(honorificName('KAVITA PATIL', 'en')).toBe('Mrs. KAVITA PATIL')
+    expect(honorificName('Mrs. KAVITA PATIL', 'en')).toBe('Mrs. KAVITA PATIL')
+  })
+
+  it('returns an empty name unchanged', () => {
+    expect(honorificName('  ', 'mr')).toBe('')
   })
 })

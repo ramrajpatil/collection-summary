@@ -51,4 +51,21 @@ describe('pdf templates', () => {
     expect(html).not.toContain('Receipt No.')
     expect(html).toContain('colspan="2"')
   })
+
+  it('shows the weekday with the date on the first page only', () => {
+    const html = buildSheetHtml(sheet, 'en')
+    // 2026-11-01 is a Sunday and is highlighted.
+    expect(html).toContain('class="weekday sunday"')
+    expect(html.match(/Sunday/g)).toHaveLength(1)
+    // The continuation ("running") header keeps only society and address, so
+    // the heading and the date appear once, on the first page.
+    expect(html).toContain('class="running"')
+    expect(html.match(/Heading/g)).toHaveLength(1)
+  })
+
+  it('marks Sundays in the statement rows', () => {
+    const html = buildStatementHtml(statement, 'en', true)
+    expect(html).toContain('class="weekday sunday"')
+    expect(html).toContain('Sun</span> 01 November 2026')
+  })
 })

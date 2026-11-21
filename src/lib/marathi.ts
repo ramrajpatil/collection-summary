@@ -32,6 +32,38 @@ const ENGLISH_MONTHS = [
   'December',
 ]
 
+export const MARATHI_WEEKDAYS = [
+  'रविवार',
+  'सोमवार',
+  'मंगळवार',
+  'बुधवार',
+  'गुरुवार',
+  'शुक्रवार',
+  'शनिवार',
+]
+
+const ENGLISH_WEEKDAYS = [
+  'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+]
+
+export const MARATHI_WEEKDAYS_SHORT = [
+  'रवि',
+  'सोम',
+  'मंगळ',
+  'बुध',
+  'गुरु',
+  'शुक्र',
+  'शनि',
+]
+
+const ENGLISH_WEEKDAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
 export function toDevanagariDigits(value: number | string): string {
   return String(value).replace(/[0-9]/g, (d) => DEVANAGARI_DIGITS[Number(d)])
 }
@@ -84,6 +116,30 @@ export function formatMonth(month: string, lang: Lang = 'mr'): string {
   if (!y || !m) return month
   const name = lang === 'mr' ? MARATHI_MONTHS[m - 1] : ENGLISH_MONTHS[m - 1]
   return `${name} ${formatDigits(y, lang)}`
+}
+
+/**
+ * Day of the week for an ISO date. `short` returns the abbreviated name used
+ * inside table rows; the default is the full name used in the sheet header.
+ */
+export function formatWeekday(
+  isoDate: string,
+  lang: Lang = 'mr',
+  short = false,
+): string {
+  const [y, m, d] = isoDate.split('-').map(Number)
+  if (!y || !m || !d) return ''
+  const day = new Date(y, m - 1, d).getDay()
+  if (lang === 'mr') {
+    return (short ? MARATHI_WEEKDAYS_SHORT : MARATHI_WEEKDAYS)[day] ?? ''
+  }
+  return (short ? ENGLISH_WEEKDAYS_SHORT : ENGLISH_WEEKDAYS)[day] ?? ''
+}
+
+export function isSunday(isoDate: string): boolean {
+  const [y, m, d] = isoDate.split('-').map(Number)
+  if (!y || !m || !d) return false
+  return new Date(y, m - 1, d).getDay() === 0
 }
 
 export function todayIso(): string {

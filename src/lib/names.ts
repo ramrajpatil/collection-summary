@@ -60,3 +60,18 @@ export function holderName(
   }
   return name
 }
+
+/**
+ * Adds the honorific used on the signed sheet to the manager's name
+ * (e.g. "सौ" in Marathi) unless it is already present.
+ */
+export function honorificName(name: string, lang: Lang): string {
+  const trimmed = name.trim()
+  if (!trimmed) return trimmed
+  if (lang === 'mr') {
+    if (trimmed.startsWith('सौ')) return trimmed
+    return `सौ ${trimmed}`
+  }
+  if (/^(mrs|mr|ms|smt)\.?\b/i.test(trimmed)) return trimmed
+  return `Mrs. ${trimmed}`
+}

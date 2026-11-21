@@ -4,6 +4,8 @@ import {
   formatDigits,
   formatReceipt,
   formatRupees,
+  formatWeekday,
+  isSunday,
 } from './marathi'
 
 export interface SheetRow {
@@ -92,6 +94,19 @@ function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;')
 }
 
+/**
+ * Renders "weekday, date" with Sunday highlighted so it stands out on the
+ * printed sheet. The weekday wraps in a span (never split mid-word) so the
+ * Devanagari text stays intact.
+ */
+function dateWithWeekday(isoDate: string, lang: Lang, short = false): string {
+  const weekday = formatWeekday(isoDate, lang, short)
+  const date = formatDate(isoDate, lang)
+  if (!weekday) return escapeHtml(date)
+  const cls = `weekday${isSunday(isoDate) ? ' sunday' : ''}`
+  return `<span class="${cls}">${escapeHtml(weekday)}</span> ${escapeHtml(date)}`
+}
+
 interface Column {
   label: string
   width: string
@@ -117,6 +132,13 @@ function theadHtml(columns: Column[]): string {
   return `<thead><tr>${cells}</tr></thead>`
 }
 
+function compactHeaderHtml(societyName: string, address: string): string {
+  return `<header class="head">
+    <div class="society">${escapeHtml(societyName)}</div>
+    <div class="address">${escapeHtml(address)}</div>
+  </header>`
+}
+
 function headerBlockHtml(
   societyName: string,
   address: string,
@@ -134,12 +156,13 @@ function headerBlockHtml(
 }
 
 function runningBlockHtml(
-  headerHtml: string,
+  societyName: string,
+  address: string,
   columns: Column[],
   periodHtml = '',
 ): string {
   return `<div class="running">
-    ${headerHtml}
+    ${compactHeaderHtml(societyName, address)}
     <div class="divider"></div>
     ${periodHtml}
     <table class="running-table">${colgroupHtml(columns)}${theadHtml(columns)}</table>
@@ -185,6 +208,8 @@ const SHEET_CSS = `
   }
   .heading { font-size: 12.5pt; font-weight: 700; }
   .date { font-size: 10.5pt; white-space: nowrap; flex-shrink: 0; }
+  .weekday { font-weight: 700; white-space: nowrap; }
+  .weekday.sunday { color: #c81e1e; }
   .period {
     display: flex;
     justify-content: space-between;
@@ -370,14 +395,14 @@ export function buildSheetHtml(
     { label: s.accountNo, width: '26mm', align: 'c' },
     { label: s.amount, width: '27mm', align: 'r' },
   ]
-  const dateHtml = `${s.dateLabel}: ${formatDate(data.dateIso, lang)}`
+  const dateHtml = `${s.dateLabel}: ${dateWithWeekday(data.dateIso, lang)}`
   const headerHtml = headerBlockHtml(
     data.societyName,
     data.address,
     data.heading,
     dateHtml,
   )
-  const runningHtml = runningBlockHtml(headerHtml, columns)
+  const runningHtml = runningBlockHtml(data.societyName, data.address, columns)
 
   return `<!doctype html>
 <html lang="${lang}">
@@ -431,7 +456,7 @@ export function buildStatementHtml(
       (row) => `
         <tr>
           <td class="c">${formatDigits(row.sr, lang)}</td>
-          <td class="c">${formatDate(row.dateIso, lang)}</td>
+          <td class="c">${dateWithWeekday(row.dateIso, lang, true)}</td>
           ${
             showReceipt
               ? `<td class="c">${formatReceipt(row.receiptNo, lang)}</td>`
@@ -462,7 +487,12 @@ export function buildStatementHtml(
       data.phone ? ` · ${s.holderPhone}: ${escapeHtml(data.phone)}` : ''
     }</span>
   </div>`
-  const runningHtml = runningBlockHtml(headerHtml, columns, periodHtml)
+  const runningHtml = runningBlockHtml(
+    data.societyName,
+    data.address,
+    columns,
+    periodHtml,
+  )
 
   return `<!doctype html>
 <html lang="${lang}">
@@ -542,7 +572,12 @@ export function buildMonthlyHtml(
     <span>${s.period}: ${escapeHtml(data.periodLabel)}</span>
     <span>${s.commissionRate}</span>
   </div>`
-  const runningHtml = runningBlockHtml(headerHtml, columns, periodHtml)
+  const runningHtml = runningBlockHtml(
+    data.societyName,
+    data.address,
+    columns,
+    periodHtml,
+  )
 
   return `<!doctype html>
 <html lang="${lang}">

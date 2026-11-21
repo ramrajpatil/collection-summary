@@ -338,6 +338,15 @@ Three templates with embedded CSS for A4 printing:
 
 All use **Noto Sans Devanagari** font via `@font-face`.
 
+The daily sheet and statement show the weekday next to the date (`formatWeekday`),
+with Sundays wrapped in `<span class="weekday sunday">` for emphasis. The date,
+weekday and heading appear only on the first page; the repeating header on later
+pages (`compactHeaderHtml`) keeps just the society name and address (plus the
+column row).
+
+The manager's signature name is prefixed with the honorific `सौ` (`honorificName`
+in `names.ts`) before the templates are rendered.
+
 The native PDF plugin (`PdfGeneratorPlugin.java`) paginates the HTML itself and
 draws each page into an A4 canvas. Top and bottom page margins are `0` so a page
 fits as many rows as possible; left/right margins remain for filing (`MARGIN_*`
