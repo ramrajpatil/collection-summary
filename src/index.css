@@ -537,7 +537,7 @@ body {
   gap: 3px;
   flex-shrink: 0;
   width: calc(50% - 5px);
-  height: 38px;
+  height: 42px;
   padding: 0;
   border-radius: 12px;
   border: 1px solid var(--chip-border);
@@ -546,7 +546,7 @@ body {
   font-family: inherit;
   font-size: clamp(0.6rem, 2.9vw, 0.68rem);
   font-weight: 700;
-  line-height: 1;
+  line-height: 1.4;
   white-space: nowrap;
   cursor: pointer;
   box-shadow:
@@ -602,7 +602,7 @@ body {
   display: inline-flex;
   align-items: center;
   width: calc(50% - 5px);
-  height: 38px;
+  height: 42px;
   flex-shrink: 0;
   border-radius: 12px;
   background: var(--accent-soft);
