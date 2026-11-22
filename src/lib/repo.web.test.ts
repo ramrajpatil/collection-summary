@@ -56,4 +56,27 @@ describe('collection receipts', () => {
       ['C', 2],
     ])
   })
+
+  it('reassigns a collection to another holder and keeps the receipt number', async () => {
+    const { repo, a } = await setup()
+    const d = await repo.createHolder({
+      name: 'D',
+      accountNo: '004',
+      defaultAmount: 100,
+    })
+    await repo.reassignCollection(DATE, a.id, d.id)
+    const day = await repo.getDay(DATE)
+    expect(day.entries.map((entry) => [entry.name, entry.receiptNo, entry.amount])).toEqual([
+      ['D', 1, 100],
+      ['B', 2, 200],
+      ['C', 3, 300],
+    ])
+  })
+
+  it('rejects reassigning onto a holder that is already collected', async () => {
+    const { repo, a, b } = await setup()
+    await expect(repo.reassignCollection(DATE, a.id, b.id)).rejects.toThrow(
+      'ALREADY_COLLECTED',
+    )
+  })
 })

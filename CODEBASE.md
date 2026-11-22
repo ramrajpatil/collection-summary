@@ -181,6 +181,7 @@ interface HolderBalance {
   "स्कॅन करा" pill (no prev/next arrows); all hero buttons share one width/height
 - **Day lock**: lock a whole day; only the master password can unlock it
 - **Collected-amount lock**: editing or removing an already-collected amount requires the master password
+- **Change account**: move a collected entry to another holder without changing its receipt number (useful when the wrong account was collected)
 - **One-shot unlock**: the password unlock re-locks after each edit/delete/save/close
 - **Password visibility (eye) toggle** on both master-password inputs
 
@@ -571,6 +572,12 @@ Current test files (57 tests):
 - `saveCollection` computes the next receipt in SQL (O(1)) for new entries
 - Editing an amount uses `updateCollection` (amount-only UPDATE), so it never
   changes the receipt number or renumbers the day
+- **Change account** (from the collected-entry sheet) uses
+  `reassignCollection(date, fromHolderId, toHolderId)` — a holder-only UPDATE
+  that keeps the row id, receipt number, amount and created date, so the day's
+  consecutive numbering is preserved. Blocked if the target holder already has
+  a collection that day (`ALREADY_COLLECTED`) and gated by the master password
+  like other entry edits.
 - Deletes and start-receipt changes renumber the day in one SQL statement
 - Stored in `daily_meta`
 

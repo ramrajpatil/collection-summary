@@ -114,6 +114,10 @@ export function CollectionScreen({
   const [startDraft, setStartDraft] = useState('0001')
   const [amountTarget, setAmountTarget] = useState<AmountTarget | null>(null)
   const [amountError, setAmountError] = useState('')
+  const [reassignFrom, setReassignFrom] = useState<Holder | null>(null)
+  const [reassignOpen, setReassignOpen] = useState(false)
+  const [reassignError, setReassignError] = useState('')
+  const [reassignSearch, setReassignSearch] = useState('')
   const [reloadToken, setReloadToken] = useState(0)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<'all' | 'collected' | 'pending'>('all')
@@ -146,6 +150,14 @@ export function CollectionScreen({
     setShowEditPassword(false)
     entryEditUnlocked.current = false
     pendingEdit.current = null
+  }
+
+  function closeReassign() {
+    entryEditUnlocked.current = false
+    setReassignOpen(false)
+    setReassignFrom(null)
+    setReassignError('')
+    setReassignSearch('')
   }
 
   function requestEditPassword(action: () => void) {
@@ -229,12 +241,17 @@ export function CollectionScreen({
       !filterOpen &&
       !unlockOpen &&
       !lockConfirmOpen &&
-      !editPassOpen
+      !editPassOpen &&
+      !reassignOpen
     )
       return
     return pushBackHandler(() => {
       if (editPassOpen) {
         closeEditPassword()
+        return true
+      }
+      if (reassignOpen) {
+        closeReassign()
         return true
       }
       if (unlockOpen) {
@@ -265,6 +282,7 @@ export function CollectionScreen({
     unlockOpen,
     lockConfirmOpen,
     editPassOpen,
+    reassignOpen,
   ])
 
   const entryByHolder = useMemo(() => {
@@ -314,6 +332,23 @@ export function CollectionScreen({
       return true
     })
   }, [holders, entryByHolder, deferredSearch, filter])
+
+  const deferredReassignSearch = useDeferredValue(reassignSearch)
+
+  const reassignCandidates = useMemo(() => {
+    if (!reassignFrom) return []
+    const query = deferredReassignSearch.trim().toLocaleLowerCase()
+    return holders.filter((holder) => {
+      if (holder.id === reassignFrom.id) return false
+      if (entryByHolder.has(holder.id)) return false
+      if (query) {
+        const haystack =
+          `${holder.name} ${holder.nameEn} ${holder.accountNo}`.toLocaleLowerCase()
+        if (!haystack.includes(query)) return false
+      }
+      return true
+    })
+  }, [holders, entryByHolder, reassignFrom, deferredReassignSearch])
 
   async function notifyCollection(holder: Holder, amount: number) {
     const settings = loadNotifySettings()
@@ -540,6 +575,71 @@ export function CollectionScreen({
     } catch (err) {
       setDay(previous)
       setAmountError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function openReassign() {
+    if (!amountTarget) return
+    if (locked) {
+      setStatus(s.dayLockedError)
+      return
+    }
+    setReassignFrom(amountTarget.holder)
+    setReassignSearch('')
+    setReassignError('')
+    setAmountTarget(null)
+    setReassignOpen(true)
+  }
+
+  async function reassignHolder(to: Holder) {
+    if (!reassignFrom || busy) return
+    if (locked) {
+      setReassignError(s.dayLockedError)
+      return
+    }
+    if (!entryEditUnlocked.current) {
+      requestEditPassword(() => void reassignHolder(to))
+      return
+    }
+    const from = reassignFrom
+    const previous = day
+    if (day) {
+      setDay({
+        ...day,
+        entries: day.entries.map((entry) =>
+          entry.holderId === from.id
+            ? {
+                ...entry,
+                holderId: to.id,
+                name: to.name,
+                nameEn: to.nameEn,
+                accountNo: to.accountNo,
+                defaultAmount: to.defaultAmount,
+              }
+            : entry,
+        ),
+      })
+    }
+    setBusy(true)
+    setReassignError('')
+    try {
+      await repo.reassignCollection(date, from.id, to.id)
+      entryEditUnlocked.current = false
+      setReassignOpen(false)
+      setReassignFrom(null)
+      setStatus(s.accountReassigned)
+      refresh()
+    } catch (err) {
+      setDay(previous)
+      setReassignError(
+        err instanceof Error
+          ? err.message === 'ALREADY_COLLECTED'
+            ? s.scanAlready
+            : err.message
+          : String(err),
+      )
     } finally {
       setBusy(false)
     }
@@ -1143,6 +1243,16 @@ export function CollectionScreen({
             {amountTarget.collected ? (
               <button
                 type="button"
+                className="btn-ghost"
+                disabled={busy || locked}
+                onClick={openReassign}
+              >
+                {s.changeAccount}
+              </button>
+            ) : null}
+            {amountTarget.collected ? (
+              <button
+                type="button"
                 className="btn-danger-text"
                 disabled={busy}
                 onClick={() => void removeAmount()}
@@ -1151,6 +1261,68 @@ export function CollectionScreen({
               </button>
             ) : null}
           </div>
+        </BottomSheet>
+      ) : null}
+
+      {reassignOpen && reassignFrom ? (
+        <BottomSheet
+          title={s.changeAccountTitle}
+          closeLabel={s.close}
+          onClose={closeReassign}
+        >
+          <p className="field-hint">{s.changeAccountHint}</p>
+          <div className="amount-holder">
+            <b>{holderName(reassignFrom.name, reassignFrom.nameEn, lang)}</b>
+            <small>
+              {s.accountNoShort} {formatDigits(reassignFrom.accountNo, lang)}
+            </small>
+          </div>
+
+          <div className="searchbar glass">
+            <SearchIcon />
+            <input
+              type="search"
+              value={reassignSearch}
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              placeholder={s.searchCollection}
+              onChange={(event) => setReassignSearch(event.target.value)}
+            />
+          </div>
+
+          {reassignError ? (
+            <p className="form-error">{reassignError}</p>
+          ) : null}
+
+          {reassignCandidates.length === 0 ? (
+            <div className="empty glass compact">
+              <p>{s.noData}</p>
+            </div>
+          ) : (
+            <section className="list">
+              {reassignCandidates.map((holder, index) => (
+                <div key={holder.id} className="picker-row">
+                  <div className="sr">{formatDigits(index + 1, lang)}</div>
+                  <div className="who">
+                    <b>{holderName(holder.name, holder.nameEn, lang)}</b>
+                    <small>
+                      {s.accountNoShort}{' '}
+                      {formatDigits(holder.accountNo, lang)}
+                    </small>
+                  </div>
+                  <button
+                    type="button"
+                    className="picker-action"
+                    disabled={busy}
+                    onClick={() => void reassignHolder(holder)}
+                  >
+                    {s.changeAccount}
+                  </button>
+                </div>
+              ))}
+            </section>
+          )}
         </BottomSheet>
       ) : null}
 

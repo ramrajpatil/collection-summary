@@ -298,6 +298,10 @@ export interface Strings {
   dayLockedError: string
   entryLockTitle: string
   entryLockHint: string
+  changeAccount: string
+  changeAccountTitle: string
+  changeAccountHint: string
+  accountReassigned: string
 }
 
 export const STRINGS: Record<Lang, Strings> = {
@@ -605,6 +609,11 @@ export const STRINGS: Record<Lang, Strings> = {
     entryLockTitle: 'बदलासाठी लॉक उघडा',
     entryLockHint:
       'ही रक्कम आधीच नोंदवली आहे. बदल किंवा काढण्यासाठी मास्टर पासवर्ड टाका.',
+    changeAccount: 'खाते बदला',
+    changeAccountTitle: 'खाते बदला',
+    changeAccountHint:
+      'ही वसुली दुसऱ्या खात्यावर हलवा. पावती क्रमांक तोच राहील.',
+    accountReassigned: 'खाते बदलले. पावती क्रमांक तोच आहे.',
   },
   en: {
     appName: 'Collection Summary',
@@ -908,6 +917,11 @@ export const STRINGS: Record<Lang, Strings> = {
     entryLockTitle: 'Unlock to edit',
     entryLockHint:
       'This amount is already collected. Enter the master password to edit or remove it.',
+    changeAccount: 'Change account',
+    changeAccountTitle: 'Change account',
+    changeAccountHint:
+      'Move this collection to another account. The receipt number stays the same.',
+    accountReassigned: 'Account changed. Receipt number kept.',
   },
 }
 

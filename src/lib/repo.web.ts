@@ -371,6 +371,31 @@ export class WebRepository implements Repository {
     this.persist()
   }
 
+  async reassignCollection(
+    date: string,
+    fromHolderId: number,
+    toHolderId: number,
+  ): Promise<void> {
+    this.assertUnlocked(date)
+    const existing = this.state.collections.find(
+      (row) => row.holderId === fromHolderId && row.date === date,
+    )
+    if (!existing) throw new Error('NOT_FOUND')
+    if (fromHolderId === toHolderId) return
+    if (
+      this.state.collections.some(
+        (row) => row.holderId === toHolderId && row.date === date,
+      )
+    ) {
+      throw new Error('ALREADY_COLLECTED')
+    }
+    // Move the row to the new holder without touching its receipt number,
+    // so the day's consecutive numbering is preserved.
+    existing.holderId = toHolderId
+    existing.updatedAt = new Date().toISOString()
+    this.persist()
+  }
+
   async saveCollectionsWithReceipts(
     date: string,
     entries: CollectionInput[],

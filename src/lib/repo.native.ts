@@ -571,6 +571,33 @@ export class NativeRepository implements Repository {
     )
   }
 
+  async reassignCollection(
+    date: string,
+    fromHolderId: number,
+    toHolderId: number,
+  ): Promise<void> {
+    const db = await this.getDb()
+    await this.assertUnlocked(db, date)
+    if (fromHolderId === toHolderId) return
+    const existing = await db.query(
+      'SELECT id FROM collections WHERE holder_id = ? AND date = ?',
+      [fromHolderId, date],
+    )
+    if ((existing.values ?? []).length === 0) throw new Error('NOT_FOUND')
+    const target = await db.query(
+      'SELECT id FROM collections WHERE holder_id = ? AND date = ?',
+      [toHolderId, date],
+    )
+    if ((target.values ?? []).length > 0) throw new Error('ALREADY_COLLECTED')
+    // Holder-only update: the row id (and therefore receipt_no), amount and
+    // created date are untouched, so the day's consecutive numbering is kept.
+    await db.run(
+      `UPDATE collections SET holder_id = ?, updated_at = ?
+        WHERE holder_id = ? AND date = ?`,
+      [toHolderId, new Date().toISOString(), fromHolderId, date],
+    )
+  }
+
   async saveCollectionsWithReceipts(
     date: string,
     entries: CollectionInput[],

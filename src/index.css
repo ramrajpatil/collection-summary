@@ -885,6 +885,37 @@ body {
   grid-template-columns: 24px minmax(0, 1fr) 76px 34px;
 }
 
+.picker-row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 78px;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 8px;
+  border-radius: 20px;
+  background: linear-gradient(160deg, var(--panel-a), var(--panel-b));
+  border: 1px solid var(--panel-border);
+  content-visibility: auto;
+  contain-intrinsic-size: auto 62px;
+}
+
+.picker-row .picker-action {
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  transition: transform 0.4s var(--spring);
+}
+
+.picker-row .picker-action:active {
+  transform: scale(0.94);
+}
+
 .sr {
   display: grid;
   place-items: center;

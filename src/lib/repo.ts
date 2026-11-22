@@ -43,6 +43,11 @@ export interface Repository {
   setDayLocked(date: string, locked: boolean): Promise<void>
   saveCollection(holderId: number, date: string, amount: number): Promise<void>
   updateCollection(holderId: number, date: string, amount: number): Promise<void>
+  reassignCollection(
+    date: string,
+    fromHolderId: number,
+    toHolderId: number,
+  ): Promise<void>
   saveCollectionsWithReceipts(
     date: string,
     entries: CollectionInput[],
