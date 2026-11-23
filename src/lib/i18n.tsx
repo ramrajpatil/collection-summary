@@ -224,6 +224,10 @@ export interface Strings {
   noOpeningBalance: string
   balanceJournal: string
   balanceReduction: string
+  amountLastCollection: string
+  amountLastDebit: string
+  amountLastAmount: string
+  amountPhone: string
   collectionEntry: string
   callHolder: string
   reminder: string
@@ -426,7 +430,7 @@ export const STRINGS: Record<Lang, Strings> = {
     collectionEmpty: 'आजची वसुली सुरू करा',
     collectionEmptyHint: 'खातेदार जोडल्यानंतर ते येथे दिसतील.',
     goToHolders: 'खातेदार जोडा',
-    editAmount: 'रक्कम बदला',
+    editAmount: 'रक्कम भरा',
     quickAmounts: 'झटपट रक्कम',
     collectNow: 'वसुली नोंदवा',
     removeCollection: 'वसुली रद्द करा',
@@ -529,6 +533,10 @@ export const STRINGS: Record<Lang, Strings> = {
     noOpeningBalance: 'सुरुवातीची शिल्लक सेट केलेली नाही.',
     balanceJournal: 'शिल्लक जर्नल',
     balanceReduction: 'शिल्लक कपात',
+    amountLastCollection: 'शेवटची वसुली',
+    amountLastDebit: 'शेवटची कपात',
+    amountLastAmount: 'शेवटची रक्कम',
+    amountPhone: 'मोबाइल',
     collectionEntry: 'वसुली',
     callHolder: 'कॉल करा',
     reminder: 'रिमाइंडर',
@@ -737,7 +745,7 @@ export const STRINGS: Record<Lang, Strings> = {
     collectionEmpty: 'Start today’s collection',
     collectionEmptyHint: 'Holders will appear here once you add them.',
     goToHolders: 'Add holders',
-    editAmount: 'Edit amount',
+    editAmount: 'Add amount',
     quickAmounts: 'Quick amounts',
     collectNow: 'Record collection',
     removeCollection: 'Remove collection',
@@ -837,6 +845,10 @@ export const STRINGS: Record<Lang, Strings> = {
     noOpeningBalance: 'No opening balance set.',
     balanceJournal: 'Balance journal',
     balanceReduction: 'Balance reduction',
+    amountLastCollection: 'Last collection',
+    amountLastDebit: 'Last debit',
+    amountLastAmount: 'Last amount',
+    amountPhone: 'Phone',
     collectionEntry: 'Collection',
     callHolder: 'Call',
     reminder: 'Reminder',

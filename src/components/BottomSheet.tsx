@@ -7,6 +7,7 @@ interface BottomSheetProps {
   onClose: () => void
   children: ReactNode
   footer?: ReactNode
+  centered?: boolean
   className?: string
 }
 
@@ -66,6 +67,7 @@ export function BottomSheet({
   onClose,
   children,
   footer,
+  centered = false,
   className,
 }: BottomSheetProps) {
   useEffect(() => {
@@ -84,7 +86,7 @@ export function BottomSheet({
   }, [])
 
   return (
-    <div className="sheet-backdrop" onClick={onClose}>
+    <div className={`sheet-backdrop${centered ? ' centered' : ''}`} onClick={onClose}>
       <div
         className={`sheet glass${className ? ` ${className}` : ''}`}
         role="dialog"

@@ -1,6 +1,6 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { Capacitor } from '@capacitor/core'
-import type { DayData, Holder, Profile } from '../lib/models'
+import type { DayData, Holder, HolderBalance, Profile } from '../lib/models'
 import type { Repository } from '../lib/repo'
 import { STRINGS, useLanguage } from '../lib/i18n'
 import {
@@ -59,7 +59,6 @@ interface CollectionScreenProps {
   onGoToHolders: () => void
 }
 
-const QUICK_AMOUNTS = [100, 200, 300, 400, 500, 1000, 1500]
 const ENTER_ROW_LIMIT = 8
 
 function padReceipt(value: number | string): string {
@@ -116,6 +115,8 @@ export function CollectionScreen({
   const [startDraft, setStartDraft] = useState('0001')
   const [amountTarget, setAmountTarget] = useState<AmountTarget | null>(null)
   const [amountError, setAmountError] = useState('')
+  const [amountBalance, setAmountBalance] = useState<HolderBalance | null>(null)
+  const [amountInfoLoading, setAmountInfoLoading] = useState(false)
   const [reassignFrom, setReassignFrom] = useState<Holder | null>(null)
   const [reassignOpen, setReassignOpen] = useState(false)
   const [reassignError, setReassignError] = useState('')
@@ -129,6 +130,34 @@ export function CollectionScreen({
   const [pdfOpen, setPdfOpen] = useState(false)
   const [pdfSort, setPdfSort] = useState<SheetSort>('account')
   const [pdfAction, setPdfAction] = useState<'save' | 'share' | null>(null)
+
+  const amountHolderId = amountTarget?.holder.id ?? null
+
+  useEffect(() => {
+    if (amountHolderId === null) return
+    let active = true
+    repo
+      .getHolderBalance(amountHolderId)
+      .then((balance) => {
+        if (active) setAmountBalance(balance)
+      })
+      .catch(() => {
+        if (active) setAmountBalance(null)
+      })
+      .finally(() => {
+        if (active) setAmountInfoLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [amountHolderId, repo])
+
+  const lastCollectionEntry = amountBalance?.journal.find(
+    (entry) => entry.type === 'collection',
+  )
+  const lastReductionEntry = amountBalance?.journal.find(
+    (entry) => entry.type === 'reduction',
+  )
 
   const refresh = () => setReloadToken((token) => token + 1)
   const isToday = date === today
@@ -486,6 +515,8 @@ export function CollectionScreen({
       return
     }
     setAmountError('')
+    setAmountBalance(null)
+    setAmountInfoLoading(true)
     setAmountTarget({
       holder,
       amount: entry?.amount ?? holder.defaultAmount,
@@ -1059,6 +1090,7 @@ export function CollectionScreen({
                       ? { animationDelay: `${index * 0.03}s` }
                       : undefined
                   }
+                  onClick={() => openAmount(holder)}
                 >
                   <div className="sr">{formatDigits(index + 1, lang)}</div>
                   <div className="who">
@@ -1077,13 +1109,8 @@ export function CollectionScreen({
                     type="button"
                     className={`amount amount-btn${isDone ? ' filled' : ''}`}
                     aria-label={s.editAmount}
-                    disabled={locked}
-                    onClick={() => openAmount(holder)}
                   >
-                    {formatRupees(
-                      entry ? entry.amount : holder.defaultAmount,
-                      lang,
-                    )}
+                    {entry ? formatRupees(entry.amount, lang) : '—'}
                   </button>
                   <button
                     type="button"
@@ -1092,7 +1119,10 @@ export function CollectionScreen({
                       isDone ? s.unmarkCollected : s.markCollected
                     }
                     disabled={busy || locked}
-                    onClick={() => void toggle(holder)}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      void toggle(holder)
+                    }}
                   >
                     {isDone ? <CheckIcon /> : <PlusIcon />}
                   </button>
@@ -1186,25 +1216,76 @@ export function CollectionScreen({
         <BottomSheet
           title={s.editAmount}
           closeLabel={s.close}
+          centered
           onClose={() => {
             entryEditUnlocked.current = false
             setAmountTarget(null)
           }}
         >
-          <div className="amount-holder">
-            <b>
-              {holderName(amountTarget.holder.name, amountTarget.holder.nameEn, lang)}
-            </b>
-            <small>
-              {s.accountNoShort}{' '}
-              {formatDigits(amountTarget.holder.accountNo, lang)}
-            </small>
+          <div className="amount-info">
+            <div className="amount-holder">
+              <b>
+                {holderName(
+                  amountTarget.holder.name,
+                  amountTarget.holder.nameEn,
+                  lang,
+                )}
+              </b>
+              <small>
+                {s.accountNoShort}{' '}
+                {formatDigits(amountTarget.holder.accountNo, lang)}
+              </small>
+            </div>
+
+            <div className="amount-phone">
+              <span>{s.amountPhone}</span>
+              <b>{amountTarget.holder.phone || '—'}</b>
+            </div>
+
+            <div className="amount-facts">
+              <div className="amount-fact">
+                <span>{s.amountLastCollection}</span>
+                <b>
+                  {lastCollectionEntry
+                    ? formatDate(lastCollectionEntry.date, lang)
+                    : '—'}
+                </b>
+              </div>
+              <div className="amount-fact">
+                <span>{s.amountLastDebit}</span>
+                <b>
+                  {lastReductionEntry
+                    ? formatDate(lastReductionEntry.date, lang)
+                    : '—'}
+                </b>
+              </div>
+              <div className="amount-fact">
+                <span>{s.amountLastAmount}</span>
+                <b>
+                  {lastCollectionEntry
+                    ? formatRupees(lastCollectionEntry.amount, lang)
+                    : '—'}
+                </b>
+              </div>
+            </div>
+
+            <div className="amount-balance">
+              <span>{s.currentBalance}</span>
+              <b>
+                {amountInfoLoading
+                  ? '…'
+                  : amountBalance
+                    ? formatRupees(amountBalance.current, lang)
+                    : '—'}
+              </b>
+            </div>
           </div>
 
           <div className="field">
             <label htmlFor="collectionAmount">{s.amount}</label>
             <input
               id="collectionAmount"
+              className="amount-input"
               type="number"
               min={0}
               step="1"
@@ -1218,26 +1299,6 @@ export function CollectionScreen({
                 })
               }
             />
-          </div>
-
-          <div className="field">
-            <span className="field-label">{s.quickAmounts}</span>
-            <div className="quick-chips">
-              {QUICK_AMOUNTS.map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={
-                    amountTarget.amount === value ? 'active' : ''
-                  }
-                  onClick={() =>
-                    setAmountTarget({ ...amountTarget, amount: value })
-                  }
-                >
-                  {formatRupees(value, lang)}
-                </button>
-              ))}
-            </div>
           </div>
 
           {amountError ? <p className="form-error">{amountError}</p> : null}

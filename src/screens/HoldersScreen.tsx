@@ -14,9 +14,9 @@ import type {
 import { isAccountExistsError } from '../lib/db'
 import { pushBackHandler } from '../lib/backButton'
 import { STRINGS, useLanguage } from '../lib/i18n'
-import { formatDigits, formatRupees } from '../lib/marathi'
+import { formatDigits } from '../lib/marathi'
 import { holderName, toEnglishName, toMarathiName, upperName } from '../lib/names'
-import { decimalOnly, digitsOnly, stripDigits } from '../lib/input'
+import { digitsOnly, stripDigits } from '../lib/input'
 import { accountDigits, rankByAccount } from '../lib/accounts'
 import { BottomSheet } from '../components/BottomSheet'
 import { ScrollTopButton } from '../components/ScrollTopButton'
@@ -444,8 +444,7 @@ export function HoldersScreen({
                   <b>{holderName(holder.name, holder.nameEn, lang)}</b>
                   <small>
                     {s.accountNoShort}{' '}
-                    {formatDigits(holder.accountNo, lang)} ·{' '}
-                    {formatRupees(holder.defaultAmount, lang)}
+                    {formatDigits(holder.accountNo, lang)}
                   </small>
                 </span>
               </button>
@@ -549,8 +548,7 @@ export function HoldersScreen({
             />
           </div>
 
-          <div className="form-grid">
-            <div className="field">
+          <div className="field">
               <label htmlFor="holderAccount">{s.holderAccount}</label>
               <input
                 id="holderAccount"
@@ -569,25 +567,6 @@ export function HoldersScreen({
                 </small>
               ) : null}
             </div>
-            <div className="field">
-              <label htmlFor="holderAmount">{s.holderAmount}</label>
-              <input
-                id="holderAmount"
-                type="number"
-                min={0}
-                step="1"
-                inputMode="decimal"
-                autoComplete="off"
-                value={draft.defaultAmount}
-                onChange={(event) =>
-                  setDraft({
-                    ...draft,
-                    defaultAmount: Number(decimalOnly(event.target.value)),
-                  })
-                }
-              />
-            </div>
-          </div>
 
           <div className="field">
             <label htmlFor="holderPhone">{s.holderPhone}</label>

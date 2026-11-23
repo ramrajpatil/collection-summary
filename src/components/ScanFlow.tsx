@@ -598,22 +598,39 @@ export function ScanFlow({
                     key={info.row.key}
                     className={`scan-row ${info.status}`}
                   >
-                    <div className="scan-row-head">
-                      <span className="scan-index">
-                        {assigned !== undefined
-                          ? formatReceipt(assigned, lang)
-                          : formatDigits(index + 1, lang)}
-                      </span>
-                      <button
-                        type="button"
-                        className="icon-btn scan-remove"
-                        aria-label={s.delete}
-                        onClick={() => removeRow(info.row.key)}
-                      >
-                        <TrashIcon />
-                      </button>
-                    </div>
-                    <div className="scan-row-main">
+                    <div className="scan-row-content">
+                      <div className="scan-row-head">
+                        <span className="scan-index">
+                          {assigned !== undefined
+                            ? formatReceipt(assigned, lang)
+                            : formatDigits(index + 1, lang)}
+                        </span>
+                        {info.holder ? (
+                          <b className="scan-name">
+                            {holderName(
+                              info.holder.name,
+                              info.holder.nameEn,
+                              lang,
+                            )}
+                          </b>
+                        ) : info.status === 'blank' ? null : (
+                          <b className="scan-name scan-name-missing">
+                            {s.scanNotFound}
+                          </b>
+                        )}
+                        {info.row.rawAccountNo &&
+                        info.row.rawAccountNo !== info.row.accountNo ? (
+                          <small className="scan-raw">
+                            {info.row.rawAccountNo}
+                          </small>
+                        ) : null}
+                        {info.status !== 'blank' ? (
+                          <span className={`scan-chip ${info.status}`}>
+                            {statusLabel(info.status)}
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="scan-row-main">
                       <input
                         className="scan-account"
                         ref={(el) => {
@@ -709,28 +726,15 @@ export function ScanFlow({
                         }
                       />
                     ) : null}
-                    {info.status !== 'blank' ? (
-                      <div className="scan-row-name">
-                        <span className={`scan-chip ${info.status}`}>
-                          {statusLabel(info.status)}
-                        </span>
-                        {info.holder ? (
-                          <b>
-                            {holderName(
-                              info.holder.name,
-                              info.holder.nameEn,
-                              lang,
-                            )}
-                          </b>
-                        ) : (
-                          <span>{s.scanNotFound}</span>
-                        )}
-                        {info.row.rawAccountNo &&
-                        info.row.rawAccountNo !== info.row.accountNo ? (
-                          <small>{info.row.rawAccountNo}</small>
-                        ) : null}
-                      </div>
-                    ) : null}
+                    </div>
+                    <button
+                      type="button"
+                      className="icon-btn scan-remove"
+                      aria-label={s.delete}
+                      onClick={() => removeRow(info.row.key)}
+                    >
+                      <TrashIcon />
+                    </button>
                   </div>
                 )
               })}
