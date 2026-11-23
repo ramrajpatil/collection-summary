@@ -62,6 +62,7 @@ interface ScanRowSource {
 
 const QUICK_AMOUNTS = [50, 100, 200, 300, 400, 500, 1000]
 const MANUAL_ROWS = 1
+const EXPAND_DELAY = 2500
 
 let rowSequence = 0
 
@@ -130,6 +131,7 @@ export function ScanFlow({
   const [saving, setSaving] = useState(false)
   const fileRef = useRef<HTMLInputElement | null>(null)
   const accountRefs = useRef<Map<string, HTMLInputElement>>(new Map())
+  const expandTimers = useRef<Map<string, number>>(new Map())
 
   useEffect(() => {
     let active = true
@@ -150,6 +152,14 @@ export function ScanFlow({
       return true
     })
   }, [onClose, saving])
+
+  useEffect(() => {
+    const timers = expandTimers.current
+    return () => {
+      timers.forEach((timer) => window.clearTimeout(timer))
+      timers.clear()
+    }
+  }, [])
 
   const collected = useMemo(
     () => new Set(collectedHolderIds),
@@ -279,7 +289,33 @@ export function ScanFlow({
   }
 
   function removeRow(key: string) {
+    cancelExpand(key)
     setRows((current) => current.filter((row) => row.key !== key))
+  }
+
+  function scheduleExpand(key: string) {
+    cancelExpand(key)
+    const timer = window.setTimeout(() => {
+      expandTimers.current.delete(key)
+      setRows((current) =>
+        current.map((row) => {
+          if (row.key !== key) return row
+          const expanded = expandAccountNo(row.accountNo)
+          return expanded && expanded !== row.accountNo
+            ? { ...row, accountNo: expanded }
+            : row
+        }),
+      )
+    }, EXPAND_DELAY)
+    expandTimers.current.set(key, timer)
+  }
+
+  function cancelExpand(key: string) {
+    const pending = expandTimers.current.get(key)
+    if (pending !== undefined) {
+      window.clearTimeout(pending)
+      expandTimers.current.delete(key)
+    }
   }
 
   function addRow() {
@@ -580,12 +616,16 @@ export function ScanFlow({
                         autoComplete="off"
                         autoCorrect="off"
                         spellCheck={false}
-                        onChange={(event) =>
+                        onChange={(event) => {
                           updateRow(info.row.key, {
                             accountNo: digitsOnly(event.target.value),
                           })
-                        }
+                          if (mode === 'manual') {
+                            scheduleExpand(info.row.key)
+                          }
+                        }}
                         onBlur={() => {
+                          cancelExpand(info.row.key)
                           if (mode !== 'manual') return
                           const expanded = expandAccountNo(info.row.accountNo)
                           if (expanded && expanded !== info.row.accountNo) {
@@ -595,6 +635,7 @@ export function ScanFlow({
                         onKeyDown={(event) => {
                           if (event.key === 'Enter') {
                             event.preventDefault()
+                            cancelExpand(info.row.key)
                             if (mode === 'manual') {
                               const expanded = expandAccountNo(
                                 info.row.accountNo,
