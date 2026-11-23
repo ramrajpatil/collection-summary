@@ -238,9 +238,17 @@ body {
   backdrop-filter: none;
 }
 
+[data-platform='native'] .scan-intro,
+[data-platform='native'] .scan-busy {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
 [data-platform='native'] .topbar,
 [data-platform='native'] .tabbar,
-[data-platform='native'] .dock {
+[data-platform='native'] .dock,
+[data-platform='native'] .scan-head,
+[data-platform='native'] .scan-foot {
   -webkit-backdrop-filter: blur(10px) saturate(150%);
   backdrop-filter: blur(10px) saturate(150%);
 }
@@ -1123,7 +1131,10 @@ body {
   animation: sheet-up 0.4s var(--spring) both;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-  background: linear-gradient(170deg, var(--glass-a), var(--glass-b)), var(--bg);
+  background:
+    radial-gradient(120% 80% at 0% 0%, var(--accent-soft), transparent 58%),
+    linear-gradient(170deg, var(--glass-a), var(--glass-b)),
+    var(--bg);
   isolation: isolate;
   contain: paint;
 }
@@ -1370,6 +1381,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .aurora span,
+  .scan-screen::before,
   .row,
   .topbar,
   .hero,
@@ -1676,7 +1688,9 @@ body {
   gap: 3px;
   padding: 5px;
   border-radius: 16px;
-  background: var(--bg);
+  background:
+    linear-gradient(170deg, var(--glass-a), var(--glass-b)),
+    var(--bg);
   border: 1px solid var(--panel-border);
   box-shadow: 0 16px 36px var(--shadow), inset 0 1px 0 var(--glass-inset);
   animation: rise 0.25s var(--spring) both;
@@ -2046,8 +2060,9 @@ select option {
   gap: 4px;
   padding: 14px;
   border-radius: 18px;
-  background: var(--chip-bg);
+  background: linear-gradient(160deg, var(--panel-a), var(--panel-b));
   border: 1px solid var(--panel-border);
+  box-shadow: inset 0 1px 0 var(--glass-inset);
 }
 
 .report-card small {
@@ -2412,15 +2427,72 @@ select option {
   gap: 12px;
   padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px
     calc(env(safe-area-inset-bottom, 0px) + 12px);
-  background: var(--bg);
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(
+      900px 620px at 6% -14%,
+      rgba(122, 162, 255, 0.22),
+      transparent 60%
+    ),
+    radial-gradient(
+      820px 620px at 110% 4%,
+      rgba(185, 140, 255, 0.18),
+      transparent 58%
+    ),
+    radial-gradient(
+      820px 820px at 46% 120%,
+      rgba(67, 230, 200, 0.15),
+      transparent 62%
+    ),
+    var(--bg);
   color: var(--text);
 }
 
+.scan-screen::before {
+  content: '';
+  position: absolute;
+  inset: -12%;
+  z-index: -1;
+  pointer-events: none;
+  opacity: var(--aurora-opacity);
+  background:
+    radial-gradient(
+      46vmax 46vmax at 22% 24%,
+      rgba(90, 140, 255, 0.5),
+      transparent 68%
+    ),
+    radial-gradient(
+      40vmax 40vmax at 78% 38%,
+      rgba(180, 110, 255, 0.4),
+      transparent 66%
+    ),
+    radial-gradient(
+      44vmax 44vmax at 42% 88%,
+      rgba(60, 230, 200, 0.36),
+      transparent 68%
+    );
+  background-blend-mode: var(--aurora-blend);
+  transform: translate3d(0, 0, 0) scale(1.15);
+  animation: drift 26s var(--ease) infinite alternate;
+  will-change: transform;
+}
+
 .scan-head {
+  flex: 0 0 auto;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
+  padding: 10px 12px 10px 16px;
+  border-radius: 20px;
+  background: linear-gradient(170deg, var(--glass-a), var(--glass-b));
+  border: 1px solid var(--stroke);
+  box-shadow:
+    0 18px 40px var(--shadow),
+    inset 0 1px 0 var(--glass-inset);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  backdrop-filter: blur(12px) saturate(150%);
 }
 
 .scan-head h1 {
@@ -2447,13 +2519,22 @@ select option {
 .scan-intro,
 .scan-busy {
   margin: auto;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 14px;
   max-width: 430px;
-  padding: 24px 8px;
+  padding: 30px 22px;
   text-align: center;
+  border-radius: 28px;
+  background: linear-gradient(170deg, var(--glass-a), var(--glass-b));
+  border: 1px solid var(--stroke);
+  box-shadow:
+    0 26px 60px var(--shadow),
+    inset 0 1px 0 var(--glass-inset);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
 }
 
 .scan-illustration {
@@ -2463,8 +2544,13 @@ select option {
   height: 96px;
   border-radius: 28px;
   color: var(--accent);
-  background: var(--chip-bg);
-  border: 1px solid var(--chip-border);
+  background:
+    linear-gradient(150deg, var(--accent-soft), transparent 72%),
+    var(--chip-bg);
+  border: 1px solid var(--accent-border);
+  box-shadow:
+    0 18px 40px var(--accent-soft),
+    inset 0 1px 0 var(--glass-inset);
 }
 
 .scan-illustration svg {
@@ -2501,18 +2587,29 @@ select option {
 .scan-secondary-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
+  width: 100%;
   justify-content: center;
 }
 
 .scan-secondary-actions .btn-ghost,
 .scan-secondary-actions .btn-primary {
-  flex: 0 0 auto;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 10px 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+  border-radius: 999px;
 }
 
-.scan-empty-hint {
-  color: var(--muted);
-  font-weight: normal;
+.scan-secondary-actions .btn-ghost svg,
+.scan-secondary-actions .btn-primary svg,
+.scan-foot .btn-ghost svg,
+.scan-foot .btn-primary svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
 }
 
 .scan-progress {
@@ -2541,9 +2638,14 @@ select option {
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  border-radius: 14px;
-  background: var(--chip-bg);
-  border: 1px solid var(--chip-border);
+  border-radius: 16px;
+  background:
+    linear-gradient(140deg, var(--accent-soft), transparent 70%),
+    linear-gradient(170deg, var(--glass-a), var(--glass-b));
+  border: 1px solid var(--accent-border);
+  box-shadow:
+    0 14px 34px var(--shadow),
+    inset 0 1px 0 var(--glass-inset);
 }
 
 .scan-start label {
@@ -2581,11 +2683,14 @@ select option {
 .scan-row {
   display: flex;
   flex-direction: column;
-  gap: 9px;
-  padding: 12px;
-  border-radius: 18px;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 16px;
   background: linear-gradient(160deg, var(--panel-a), var(--panel-b));
   border: 1px solid var(--panel-border);
+  box-shadow:
+    0 10px 26px var(--shadow),
+    inset 0 1px 0 var(--glass-inset);
 }
 
 .scan-row.missing {
@@ -2597,26 +2702,116 @@ select option {
   opacity: 0.72;
 }
 
-.scan-row-top {
+.scan-row-main {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .scan-index {
+  flex: 0 0 auto;
   display: grid;
   place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 8px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 999px;
   font-size: 0.7rem;
+  font-weight: 700;
   color: var(--muted);
   background: var(--chip-bg);
   border: 1px solid var(--chip-border);
 }
 
+.scan-account {
+  flex: 0 1 34%;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--chip-border);
+  background: var(--input-bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 1.03rem;
+  font-weight: 700;
+}
+
+.scan-account::placeholder {
+  color: var(--faint);
+  font-weight: 600;
+}
+
+.scan-account:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.scan-amount {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-left: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.scan-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.scan-chips button {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--chip-border);
+  background: var(--chip-bg);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.2s var(--ease),
+    transform 0.2s var(--spring);
+}
+
+.scan-chips button.active {
+  color: #08111f;
+  background: linear-gradient(180deg, #a9c7ff, #c3a4ff);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.scan-chips button:active {
+  transform: translateY(2px);
+}
+
+.scan-custom-amount {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--chip-border);
+  background: var(--input-bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.scan-custom-amount:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.scan-add-pill {
+  align-self: center;
+  border-radius: 999px;
+  padding: 10px 24px;
+}
+
 .scan-chip {
-  margin-right: auto;
+  flex: 0 0 auto;
   padding: 3px 9px;
   border-radius: 999px;
   font-size: 0.66rem;
@@ -2642,40 +2837,9 @@ select option {
   display: none;
 }
 
-.scan-fields {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.scan-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 0.68rem;
-  color: var(--faint);
-}
-
-.scan-field input {
-  width: 100%;
-  padding: 9px 11px;
-  border-radius: 12px;
-  border: 1px solid var(--chip-border);
-  background: var(--input-bg);
-  color: var(--text);
-  font: inherit;
-  font-size: 0.86rem;
-  font-weight: 600;
-}
-
-.scan-field input:focus {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}
-
 .scan-row-name {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 6px;
   min-width: 0;
   font-size: 0.74rem;
@@ -2701,18 +2865,30 @@ select option {
 }
 
 .scan-foot {
+  flex: 0 0 auto;
   display: flex;
+  align-items: center;
   gap: 10px;
   justify-content: space-between;
-  padding-top: 4px;
+  padding: 10px;
+  border-radius: 22px;
+  background: linear-gradient(170deg, var(--glass-a), var(--glass-b));
+  border: 1px solid var(--stroke);
+  box-shadow:
+    0 18px 44px var(--shadow),
+    inset 0 1px 0 var(--glass-inset);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  backdrop-filter: blur(12px) saturate(150%);
 }
 
-.scan-foot .btn-ghost {
-  flex: 0 0 auto;
-}
-
+.scan-foot .btn-ghost,
 .scan-foot .btn-primary {
-  flex: 0 0 auto;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 10px 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+  border-radius: 999px;
 }
 
 .form-grid {
@@ -3011,8 +3187,9 @@ select option {
 .reminder-preview {
   padding: 14px;
   border-radius: 16px;
-  background: var(--chip-bg);
+  background: linear-gradient(160deg, var(--panel-a), var(--panel-b));
   border: 1px solid var(--panel-border);
+  box-shadow: inset 0 1px 0 var(--glass-inset);
   font-size: 0.82rem;
   line-height: 1.5;
   white-space: pre-wrap;
@@ -3041,8 +3218,9 @@ select option {
   gap: 8px;
   padding: 14px;
   border-radius: 18px;
-  background: var(--chip-bg);
+  background: linear-gradient(160deg, var(--panel-a), var(--panel-b));
   border: 1px solid var(--panel-border);
+  box-shadow: inset 0 1px 0 var(--glass-inset);
 }
 
 .backup-section + .backup-section {
@@ -3204,8 +3382,9 @@ select option {
   gap: 8px;
   padding: 12px;
   border-radius: 18px;
-  background: var(--chip-bg);
+  background: linear-gradient(160deg, var(--panel-a), var(--panel-b));
   border: 1px solid var(--panel-border);
+  box-shadow: inset 0 1px 0 var(--glass-inset);
 }
 
 .scan-existing-head {
@@ -3285,7 +3464,7 @@ select option {
 
 .scan-cta {
   width: 100%;
-  max-width: 280px;
+  max-width: none;
   align-self: center;
 }
 
@@ -3322,7 +3501,7 @@ select option {
   gap: 10px;
   padding: 12px;
   border-radius: 18px;
-  background: var(--chip-bg);
+  background: linear-gradient(160deg, var(--panel-a), var(--panel-b));
   border: 1px solid var(--panel-border);
   box-shadow:
     0 8px 18px var(--shadow),

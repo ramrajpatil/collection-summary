@@ -141,6 +141,7 @@ export interface Strings {
   scanAlready: string
   scanDuplicate: string
   scanAdd: string
+  scanCustom: string
   scanExisting: string
   scanSave: string
   scanEmpty: string
@@ -442,6 +443,7 @@ export const STRINGS: Record<Lang, Strings> = {
     scanAlready: 'आधीच नोंदवले',
     scanDuplicate: 'दुहेरी खाते',
     scanAdd: 'नोंद जोडा',
+    scanCustom: 'इतर',
     scanExisting: 'आधीच नोंदवलेल्या नोंदी',
     scanSave: 'वसुलीत जोडा',
     scanEmpty: 'कोणत्याही नोंदी सापडल्या नाहीत. पुन्हा स्कॅन करा.',
@@ -752,6 +754,7 @@ export const STRINGS: Record<Lang, Strings> = {
     scanAlready: 'Already collected',
     scanDuplicate: 'Duplicate account',
     scanAdd: 'Add entry',
+    scanCustom: 'Other',
     scanExisting: 'Already saved for this day',
     scanSave: 'Add to collection',
     scanEmpty: 'No entries were found. Try scanning again.',

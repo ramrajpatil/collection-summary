@@ -48,6 +48,9 @@ CREATE TABLE IF NOT EXISTS holders (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
+CREATE INDEX IF NOT EXISTS idx_holders_active ON holders(active);
+CREATE INDEX IF NOT EXISTS idx_holders_name ON holders(name COLLATE NOCASE);
+CREATE INDEX IF NOT EXISTS idx_holders_name_en ON holders(name_en COLLATE NOCASE);
 CREATE TABLE IF NOT EXISTS collections (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   holder_id INTEGER NOT NULL,
@@ -61,6 +64,10 @@ CREATE TABLE IF NOT EXISTS collections (
 );
 CREATE INDEX IF NOT EXISTS idx_collections_date ON collections(date);
 CREATE INDEX IF NOT EXISTS idx_collections_date_id ON collections(date, id);
+CREATE INDEX IF NOT EXISTS idx_collections_date_receipt
+  ON collections(date, receipt_no, id);
+CREATE INDEX IF NOT EXISTS idx_collections_report
+  ON collections(date, holder_id, amount);
 CREATE TABLE IF NOT EXISTS daily_meta (
   date TEXT PRIMARY KEY NOT NULL,
   start_receipt INTEGER NOT NULL DEFAULT 1,
@@ -303,6 +310,9 @@ export class NativeRepository implements Repository {
       await db.query('PRAGMA synchronous = NORMAL;')
       await db.query('PRAGMA temp_store = MEMORY;')
       await db.query('PRAGMA cache_size = -8000;')
+      // Keep the query planner's statistics fresh so the new indexes are used.
+      await db.query('PRAGMA analysis_limit = 400;')
+      await db.query('PRAGMA optimize;')
     } catch {
       void 0
     }

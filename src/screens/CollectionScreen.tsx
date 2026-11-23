@@ -13,6 +13,7 @@ import {
 } from '../lib/marathi'
 import { holderName } from '../lib/names'
 import { decimalOnly } from '../lib/input'
+import { accountDigits, rankByAccount } from '../lib/accounts'
 import { verifyMasterPassword } from '../lib/lock'
 import {
   loadNotifySettings,
@@ -320,35 +321,45 @@ export function CollectionScreen({
   const deferredSearch = useDeferredValue(search)
 
   const visibleHolders = useMemo(() => {
-    const query = deferredSearch.trim().toLocaleLowerCase()
-    return holders.filter((holder) => {
+    const raw = deferredSearch.trim()
+    const base = holders.filter((holder) => {
       const entry = entryByHolder.get(holder.id)
       if (filter === 'collected' && !entry) return false
       if (filter === 'pending' && entry) return false
-      if (query) {
-        const haystack =
-          `${holder.name} ${holder.nameEn} ${holder.accountNo}`.toLocaleLowerCase()
-        if (!haystack.includes(query)) return false
-      }
       return true
     })
+    if (!raw) return base
+    if (accountDigits(raw)) {
+      return rankByAccount(base, raw, (holder) => holder.accountNo)
+    }
+    const query = raw.toLocaleLowerCase()
+    return base.filter((holder) =>
+      `${holder.name} ${holder.nameEn} ${holder.accountNo}`
+        .toLocaleLowerCase()
+        .includes(query),
+    )
   }, [holders, entryByHolder, deferredSearch, filter])
 
   const deferredReassignSearch = useDeferredValue(reassignSearch)
 
   const reassignCandidates = useMemo(() => {
     if (!reassignFrom) return []
-    const query = deferredReassignSearch.trim().toLocaleLowerCase()
-    return holders.filter((holder) => {
+    const raw = deferredReassignSearch.trim()
+    const base = holders.filter((holder) => {
       if (holder.id === reassignFrom.id) return false
       if (entryByHolder.has(holder.id)) return false
-      if (query) {
-        const haystack =
-          `${holder.name} ${holder.nameEn} ${holder.accountNo}`.toLocaleLowerCase()
-        if (!haystack.includes(query)) return false
-      }
       return true
     })
+    if (!raw) return base
+    if (accountDigits(raw)) {
+      return rankByAccount(base, raw, (holder) => holder.accountNo)
+    }
+    const query = raw.toLocaleLowerCase()
+    return base.filter((holder) =>
+      `${holder.name} ${holder.nameEn} ${holder.accountNo}`
+        .toLocaleLowerCase()
+        .includes(query),
+    )
   }, [holders, entryByHolder, reassignFrom, deferredReassignSearch])
 
   async function notifyCollection(holder: Holder, amount: number) {

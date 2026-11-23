@@ -17,6 +17,7 @@ import { STRINGS, useLanguage } from '../lib/i18n'
 import { formatDigits, formatRupees } from '../lib/marathi'
 import { holderName, toEnglishName, toMarathiName, upperName } from '../lib/names'
 import { decimalOnly, digitsOnly, stripDigits } from '../lib/input'
+import { accountDigits, rankByAccount } from '../lib/accounts'
 import { BottomSheet } from '../components/BottomSheet'
 import { ScrollTopButton } from '../components/ScrollTopButton'
 import { Toast } from '../components/Toast'
@@ -109,8 +110,12 @@ export function HoldersScreen({
   const deferredSearch = useDeferredValue(search)
 
   const visibleHolders = useMemo(() => {
-    const query = deferredSearch.trim().toLocaleLowerCase()
-    if (!query) return holders
+    const raw = deferredSearch.trim()
+    if (!raw) return holders
+    if (accountDigits(raw)) {
+      return rankByAccount(holders, raw, (holder) => holder.accountNo)
+    }
+    const query = raw.toLocaleLowerCase()
     return holders.filter((holder) =>
       `${holder.name} ${holder.nameEn} ${holder.accountNo}`
         .toLocaleLowerCase()
