@@ -2708,6 +2708,24 @@ select option {
   gap: 8px;
 }
 
+.scan-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.scan-remove {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: var(--danger-border);
+}
+
+.scan-remove svg {
+  width: 16.2px;
+  height: 16.2px;
+}
+
 .scan-index {
   flex: 0 0 auto;
   display: grid;
@@ -2718,13 +2736,13 @@ select option {
   border-radius: 999px;
   font-size: 0.7rem;
   font-weight: 700;
-  color: var(--muted);
-  background: var(--chip-bg);
-  border: 1px solid var(--chip-border);
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
 }
 
 .scan-account {
-  flex: 0 0 calc(34% + 10px);
+  flex: 0 0 calc(23.8% + 7px);
   min-width: 0;
   padding: 8px 10px;
   border-radius: 10px;

@@ -598,12 +598,22 @@ export function ScanFlow({
                     key={info.row.key}
                     className={`scan-row ${info.status}`}
                   >
-                    <div className="scan-row-main">
+                    <div className="scan-row-head">
                       <span className="scan-index">
                         {assigned !== undefined
                           ? formatReceipt(assigned, lang)
                           : formatDigits(index + 1, lang)}
                       </span>
+                      <button
+                        type="button"
+                        className="icon-btn scan-remove"
+                        aria-label={s.delete}
+                        onClick={() => removeRow(info.row.key)}
+                      >
+                        <TrashIcon />
+                      </button>
+                    </div>
+                    <div className="scan-row-main">
                       <input
                         className="scan-account"
                         ref={(el) => {
@@ -682,14 +692,6 @@ export function ScanFlow({
                           </button>
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        className="icon-btn scan-remove"
-                        aria-label={s.delete}
-                        onClick={() => removeRow(info.row.key)}
-                      >
-                        <TrashIcon />
-                      </button>
                     </div>
                     {showCustom ? (
                       <input
