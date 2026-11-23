@@ -16,6 +16,7 @@ import { pushBackHandler } from '../lib/backButton'
 import { STRINGS, useLanguage } from '../lib/i18n'
 import { formatDigits, formatRupees } from '../lib/marathi'
 import { holderName, toEnglishName, toMarathiName, upperName } from '../lib/names'
+import { decimalOnly, digitsOnly, stripDigits } from '../lib/input'
 import { BottomSheet } from '../components/BottomSheet'
 import { ScrollTopButton } from '../components/ScrollTopButton'
 import { Toast } from '../components/Toast'
@@ -191,18 +192,20 @@ export function HoldersScreen({
   }
 
   function updateMarathiName(value: string, sync = true) {
+    const clean = stripDigits(value)
     setDraft((prev) => ({
       ...prev,
-      name: value,
-      nameEn: sync ? toEnglishName(value) : prev.nameEn,
+      name: clean,
+      nameEn: sync ? toEnglishName(clean) : prev.nameEn,
     }))
   }
 
   function updateEnglishName(value: string, sync = true) {
+    const clean = stripDigits(value)
     setDraft((prev) => ({
       ...prev,
-      nameEn: value,
-      name: sync ? toMarathiName(value) : prev.name,
+      nameEn: clean,
+      name: sync ? toMarathiName(clean) : prev.name,
     }))
   }
 
@@ -552,7 +555,7 @@ export function HoldersScreen({
                 autoCorrect="off"
                 spellCheck={false}
                 onChange={(event) =>
-                  setDraft({ ...draft, accountNo: event.target.value })
+                  setDraft({ ...draft, accountNo: digitsOnly(event.target.value) })
                 }
               />
               {!editing && nextAccount ? (
@@ -574,7 +577,7 @@ export function HoldersScreen({
                 onChange={(event) =>
                   setDraft({
                     ...draft,
-                    defaultAmount: Number(event.target.value),
+                    defaultAmount: Number(decimalOnly(event.target.value)),
                   })
                 }
               />
@@ -592,7 +595,7 @@ export function HoldersScreen({
               spellCheck={false}
               value={draft.phone ?? ''}
               onChange={(event) =>
-                setDraft({ ...draft, phone: event.target.value })
+                setDraft({ ...draft, phone: digitsOnly(event.target.value) })
               }
             />
           </div>

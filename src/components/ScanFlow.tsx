@@ -12,6 +12,7 @@ import {
   toLatinDigits,
 } from '../lib/marathi'
 import { holderName } from '../lib/names'
+import { decimalOnly, digitsOnly } from '../lib/input'
 import { pushBackHandler } from '../lib/backButton'
 import { readTextFile } from '../lib/backup'
 import { parseScanImport } from '../lib/scanImport'
@@ -452,7 +453,9 @@ export function ScanFlow({
                     autoComplete="off"
                     spellCheck={false}
                     value={startDraft}
-                    onChange={(event) => setStartDraft(event.target.value)}
+                    onChange={(event) =>
+                      setStartDraft(digitsOnly(event.target.value))
+                    }
                   />
                 </div>
                 {receiptError ? (
@@ -526,7 +529,7 @@ export function ScanFlow({
                         spellCheck={false}
                         onChange={(event) =>
                           updateRow(info.row.key, {
-                            accountNo: event.target.value,
+                            accountNo: digitsOnly(event.target.value),
                           })
                         }
                       />
@@ -541,7 +544,7 @@ export function ScanFlow({
                         value={info.row.amount}
                         onChange={(event) =>
                           updateRow(info.row.key, {
-                            amount: event.target.value,
+                            amount: decimalOnly(event.target.value),
                           })
                         }
                         onKeyDown={(event) => {

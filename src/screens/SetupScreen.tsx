@@ -3,6 +3,7 @@ import type { Profile } from '../lib/models'
 import type { Repository } from '../lib/repo'
 import { STRINGS, useLanguage } from '../lib/i18n'
 import { useTheme } from '../lib/theme'
+import { stripDigits } from '../lib/input'
 import { MoonIcon, SunIcon } from '../components/Icons'
 
 interface SetupScreenProps {
@@ -98,7 +99,7 @@ export function SetupScreen({
             autoCorrect="off"
             spellCheck={false}
             onChange={(event) =>
-              setDraft({ ...draft, societyName: event.target.value })
+              setDraft({ ...draft, societyName: stripDigits(event.target.value) })
             }
           />
         </div>
@@ -127,7 +128,7 @@ export function SetupScreen({
               autoCorrect="off"
               spellCheck={false}
               onChange={(event) =>
-                setDraft({ ...draft, agentName: event.target.value })
+                setDraft({ ...draft, agentName: stripDigits(event.target.value) })
               }
             />
           </div>
@@ -140,7 +141,7 @@ export function SetupScreen({
               autoCorrect="off"
               spellCheck={false}
               onChange={(event) =>
-                setDraft({ ...draft, managerName: event.target.value })
+                setDraft({ ...draft, managerName: stripDigits(event.target.value) })
               }
             />
           </div>

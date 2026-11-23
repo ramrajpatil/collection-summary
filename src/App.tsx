@@ -21,6 +21,7 @@ import {
 } from './lib/settings'
 import { useTheme, type Theme } from './lib/theme'
 import { applySystemTheme } from './lib/systemUi'
+import { stripDigits } from './lib/input'
 import { SetupScreen } from './screens/SetupScreen'
 import { CollectionScreen } from './screens/CollectionScreen'
 import { HoldersScreen } from './screens/HoldersScreen'
@@ -484,7 +485,7 @@ export default function App() {
               onChange={(event) =>
                 setSettingsDraft({
                   ...settingsDraft,
-                  societyName: event.target.value,
+                  societyName: stripDigits(event.target.value),
                 })
               }
             />
@@ -519,7 +520,7 @@ export default function App() {
                 onChange={(event) =>
                   setSettingsDraft({
                     ...settingsDraft,
-                    agentName: event.target.value,
+                    agentName: stripDigits(event.target.value),
                   })
                 }
               />
@@ -535,7 +536,7 @@ export default function App() {
                 onChange={(event) =>
                   setSettingsDraft({
                     ...settingsDraft,
-                    managerName: event.target.value,
+                    managerName: stripDigits(event.target.value),
                   })
                 }
               />

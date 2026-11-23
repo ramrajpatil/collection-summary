@@ -12,6 +12,7 @@ import {
   todayIso,
 } from '../lib/marathi'
 import { holderName } from '../lib/names'
+import { decimalOnly } from '../lib/input'
 import { verifyMasterPassword } from '../lib/lock'
 import {
   loadNotifySettings,
@@ -1202,7 +1203,7 @@ export function CollectionScreen({
               onChange={(event) =>
                 setAmountTarget({
                   ...amountTarget,
-                  amount: Number(event.target.value),
+                  amount: Number(decimalOnly(event.target.value)),
                 })
               }
             />

@@ -17,6 +17,7 @@ import {
   todayIso,
 } from '../lib/marathi'
 import { holderName } from '../lib/names'
+import { decimalOnly } from '../lib/input'
 import {
   buildHolderStatementHtml,
   generateNativePdf,
@@ -599,7 +600,9 @@ export function HolderDetailScreen({
               step="1"
               inputMode="decimal"
               value={openingAmount}
-              onChange={(event) => setOpeningAmount(event.target.value)}
+              onChange={(event) =>
+                setOpeningAmount(decimalOnly(event.target.value))
+              }
             />
           </div>
           <div className="field">
@@ -653,7 +656,9 @@ export function HolderDetailScreen({
               step="1"
               inputMode="decimal"
               value={reductionAmount}
-              onChange={(event) => setReductionAmount(event.target.value)}
+              onChange={(event) =>
+                setReductionAmount(decimalOnly(event.target.value))
+              }
             />
           </div>
           <div className="field">
