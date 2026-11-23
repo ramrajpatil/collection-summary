@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { Capacitor } from '@capacitor/core'
 import { Camera } from '@capacitor/camera'
 import type { DayEntry, Holder } from '../lib/models'
@@ -60,7 +61,7 @@ interface ScanRowSource {
 }
 
 const QUICK_AMOUNTS = [50, 100, 200, 300, 400, 500, 1000]
-const MANUAL_ROWS = 35
+const MANUAL_ROWS = 1
 
 let rowSequence = 0
 
@@ -128,6 +129,7 @@ export function ScanFlow({
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
   const fileRef = useRef<HTMLInputElement | null>(null)
+  const accountRefs = useRef<Map<string, HTMLInputElement>>(new Map())
 
   useEffect(() => {
     let active = true
@@ -282,6 +284,23 @@ export function ScanFlow({
 
   function addRow() {
     setRows((current) => [...current, createRow()])
+  }
+
+  function focusNextAccount(key: string) {
+    const index = rows.findIndex((row) => row.key === key)
+    if (index === -1) return
+    const next = rows[index + 1]
+    if (next) {
+      accountRefs.current.get(next.key)?.focus()
+      return
+    }
+    const row = createRow()
+    // Commit the new row synchronously so the input exists within this tap
+    // gesture; then focusing it keeps the keypad open on Android.
+    flushSync(() => {
+      setRows((current) => [...current, row])
+    })
+    accountRefs.current.get(row.key)?.focus()
   }
 
   function toggleCustom(row: ScanRow) {
@@ -551,6 +570,10 @@ export function ScanFlow({
                       </span>
                       <input
                         className="scan-account"
+                        ref={(el) => {
+                          if (el) accountRefs.current.set(info.row.key, el)
+                          else accountRefs.current.delete(info.row.key)
+                        }}
                         value={formatDigits(info.row.accountNo, lang)}
                         placeholder={s.accountNoShort}
                         inputMode="numeric"
@@ -596,12 +619,15 @@ export function ScanFlow({
                                   ? 'active'
                                   : ''
                               }
-                              onClick={() =>
+                              onClick={() => {
                                 updateRow(info.row.key, {
                                   amount: String(value),
                                   custom: false,
                                 })
-                              }
+                                if (mode === 'manual') {
+                                  focusNextAccount(info.row.key)
+                                }
+                              }}
                             >
                               {formatDigits(value, lang)}
                             </button>
