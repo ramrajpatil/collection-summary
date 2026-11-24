@@ -2906,21 +2906,21 @@ select option {
 }
 
 .scan-chips {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
   padding: 2px 0;
 }
 
 .scan-chips button {
-  flex: 0 0 auto;
-  padding: 4px 8px;
+  min-height: 36px;
+  padding: 8px 6px;
   border-radius: 999px;
   border: 1px solid var(--chip-border);
   background: var(--chip-bg);
   color: var(--text);
   font-family: inherit;
-  font-size: 0.64rem;
+  font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
   transition:
