@@ -1,8 +1,18 @@
 import { Capacitor, CapacitorHttp } from '@capacitor/core'
 
 const STORAGE_KEY = 'collection-summary.geminiKey'
-const MODEL = 'gemini-3.8-flash'
-const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`
+const API_BASE = 'https://generativelanguage.googleapis.com/v1beta'
+// Used only if the account's own model list can't be fetched. Otherwise we
+// discover whatever generateContent models the key can use and try them,
+// preferring the "free-tier friendly" flash ones.
+const MODEL_CANDIDATES = [
+  'gemini-2.5-flash',
+  'gemini-2.0-flash',
+  'gemini-1.5-flash',
+  'gemini-flash-latest',
+]
+
+let cachedModels: string[] | null = null
 
 const PROMPT = `You are reading a handwritten daily collection sheet from a savings society in Maharashtra, India.
 The sheet has two handwritten columns: an account number (usually 4-6 digits) and the collected amount (usually 1-5 digits) to its right.
@@ -171,67 +181,143 @@ export async function prepareScannedImage(
   })
 }
 
+function isModelUnavailable(status: number, detail: string): boolean {
+  if (status === 404 || status === 429 || status === 503) return true
+  return /not found|not available|not supported|unsupported|does not exist|deprecated|no longer/i.test(
+    detail,
+  )
+}
+
+function rankModel(name: string): number {
+  const n = name.toLowerCase()
+  let score = 0
+  if (n.includes('flash')) score -= 10
+  if (n.includes('pro')) score += 6
+  if (n.includes('lite')) score += 3
+  if (/preview|exp|experimental/.test(n)) score += 1
+  return score
+}
+
+/**
+ * Asks the API which models this key can actually use and returns them ordered
+ * most-free-tier-friendly first (flash before pro, stable before preview).
+ */
+async function discoverModels(apiKey: string): Promise<string[]> {
+  try {
+    const res = await CapacitorHttp.get({
+      url: `${API_BASE}/models?pageSize=200`,
+      headers: { 'x-goog-api-key': apiKey },
+    })
+    if (res.status < 200 || res.status >= 300) return []
+    const data =
+      typeof res.data === 'string' ? JSON.parse(res.data) : res.data
+    const list = (data as { models?: unknown })?.models
+    if (!Array.isArray(list)) return []
+    return (
+      list as Array<{ name?: string; supportedGenerationMethods?: string[] }>
+    )
+      .filter((model) =>
+        (model.supportedGenerationMethods ?? []).includes('generateContent'),
+      )
+      .map((model) => (model.name ?? '').replace(/^models\//, ''))
+      .filter(Boolean)
+      .sort((a, b) => rankModel(a) - rankModel(b))
+  } catch {
+    return []
+  }
+}
+
+function extractText(data: Record<string, unknown>): string {
+  const candidates = data?.candidates as
+    | Array<{ content?: { parts?: Array<{ text?: string }> } }>
+    | undefined
+  return (candidates?.[0]?.content?.parts ?? [])
+    .map((part) => part.text ?? '')
+    .join('')
+    .trim()
+}
+
 export async function recognizeWithGemini(
   imageBase64: string,
   apiKey: string,
 ): Promise<GeminiEntry[]> {
-  if (!apiKey.trim()) throw new Error('MISSING_API_KEY')
+  const key = apiKey.trim()
+  if (!key) throw new Error('MISSING_API_KEY')
 
-  const response = await CapacitorHttp.post({
-    url: ENDPOINT,
-    headers: {
-      'Content-Type': 'application/json',
-      'x-goog-api-key': apiKey.trim(),
-    },
-    data: {
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            { text: PROMPT },
-            {
-              inline_data: {
-                mime_type: 'image/jpeg',
-                data: imageBase64,
-              },
-            },
-          ],
-        },
-      ],
-      generationConfig: {
-        responseMimeType: 'application/json',
-        responseSchema: RESPONSE_SCHEMA,
-        temperature: 0,
+  const models: string[] = []
+  const discovered = cachedModels ?? (await discoverModels(key))
+  if (discovered.length > 0) {
+    cachedModels = discovered
+    models.push(...discovered)
+  }
+  for (const name of MODEL_CANDIDATES) {
+    if (!models.includes(name)) models.push(name)
+  }
+
+  let lastError: Error = new Error('EMPTY_RESPONSE')
+  for (const model of models) {
+    const response = await CapacitorHttp.post({
+      url: `${API_BASE}/models/${model}:generateContent`,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': key,
       },
-    },
-  })
+      data: {
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              { text: PROMPT },
+              {
+                inline_data: {
+                  mime_type: 'image/jpeg',
+                  data: imageBase64,
+                },
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          responseSchema: RESPONSE_SCHEMA,
+          temperature: 0,
+        },
+      },
+    })
 
-  if (response.status < 200 || response.status >= 300) {
+    if (response.status >= 200 && response.status < 300) {
+      const data =
+        typeof response.data === 'string'
+          ? (JSON.parse(response.data) as Record<string, unknown>)
+          : (response.data as Record<string, unknown>)
+      const text = extractText(data)
+      if (!text) {
+        const feedback = data?.promptFeedback as
+          | { blockReason?: string }
+          | undefined
+        lastError = new Error(feedback?.blockReason ?? 'EMPTY_RESPONSE')
+        continue
+      }
+      // Remember the working model so later scans hit it first.
+      cachedModels = [
+        model,
+        ...(cachedModels ?? []).filter((name) => name !== model),
+      ]
+      return parseGeminiEntries(text)
+    }
+
     const detail =
       typeof response.data === 'string'
         ? response.data
         : JSON.stringify(response.data ?? '')
-    throw new Error(`HTTP_${response.status}: ${detail.slice(0, 240)}`)
+    const error = new Error(`HTTP_${response.status}: ${detail.slice(0, 240)}`)
+
+    // Bad/absent key fails for every model — stop immediately.
+    if (response.status === 401 || response.status === 403) throw error
+    lastError = error
+    // Model missing/overloaded/unsupported: try the next candidate.
+    if (!isModelUnavailable(response.status, detail)) throw error
   }
 
-  const data =
-    typeof response.data === 'string'
-      ? (JSON.parse(response.data) as Record<string, unknown>)
-      : (response.data as Record<string, unknown>)
-  const candidates = data?.candidates as
-    | Array<{ content?: { parts?: Array<{ text?: string }> } }>
-    | undefined
-  const text = (candidates?.[0]?.content?.parts ?? [])
-    .map((part) => part.text ?? '')
-    .join('')
-    .trim()
-
-  if (!text) {
-    const feedback = data?.promptFeedback as
-      | { blockReason?: string }
-      | undefined
-    throw new Error(feedback?.blockReason ?? 'EMPTY_RESPONSE')
-  }
-
-  return parseGeminiEntries(text)
+  throw lastError
 }
