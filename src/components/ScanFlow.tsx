@@ -124,6 +124,7 @@ export function ScanFlow({
   const [saving, setSaving] = useState(false)
   const fileRef = useRef<HTMLInputElement | null>(null)
   const accountRefs = useRef<Map<string, HTMLInputElement>>(new Map())
+  const amountRefs = useRef<Map<string, HTMLInputElement>>(new Map())
   const expandTimers = useRef<Map<string, number>>(new Map())
 
   useEffect(() => {
@@ -332,20 +333,32 @@ export function ScanFlow({
     accountRefs.current.get(row.key)?.focus()
   }
 
-  function handleRowEnter(key: string) {
+  function commitAccount(key: string) {
     cancelExpand(key)
-    if (mode !== 'manual') {
-      addRow()
-      return
-    }
+    if (mode !== 'manual') return
     const row = rows.find((candidate) => candidate.key === key)
-    if (row) {
-      const expanded = expandAccountNo(row.accountNo)
-      if (expanded && expanded !== row.accountNo) {
-        updateRow(key, { accountNo: expanded })
-      }
+    if (!row) return
+    const expanded = expandAccountNo(row.accountNo)
+    if (expanded && expanded !== row.accountNo) {
+      updateRow(key, { accountNo: expanded })
     }
-    focusNextAccount(key)
+  }
+
+  // Enter on the account field advances to the amount field of the same row.
+  function handleAccountEnter(key: string) {
+    commitAccount(key)
+    amountRefs.current.get(key)?.focus()
+  }
+
+  // Enter on the amount field saves the row and moves on: spawn/focus the next
+  // row's account field (manual) or just add a row (camera/JSON import).
+  function handleAmountEnter(key: string) {
+    commitAccount(key)
+    if (mode === 'manual') {
+      focusNextAccount(key)
+    } else {
+      addRow()
+    }
   }
 
   async function runScan() {
@@ -672,16 +685,20 @@ export function ScanFlow({
                         onKeyDown={(event) => {
                           if (event.key === 'Enter') {
                             event.preventDefault()
-                            handleRowEnter(info.row.key)
+                            handleAccountEnter(info.row.key)
                           }
                         }}
                       />
                       <input
                         className="scan-amount-input"
+                        ref={(el) => {
+                          if (el) amountRefs.current.set(info.row.key, el)
+                          else amountRefs.current.delete(info.row.key)
+                        }}
                         value={formatDigits(info.row.amount, lang)}
                         placeholder={s.amount}
                         inputMode="numeric"
-                        enterKeyHint="next"
+                        enterKeyHint="done"
                         pattern="[0-9]*"
                         autoComplete="off"
                         autoCorrect="off"
@@ -694,7 +711,7 @@ export function ScanFlow({
                         onKeyDown={(event) => {
                           if (event.key === 'Enter') {
                             event.preventDefault()
-                            handleRowEnter(info.row.key)
+                            handleAmountEnter(info.row.key)
                           }
                         }}
                       />
