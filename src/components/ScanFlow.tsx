@@ -12,7 +12,7 @@ import {
   formatRupees,
 } from '../lib/marathi'
 import { holderName } from '../lib/names'
-import { decimalOnly, digitsOnly } from '../lib/input'
+import { digitsOnly } from '../lib/input'
 import { accountDigits, expandAccountNo } from '../lib/accounts'
 import { pushBackHandler } from '../lib/backButton'
 import { readTextFile } from '../lib/backup'
@@ -48,7 +48,6 @@ interface ScanRow {
   key: string
   accountNo: string
   amount: string
-  custom: boolean
   rawAccountNo: string
   rawAmount: string
 }
@@ -60,15 +59,10 @@ interface ScanRowSource {
   amount?: string | number | null
 }
 
-const QUICK_AMOUNTS = [50, 100, 200, 300, 400, 500, 1000]
 const MANUAL_ROWS = 1
 const EXPAND_DELAY = 2500
 
 let rowSequence = 0
-
-function isQuickAmount(value: string): boolean {
-  return QUICK_AMOUNTS.some((amount) => String(amount) === value.trim())
-}
 
 function createRow(entry?: ScanRowSource): ScanRow {
   rowSequence += 1
@@ -78,7 +72,6 @@ function createRow(entry?: ScanRowSource): ScanRow {
     key: `scan-${rowSequence}`,
     accountNo,
     amount,
-    custom: amount !== '' && !isQuickAmount(amount),
     rawAccountNo: accountNo,
     rawAmount: amount,
   }
@@ -339,9 +332,20 @@ export function ScanFlow({
     accountRefs.current.get(row.key)?.focus()
   }
 
-  function toggleCustom(row: ScanRow) {
-    const keep = row.amount !== '' && !isQuickAmount(row.amount)
-    updateRow(row.key, { custom: true, amount: keep ? row.amount : '' })
+  function handleRowEnter(key: string) {
+    cancelExpand(key)
+    if (mode !== 'manual') {
+      addRow()
+      return
+    }
+    const row = rows.find((candidate) => candidate.key === key)
+    if (row) {
+      const expanded = expandAccountNo(row.accountNo)
+      if (expanded && expanded !== row.accountNo) {
+        updateRow(key, { accountNo: expanded })
+      }
+    }
+    focusNextAccount(key)
   }
 
   async function runScan() {
@@ -590,47 +594,51 @@ export function ScanFlow({
             <div className="scan-rows">
               {rowInfos.map((info, index) => {
                 const assigned = receiptByKey.get(info.row.key)
-                const showCustom =
-                  info.row.custom ||
-                  (info.row.amount !== '' && !isQuickAmount(info.row.amount))
                 return (
                   <div
                     key={info.row.key}
                     className={`scan-row ${info.status}`}
                   >
-                    <div className="scan-row-content">
-                      <div className="scan-row-head">
-                        <span className="scan-index">
-                          {assigned !== undefined
-                            ? formatReceipt(assigned, lang)
-                            : formatDigits(index + 1, lang)}
+                    <div className="scan-row-head">
+                      <span className="scan-index">
+                        {assigned !== undefined
+                          ? formatReceipt(assigned, lang)
+                          : formatDigits(index + 1, lang)}
+                      </span>
+                      {info.holder ? (
+                        <b className="scan-name">
+                          {holderName(
+                            info.holder.name,
+                            info.holder.nameEn,
+                            lang,
+                          )}
+                        </b>
+                      ) : info.status === 'blank' ? null : (
+                        <b className="scan-name scan-name-missing">
+                          {s.scanNotFound}
+                        </b>
+                      )}
+                      {info.row.rawAccountNo &&
+                      info.row.rawAccountNo !== info.row.accountNo ? (
+                        <small className="scan-raw">
+                          {info.row.rawAccountNo}
+                        </small>
+                      ) : null}
+                      {info.status !== 'blank' ? (
+                        <span className={`scan-chip ${info.status}`}>
+                          {statusLabel(info.status)}
                         </span>
-                        {info.holder ? (
-                          <b className="scan-name">
-                            {holderName(
-                              info.holder.name,
-                              info.holder.nameEn,
-                              lang,
-                            )}
-                          </b>
-                        ) : info.status === 'blank' ? null : (
-                          <b className="scan-name scan-name-missing">
-                            {s.scanNotFound}
-                          </b>
-                        )}
-                        {info.row.rawAccountNo &&
-                        info.row.rawAccountNo !== info.row.accountNo ? (
-                          <small className="scan-raw">
-                            {info.row.rawAccountNo}
-                          </small>
-                        ) : null}
-                        {info.status !== 'blank' ? (
-                          <span className={`scan-chip ${info.status}`}>
-                            {statusLabel(info.status)}
-                          </span>
-                        ) : null}
-                      </div>
-                      <div className="scan-row-main">
+                      ) : null}
+                      <button
+                        type="button"
+                        className="icon-btn scan-remove"
+                        aria-label={s.delete}
+                        onClick={() => removeRow(info.row.key)}
+                      >
+                        <TrashIcon />
+                      </button>
+                    </div>
+                    <div className="scan-row-main">
                       <input
                         className="scan-account"
                         ref={(el) => {
@@ -640,6 +648,8 @@ export function ScanFlow({
                         value={formatDigits(info.row.accountNo, lang)}
                         placeholder={s.accountNoShort}
                         inputMode="numeric"
+                        enterKeyHint="next"
+                        pattern="[0-9]*"
                         autoComplete="off"
                         autoCorrect="off"
                         spellCheck={false}
@@ -662,79 +672,33 @@ export function ScanFlow({
                         onKeyDown={(event) => {
                           if (event.key === 'Enter') {
                             event.preventDefault()
-                            cancelExpand(info.row.key)
-                            if (mode === 'manual') {
-                              const expanded = expandAccountNo(
-                                info.row.accountNo,
-                              )
-                              if (expanded && expanded !== info.row.accountNo) {
-                                updateRow(info.row.key, { accountNo: expanded })
-                              }
-                            }
-                            addRow()
+                            handleRowEnter(info.row.key)
                           }
                         }}
                       />
-                      <div className="scan-amount">
-                        <div className="scan-chips">
-                          {QUICK_AMOUNTS.map((value) => (
-                            <button
-                              key={value}
-                              type="button"
-                              className={
-                                !showCustom &&
-                                Number(info.row.amount) === value
-                                  ? 'active'
-                                  : ''
-                              }
-                              onClick={() => {
-                                updateRow(info.row.key, {
-                                  amount: String(value),
-                                  custom: false,
-                                })
-                                if (mode === 'manual') {
-                                  focusNextAccount(info.row.key)
-                                }
-                              }}
-                            >
-                              {formatDigits(value, lang)}
-                            </button>
-                          ))}
-                          <button
-                            type="button"
-                            className={showCustom ? 'active' : ''}
-                            onClick={() => toggleCustom(info.row)}
-                          >
-                            {s.scanCustom}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                    {showCustom ? (
                       <input
-                        className="scan-custom-amount"
-                        type="text"
-                        inputMode="decimal"
+                        className="scan-amount-input"
+                        value={formatDigits(info.row.amount, lang)}
                         placeholder={s.amount}
+                        inputMode="numeric"
+                        enterKeyHint="next"
+                        pattern="[0-9]*"
                         autoComplete="off"
-                        value={info.row.amount}
+                        autoCorrect="off"
+                        spellCheck={false}
                         onChange={(event) =>
                           updateRow(info.row.key, {
-                            amount: decimalOnly(event.target.value),
-                            custom: true,
+                            amount: digitsOnly(event.target.value),
                           })
                         }
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault()
+                            handleRowEnter(info.row.key)
+                          }
+                        }}
                       />
-                    ) : null}
                     </div>
-                    <button
-                      type="button"
-                      className="icon-btn scan-remove"
-                      aria-label={s.delete}
-                      onClick={() => removeRow(info.row.key)}
-                    >
-                      <TrashIcon />
-                    </button>
                   </div>
                 )
               })}
