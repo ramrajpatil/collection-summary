@@ -122,6 +122,9 @@ export function CollectionScreen({
   const [reassignError, setReassignError] = useState('')
   const [reassignSearch, setReassignSearch] = useState('')
   const [reloadToken, setReloadToken] = useState(0)
+  const [collectionDates, setCollectionDates] = useState<Set<string>>(
+    () => new Set(),
+  )
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<'all' | 'collected' | 'pending'>('all')
   const [filterOpen, setFilterOpen] = useState(false)
@@ -258,6 +261,19 @@ export function CollectionScreen({
       state.cancelled = true
     }
   }, [repo, date, reloadToken, s.failed])
+
+  useEffect(() => {
+    let cancelled = false
+    repo
+      .listCollectionDates()
+      .then((dates) => {
+        if (!cancelled) setCollectionDates(new Set(dates))
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [repo, reloadToken])
 
   useEffect(() => {
     if (!status) return
@@ -1559,6 +1575,7 @@ export function CollectionScreen({
         <DatePicker
           value={date}
           max={today}
+          marked={collectionDates}
           onSelect={(next) => changeDate(next)}
           onClose={() => setCalendarOpen(false)}
         />

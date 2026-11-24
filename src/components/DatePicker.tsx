@@ -14,6 +14,7 @@ interface DatePickerProps {
   max: string
   onSelect: (isoDate: string) => void
   onClose: () => void
+  marked?: Set<string>
 }
 
 const MR_WEEKDAYS = ['रवि', 'सोम', 'मंगळ', 'बुध', 'गुरु', 'शुक्र', 'शनि']
@@ -32,6 +33,7 @@ export function DatePicker({
   max,
   onSelect,
   onClose,
+  marked,
 }: DatePickerProps) {
   const { lang } = useLanguage()
   const s = STRINGS[lang]
@@ -125,13 +127,14 @@ export function DatePicker({
             const disabled = isoDate > max
             const selected = isoDate === value
             const isToday = isoDate === today
+            const isMarked = marked?.has(isoDate) ?? false
             return (
               <button
                 key={isoDate}
                 type="button"
                 className={`calendar-day${selected ? ' selected' : ''}${
                   isToday ? ' today' : ''
-                }`}
+                }${isMarked ? ' marked' : ''}`}
                 disabled={disabled}
                 aria-pressed={selected}
                 onClick={() => pick(day)}

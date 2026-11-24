@@ -434,6 +434,13 @@ body {
   color: var(--accent);
 }
 
+.calendar-day.marked {
+  background: var(--success-soft-a);
+  border-color: var(--success-border);
+  color: var(--success);
+  font-weight: 700;
+}
+
 .calendar-day.selected {
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   border-color: transparent;

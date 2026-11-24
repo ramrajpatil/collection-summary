@@ -490,6 +490,16 @@ export class NativeRepository implements Repository {
     return { date, startReceipt, locked, entries }
   }
 
+  async listCollectionDates(): Promise<string[]> {
+    const db = await this.getDb()
+    const res = await db.query(
+      'SELECT DISTINCT date FROM collections ORDER BY date ASC',
+    )
+    return ((res.values ?? []) as Array<{ date: string }>).map(
+      (row) => row.date,
+    )
+  }
+
   private async assertUnlocked(
     db: SQLiteDBConnection,
     date: string,
