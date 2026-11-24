@@ -47,11 +47,12 @@ public class PdfGeneratorPlugin extends Plugin {
 
     private static final int PAGE_W = 595;
     private static final int PAGE_H = 842;
-    // Left/right margins stay generous for filing, but the top/bottom margins
-    // are removed so each page fits as many rows as possible.
-    private static final int MARGIN_TOP = 0;
+    // Left/right margins stay generous for filing, and the top/bottom margins
+    // keep the header and last row inside the printable area so they are not
+    // clipped by the printer/paper edge.
+    private static final int MARGIN_TOP = 40;
     private static final int MARGIN_RIGHT = 45;  // ~16mm
-    private static final int MARGIN_BOTTOM = 0;
+    private static final int MARGIN_BOTTOM = 40;
     private static final int MARGIN_LEFT = 62;   // ~22mm (binding side)
     private static final int CONTENT_W = PAGE_W - MARGIN_LEFT - MARGIN_RIGHT;
     private static final int CONTENT_H = PAGE_H - MARGIN_TOP - MARGIN_BOTTOM;
