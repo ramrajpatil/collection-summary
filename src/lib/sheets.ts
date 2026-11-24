@@ -1,5 +1,4 @@
 import { Capacitor } from '@capacitor/core'
-import { Share } from '@capacitor/share'
 import type {
   DayEntry,
   HolderHistory,
@@ -218,10 +217,12 @@ export async function sharePdf(
   text: string,
 ): Promise<void> {
   if (!Capacitor.isNativePlatform()) return
-  await Share.share({
-    title,
+  // The Capacitor Share plugin rejects content:// URIs ("Unsupported url"), and
+  // our generated PDFs are content:// (MediaStore/FileProvider). Share through
+  // the custom plugin instead, which sends ACTION_SEND with the content URI.
+  await PdfGenerator.share({
+    uri: result.uri,
+    fileName: result.path.split('/').pop() ?? title,
     text,
-    url: result.uri,
-    dialogTitle: title,
   })
 }

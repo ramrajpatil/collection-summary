@@ -14,7 +14,7 @@ interface DatePickerProps {
   max: string
   onSelect: (isoDate: string) => void
   onClose: () => void
-  marked?: Set<string>
+  amounts?: Record<string, number>
 }
 
 const MR_WEEKDAYS = ['रवि', 'सोम', 'मंगळ', 'बुध', 'गुरु', 'शुक्र', 'शनि']
@@ -33,7 +33,7 @@ export function DatePicker({
   max,
   onSelect,
   onClose,
-  marked,
+  amounts,
 }: DatePickerProps) {
   const { lang } = useLanguage()
   const s = STRINGS[lang]
@@ -116,8 +116,8 @@ export function DatePicker({
           {cells.map((day, index) => {
             if (day === null) {
               return (
-                <span
-                  className="calendar-day calendar-blank"
+                <div
+                  className="calendar-cell calendar-blank"
                   key={`blank-${index}`}
                   aria-hidden
                 />
@@ -127,20 +127,27 @@ export function DatePicker({
             const disabled = isoDate > max
             const selected = isoDate === value
             const isToday = isoDate === today
-            const isMarked = marked?.has(isoDate) ?? false
+            const amount = amounts?.[isoDate]
+            const isMarked = amount !== undefined
             return (
-              <button
-                key={isoDate}
-                type="button"
-                className={`calendar-day${selected ? ' selected' : ''}${
-                  isToday ? ' today' : ''
-                }${isMarked ? ' marked' : ''}`}
-                disabled={disabled}
-                aria-pressed={selected}
-                onClick={() => pick(day)}
-              >
-                {formatDigits(day, lang)}
-              </button>
+              <div className="calendar-cell" key={isoDate}>
+                <button
+                  type="button"
+                  className={`calendar-day${selected ? ' selected' : ''}${
+                    isToday ? ' today' : ''
+                  }${isMarked ? ' marked' : ''}`}
+                  disabled={disabled}
+                  aria-pressed={selected}
+                  onClick={() => pick(day)}
+                >
+                  {formatDigits(day, lang)}
+                </button>
+                {isMarked ? (
+                  <span className="calendar-amount">
+                    {formatDigits(Math.round(amount), lang)}
+                  </span>
+                ) : null}
+              </div>
             )
           })}
         </div>

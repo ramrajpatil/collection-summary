@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Capacitor } from '@capacitor/core'
-import type { MonthlyReport, Profile } from '../lib/models'
+import type {
+  HolderHistory,
+  MonthlyHolderRow,
+  MonthlyReport,
+  Profile,
+} from '../lib/models'
 import type { Repository } from '../lib/repo'
 import { STRINGS, useLanguage } from '../lib/i18n'
 import {
@@ -11,7 +16,6 @@ import {
 } from '../lib/marathi'
 import { holderName } from '../lib/names'
 import {
-  buildDailySheetHtml,
   buildMonthlySheetHtml,
   generateNativePdf,
   openPrintPreview,
@@ -26,6 +30,7 @@ import {
   UsersIcon,
   WalletIcon,
 } from '../components/Icons'
+import { BottomSheet } from '../components/BottomSheet'
 import { Toast } from '../components/Toast'
 import { ScrollTopButton } from '../components/ScrollTopButton'
 import { currentMonth, shiftMonth } from '../lib/reports'
@@ -48,6 +53,30 @@ export function ReportsScreen({ repo, profile }: ReportsScreenProps) {
     { month: string; total: number; commission: number }[]
   >([])
   const [historyOpen, setHistoryOpen] = useState(false)
+  const [detailHolder, setDetailHolder] = useState<MonthlyHolderRow | null>(null)
+  const [detail, setDetail] = useState<HolderHistory | null>(null)
+  const [detailLoading, setDetailLoading] = useState(false)
+
+  const detailHolderId = detailHolder?.holderId ?? null
+
+  useEffect(() => {
+    if (detailHolderId === null) return
+    let cancelled = false
+    repo
+      .getHolderHistory(detailHolderId)
+      .then((next) => {
+        if (!cancelled) setDetail(next)
+      })
+      .catch(() => {
+        if (!cancelled) setDetail(null)
+      })
+      .finally(() => {
+        if (!cancelled) setDetailLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [detailHolderId, repo])
 
   useEffect(() => {
     const state = { cancelled: false }
@@ -130,38 +159,6 @@ export function ReportsScreen({ repo, profile }: ReportsScreenProps) {
       )
       await sharePdf(result, s.shareTitle, s.reportShared)
       setStatus(s.reportShared)
-    } catch (err) {
-      setStatus(
-        `${s.pdfFailed} ${err instanceof Error ? err.message : String(err)}`,
-      )
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function generateDaily(date: string) {
-    if (busy) return
-    setBusy(true)
-    setStatus('')
-    try {
-      const html = await buildDailySheetHtml(repo, profile, date, lang)
-      if (!html) {
-        setStatus(s.noEntries)
-        return
-      }
-      if (!Capacitor.isNativePlatform()) {
-        setStatus(
-          openPrintPreview(html)
-            ? lang === 'mr'
-              ? 'वेब प्रिव्ह्यू उघडला.'
-              : 'Web preview opened.'
-            : s.pdfFailed,
-        )
-        return
-      }
-      const result = await generateNativePdf(html, `collection-${date}.pdf`)
-      await sharePdf(result, s.shareTitle, s.shareText)
-      setStatus(s.pdfSaved)
     } catch (err) {
       setStatus(
         `${s.pdfFailed} ${err instanceof Error ? err.message : String(err)}`,
@@ -328,7 +325,16 @@ export function ReportsScreen({ repo, profile }: ReportsScreenProps) {
           ) : (
             <section className="report-holders">
               {report.holders.map((holder) => (
-                <div className="report-holder" key={holder.holderId}>
+                <button
+                  type="button"
+                  className="report-holder"
+                  key={holder.holderId}
+                  onClick={() => {
+                    setDetail(null)
+                    setDetailLoading(true)
+                    setDetailHolder(holder)
+                  }}
+                >
                   <div className="report-holder-main">
                     <b>{holderName(holder.name, holder.nameEn, lang)}</b>
                     <small>
@@ -344,48 +350,53 @@ export function ReportsScreen({ repo, profile }: ReportsScreenProps) {
                       {formatRupees(holder.commission, lang)}
                     </small>
                   </div>
-                </div>
-              ))}
-            </section>
-          )}
-
-          <div className="section-title">
-            <h2>{s.dailySheets}</h2>
-            <span>
-              {formatDigits(report.daily.length, lang)} {s.collectedDays}
-            </span>
-          </div>
-
-          {report.daily.length === 0 ? (
-            <div className="empty glass compact">
-              <p>{s.noReportData}</p>
-            </div>
-          ) : (
-            <section className="report-days">
-              {report.daily.map((day) => (
-                <div className="report-day" key={day.date}>
-                  <div>
-                    <b>{formatDate(day.date, lang)}</b>
-                    <small>
-                      {formatDigits(day.count, lang)} {s.accounts} ·{' '}
-                      {formatRupees(day.total, lang)}
-                    </small>
-                  </div>
-                  <button
-                    type="button"
-                    className="icon-btn"
-                    aria-label={s.regenerateSheet}
-                    disabled={busy}
-                    onClick={() => void generateDaily(day.date)}
-                  >
-                    <DocIcon />
-                  </button>
-                </div>
+                </button>
               ))}
             </section>
           )}
         </>
       )}
+
+      {detailHolder ? (
+        <BottomSheet
+          title={holderName(detailHolder.name, detailHolder.nameEn, lang)}
+          closeLabel={s.close}
+          centered
+          onClose={() => setDetailHolder(null)}
+        >
+          <div className="holder-dates-info">
+            <div className="holder-dates-stat">
+              <small>{s.accountNoShort}</small>
+              <b>{formatDigits(detailHolder.accountNo, lang)}</b>
+            </div>
+            <div className="holder-dates-stat">
+              <small>{s.holderTotal}</small>
+              <b>{formatRupees(detail?.total ?? detailHolder.total, lang)}</b>
+            </div>
+            <div className="holder-dates-stat">
+              <small>{s.days}</small>
+              <b>{formatDigits(detail?.days ?? detailHolder.days, lang)}</b>
+            </div>
+          </div>
+
+          {detailLoading ? (
+            <div className="holder-dates-loading">
+              <span className="spinner" />
+            </div>
+          ) : !detail || detail.entries.length === 0 ? (
+            <p className="holder-dates-empty">{s.noHistory}</p>
+          ) : (
+            <div className="holder-dates">
+              {detail.entries.map((entry) => (
+                <div className="holder-date-row" key={entry.date}>
+                  <b>{formatDate(entry.date, lang)}</b>
+                  <span>{formatRupees(entry.amount, lang)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </BottomSheet>
+      ) : null}
 
       {status ? (
         <Toast

@@ -40,7 +40,7 @@ export interface Repository {
   deleteHolder(id: number): Promise<void>
   nextAccountNo(): Promise<string>
   getDay(date: string): Promise<DayData>
-  listCollectionDates(): Promise<string[]>
+  getDailyCollectionTotals(): Promise<Record<string, number>>
   setDayLocked(date: string, locked: boolean): Promise<void>
   saveCollection(holderId: number, date: string, amount: number): Promise<void>
   updateCollection(holderId: number, date: string, amount: number): Promise<void>

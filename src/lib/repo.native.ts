@@ -490,14 +490,19 @@ export class NativeRepository implements Repository {
     return { date, startReceipt, locked, entries }
   }
 
-  async listCollectionDates(): Promise<string[]> {
+  async getDailyCollectionTotals(): Promise<Record<string, number>> {
     const db = await this.getDb()
     const res = await db.query(
-      'SELECT DISTINCT date FROM collections ORDER BY date ASC',
+      'SELECT date, SUM(amount) AS total FROM collections GROUP BY date',
     )
-    return ((res.values ?? []) as Array<{ date: string }>).map(
-      (row) => row.date,
-    )
+    const totals: Record<string, number> = {}
+    for (const row of (res.values ?? []) as Array<{
+      date: string
+      total: number
+    }>) {
+      totals[row.date] = Number(row.total)
+    }
+    return totals
   }
 
   private async assertUnlocked(

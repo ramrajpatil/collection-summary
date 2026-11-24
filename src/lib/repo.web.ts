@@ -313,9 +313,12 @@ export class WebRepository implements Repository {
     return { date, startReceipt, locked: this.state.locks[date] === true, entries }
   }
 
-  async listCollectionDates(): Promise<string[]> {
-    const dates = new Set(this.state.collections.map((row) => row.date))
-    return [...dates].sort()
+  async getDailyCollectionTotals(): Promise<Record<string, number>> {
+    const totals: Record<string, number> = {}
+    for (const row of this.state.collections) {
+      totals[row.date] = (totals[row.date] ?? 0) + row.amount
+    }
+    return totals
   }
 
   async setDayLocked(date: string, locked: boolean): Promise<void> {
