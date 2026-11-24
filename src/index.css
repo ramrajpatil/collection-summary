@@ -425,16 +425,16 @@ body {
 .calendar-amount {
   max-width: 100%;
   overflow: hidden;
-  font-size: 0.55rem;
+  padding: 1px 5px;
+  border-radius: 999px;
+  font-size: 0.52rem;
   font-weight: 700;
-  line-height: 1;
-  color: #0b0b0b;
+  line-height: 1.35;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-[data-theme='dark'] .calendar-amount {
-  color: var(--text);
 }
 
 .calendar-day {
