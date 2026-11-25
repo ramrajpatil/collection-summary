@@ -53,6 +53,12 @@ export interface Repository {
     date: string,
     entries: CollectionInput[],
   ): Promise<void>
+  insertCollectionAtReceipt(
+    date: string,
+    holderId: number,
+    amount: number,
+    receiptNo: number,
+  ): Promise<void>
   deleteCollection(holderId: number, date: string): Promise<void>
   setStartReceipt(date: string, start: number): Promise<void>
   getMonthlyReport(month: string): Promise<MonthlyReport>
