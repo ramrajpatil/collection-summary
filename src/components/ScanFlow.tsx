@@ -42,7 +42,6 @@ interface ScanFlowProps {
   existingEntries: DayEntry[]
   onClose: () => void
   onSaved: (count: number) => void
-  onRefresh: () => void
 }
 
 interface ScanRow {
@@ -110,7 +109,6 @@ export function ScanFlow({
   existingEntries,
   onClose,
   onSaved,
-  onRefresh,
 }: ScanFlowProps) {
   const s = STRINGS[lang]
   const native = Capacitor.isNativePlatform()
@@ -124,11 +122,6 @@ export function ScanFlow({
   const [error, setError] = useState('')
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
-  const [insertOpen, setInsertOpen] = useState(false)
-  const [insertReceipt, setInsertReceipt] = useState('')
-  const [insertAccount, setInsertAccount] = useState('')
-  const [insertAmount, setInsertAmount] = useState('')
-  const [insertBusy, setInsertBusy] = useState(false)
   const fileRef = useRef<HTMLInputElement | null>(null)
   const accountRefs = useRef<Map<string, HTMLInputElement>>(new Map())
   const amountRefs = useRef<Map<string, HTMLInputElement>>(new Map())
@@ -247,55 +240,6 @@ export function ScanFlow({
     return map
   }, [rowInfos, receiptsEnabled, receiptNumber])
 
-  const insertHolder = useMemo(() => {
-    const raw = insertAccount.trim()
-    if (!raw) return null
-    const account = mode === 'manual' ? expandAccountNo(raw) : raw
-    return findHolder(account, holders)
-  }, [insertAccount, holders, mode])
-
-  const insertReceiptNo = Number(insertReceipt)
-  const insertAmountNo = Number(insertAmount)
-  const insertValid =
-    Number.isInteger(insertReceiptNo) &&
-    insertReceiptNo >= 1 &&
-    insertHolder !== null &&
-    !collected.has(insertHolder.id) &&
-    insertAmount.trim() !== '' &&
-    Number.isFinite(insertAmountNo) &&
-    insertAmountNo >= 0
-
-  async function submitInsert() {
-    if (!insertValid || !insertHolder || insertBusy) return
-    setInsertBusy(true)
-    setError('')
-    setNote('')
-    try {
-      await repo.insertCollectionAtReceipt(
-        date,
-        insertHolder.id,
-        Number(insertAmount),
-        insertReceiptNo,
-      )
-      onRefresh()
-      setInsertReceipt('')
-      setInsertAccount('')
-      setInsertAmount('')
-      setNote(s.scanInserted)
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err)
-      setError(
-        message === 'ALREADY_COLLECTED'
-          ? s.scanAlready
-          : message === 'DAY_LOCKED'
-            ? s.dayLockedError
-            : message,
-      )
-    } finally {
-      setInsertBusy(false)
-    }
-  }
-
   function startManual() {
     setError('')
     setMode('manual')
@@ -385,22 +329,6 @@ export function ScanFlow({
     // gesture; then focusing it keeps the keypad open on Android.
     flushSync(() => {
       setRows((current) => [...current, row])
-    })
-    accountRefs.current.get(row.key)?.focus()
-  }
-
-  function insertRowAfter(key: string) {
-    const row = createRow()
-    // Insert a blank row right after this one so it takes the next receipt
-    // number and every later row shifts down.
-    flushSync(() => {
-      setRows((current) => {
-        const at = current.findIndex((candidate) => candidate.key === key)
-        if (at === -1) return [...current, row]
-        const next = [...current]
-        next.splice(at + 1, 0, row)
-        return next
-      })
     })
     accountRefs.current.get(row.key)?.focus()
   }
@@ -643,86 +571,6 @@ export function ScanFlow({
               </>
             ) : null}
 
-            <button
-              type="button"
-              className={`scan-insert-toggle${insertOpen ? ' open' : ''}`}
-              aria-expanded={insertOpen}
-              onClick={() => setInsertOpen((value) => !value)}
-            >
-              <PlusIcon />
-              <span>{s.scanInsertMissed}</span>
-            </button>
-
-            {insertOpen ? (
-              <div className="scan-insert-form">
-                <div className="scan-insert-grid">
-                  <label>
-                    <span>{s.receiptNo}</span>
-                    <input
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      autoComplete="off"
-                      value={insertReceipt}
-                      onChange={(event) =>
-                        setInsertReceipt(digitsOnly(event.target.value))
-                      }
-                    />
-                  </label>
-                  <label>
-                    <span>{s.accountNoShort}</span>
-                    <input
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      autoComplete="off"
-                      value={formatDigits(insertAccount, lang)}
-                      onChange={(event) =>
-                        setInsertAccount(digitsOnly(event.target.value))
-                      }
-                      onBlur={() => {
-                        if (mode !== 'manual') return
-                        const expanded = expandAccountNo(insertAccount)
-                        if (expanded && expanded !== insertAccount) {
-                          setInsertAccount(expanded)
-                        }
-                      }}
-                    />
-                  </label>
-                  <label>
-                    <span>{s.amount}</span>
-                    <input
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      autoComplete="off"
-                      value={insertAmount}
-                      onChange={(event) =>
-                        setInsertAmount(digitsOnly(event.target.value))
-                      }
-                    />
-                  </label>
-                </div>
-                {insertAccount.trim() ? (
-                  <p
-                    className={`scan-insert-name${
-                      insertHolder ? '' : ' missing'
-                    }`}
-                  >
-                    {insertHolder
-                      ? holderName(insertHolder.name, insertHolder.nameEn, lang)
-                      : s.scanNotFound}
-                  </p>
-                ) : null}
-                <button
-                  type="button"
-                  className="btn-primary"
-                  disabled={!insertValid || insertBusy}
-                  onClick={() => void submitInsert()}
-                >
-                  {insertBusy ? <span className="spinner" /> : null}
-                  {s.scanInsert}
-                </button>
-              </div>
-            ) : null}
-
             {existingEntries.length > 0 ? (
               <section className="scan-existing">
                 <div className="scan-existing-head">
@@ -794,15 +642,6 @@ export function ScanFlow({
                           {statusLabel(info.status)}
                         </span>
                       ) : null}
-                      <button
-                        type="button"
-                        className="icon-btn scan-insert"
-                        aria-label={s.scanInsert}
-                        title={s.scanInsert}
-                        onClick={() => insertRowAfter(info.row.key)}
-                      >
-                        <PlusIcon />
-                      </button>
                       <button
                         type="button"
                         className="icon-btn scan-remove"

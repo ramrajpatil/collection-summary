@@ -1592,7 +1592,6 @@ export function CollectionScreen({
           existingReceipts={existingReceipts}
           existingEntries={day?.entries ?? []}
           onClose={() => setScanOpen(false)}
-          onRefresh={() => refresh()}
           onSaved={(count) => {
             setScanOpen(false)
             refresh()

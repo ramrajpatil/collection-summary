@@ -681,54 +681,6 @@ export class NativeRepository implements Repository {
     }
   }
 
-  async insertCollectionAtReceipt(
-    date: string,
-    holderId: number,
-    amount: number,
-    receiptNo: number,
-  ): Promise<void> {
-    const db = await this.getDb()
-    const target = Math.floor(Number(receiptNo) || 0)
-    if (target <= 0) throw new Error('INVALID_RECEIPT')
-    await db.beginTransaction()
-    try {
-      await this.assertUnlocked(db, date)
-      const dup = await db.query(
-        'SELECT id FROM collections WHERE holder_id = ? AND date = ?',
-        [holderId, date],
-      )
-      if ((dup.values ?? []).length > 0) throw new Error('ALREADY_COLLECTED')
-      await db.run(
-        'INSERT OR IGNORE INTO daily_meta (date, start_receipt) VALUES (?, 1)',
-        [date],
-        false,
-      )
-      // Open the target receipt slot by shifting every later receipt up one.
-      await db.run(
-        `UPDATE collections SET receipt_no = receipt_no + 1
-          WHERE date = ? AND receipt_no >= ?`,
-        [date, target],
-        false,
-      )
-      const now = new Date().toISOString()
-      await db.run(
-        `INSERT INTO collections
-          (holder_id, date, amount, receipt_no, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [holderId, date, Math.max(0, Number(amount) || 0), target, now, now],
-        false,
-      )
-      await db.commitTransaction()
-    } catch (err) {
-      try {
-        await db.rollbackTransaction()
-      } catch {
-        void 0
-      }
-      throw err
-    }
-  }
-
   async deleteCollection(holderId: number, date: string): Promise<void> {
     const db = await this.getDb()
     await this.assertUnlocked(db, date)
