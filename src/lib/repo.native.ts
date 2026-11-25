@@ -763,6 +763,62 @@ export class NativeRepository implements Repository {
     )
   }
 
+  async moveDay(from: string, to: string): Promise<void> {
+    if (from === to) throw new Error('SAME_DAY')
+    const db = await this.getDb()
+    await db.beginTransaction()
+    try {
+      await this.assertUnlocked(db, from)
+      await this.assertUnlocked(db, to)
+      const targetRes = await db.query(
+        'SELECT COUNT(*) AS count FROM collections WHERE date = ?',
+        [to],
+      )
+      const targetCount = Number(
+        (targetRes.values?.[0] as { count?: number } | undefined)?.count ?? 0,
+      )
+      if (targetCount > 0) throw new Error('TARGET_NOT_EMPTY')
+
+      const sourceMeta = await db.query(
+        'SELECT start_receipt FROM daily_meta WHERE date = ?',
+        [from],
+      )
+      const sourceStart =
+        Number(
+          (sourceMeta.values?.[0] as { start_receipt?: number } | undefined)
+            ?.start_receipt ?? 1,
+        ) || 1
+
+      await db.executeSet(
+        [
+          {
+            statement: 'UPDATE collections SET date = ?, updated_at = ? WHERE date = ?',
+            values: [to, new Date().toISOString(), from],
+          },
+          {
+            statement:
+              'INSERT OR IGNORE INTO daily_meta (date, start_receipt) VALUES (?, ?)',
+            values: [to, sourceStart],
+          },
+          {
+            statement: 'DELETE FROM daily_meta WHERE date = ?',
+            values: [from],
+          },
+        ],
+        false,
+      )
+      await this.renumberDate(db, to)
+      await db.commitTransaction()
+    } catch (err) {
+      try {
+        await db.rollbackTransaction()
+      } catch {
+        void 0
+      }
+      throw err
+    }
+  }
+
   async setStartReceipt(date: string, start: number): Promise<void> {
     const db = await this.getDb()
     const value = Math.max(1, Math.floor(Number(start) || 1))
@@ -1293,6 +1349,21 @@ export class NativeRepository implements Repository {
       let skippedLocked = 0
       let skippedUnknown = 0
 
+      // Days that already have collections keep a merged, renumbered sequence;
+      // fresh days keep the exact receipt numbers from the file (e.g. a transfer).
+      const fileDates = [...new Set(rows.map((row) => row.date))]
+      const hadExisting = new Set<string>()
+      if (fileDates.length > 0) {
+        const placeholders = fileDates.map(() => '?').join(', ')
+        const existingRes = await db.query(
+          `SELECT DISTINCT date FROM collections WHERE date IN (${placeholders})`,
+          fileDates,
+        )
+        for (const row of (existingRes.values ?? []) as { date: string }[]) {
+          hadExisting.add(row.date)
+        }
+      }
+
       for (const row of rows) {
         if (lockedDates.has(row.date)) {
           skippedLocked += 1
@@ -1356,7 +1427,7 @@ export class NativeRepository implements Repository {
         await db.executeSet(statements, false)
       }
       for (const date of affected) {
-        await this.renumberDate(db, date)
+        if (hadExisting.has(date)) await this.renumberDate(db, date)
       }
       await db.commitTransaction()
       return {

@@ -192,4 +192,76 @@ describe('collection receipts', () => {
     expect(result.skippedUnknown).toBe(1)
     expect(result.skipped).toBe(2)
   })
+
+  it('keeps the receipt numbers from the file on a fresh day', async () => {
+    const { repo } = await setup()
+    const nextDate = '2026-11-21'
+    await repo.importCollections({
+      type: 'collection-export',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      range: { start: nextDate, end: nextDate },
+      dailyMeta: { [nextDate]: 5 },
+      locks: {},
+      collections: [
+        {
+          accountNo: '001',
+          name: 'A',
+          date: nextDate,
+          amount: 100,
+          receiptNo: 5,
+        },
+        {
+          accountNo: '002',
+          name: 'B',
+          date: nextDate,
+          amount: 200,
+          receiptNo: 6,
+        },
+      ],
+    })
+
+    const day = await repo.getDay(nextDate)
+    expect(day.startReceipt).toBe(5)
+    expect(
+      day.entries.map((entry) => [entry.name, entry.receiptNo, entry.amount]),
+    ).toEqual([
+      ['A', 5, 100],
+      ['B', 6, 200],
+    ])
+  })
+
+  it('moves every collection of a day to another date', async () => {
+    const { repo } = await setup()
+    const target = '2026-11-21'
+    await repo.moveDay(DATE, target)
+
+    expect((await repo.getDay(DATE)).entries).toEqual([])
+    const moved = await repo.getDay(target)
+    expect(
+      moved.entries.map((entry) => [entry.name, entry.amount, entry.receiptNo]),
+    ).toEqual([
+      ['A', 100, 1],
+      ['B', 200, 2],
+      ['C', 300, 3],
+    ])
+  })
+
+  it('refuses to move onto a date that already has collections', async () => {
+    const { repo } = await setup()
+    await expect(repo.moveDay(DATE, DATE)).rejects.toThrow('SAME_DAY')
+    const other = '2026-11-21'
+    await repo.saveCollection(
+      (await repo.createHolder({
+        name: 'D',
+        accountNo: '004',
+        defaultAmount: 100,
+      })).id,
+      other,
+      100,
+    )
+    await expect(repo.moveDay(DATE, other)).rejects.toThrow(
+      'TARGET_NOT_EMPTY',
+    )
+  })
 })

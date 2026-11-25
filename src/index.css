@@ -2298,6 +2298,22 @@ select option {
   margin-top: 10px;
 }
 
+.day-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.day-actions > button {
+  width: 100%;
+}
+
+.day-actions .delete-day-btn {
+  width: auto;
+  margin-top: 0;
+}
+
 .sheet-danger {
   margin-top: 4px;
   padding-top: 10px;

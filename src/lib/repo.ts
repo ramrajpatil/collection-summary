@@ -60,6 +60,7 @@ export interface Repository {
     receiptNo: number,
   ): Promise<void>
   clearDay(date: string): Promise<void>
+  moveDay(from: string, to: string): Promise<void>
   deleteCollection(holderId: number, date: string): Promise<void>
   setStartReceipt(date: string, start: number): Promise<void>
   getMonthlyReport(month: string): Promise<MonthlyReport>

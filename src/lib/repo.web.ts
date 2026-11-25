@@ -501,6 +501,30 @@ export class WebRepository implements Repository {
     this.persist()
   }
 
+  async moveDay(from: string, to: string): Promise<void> {
+    if (from === to) throw new Error('SAME_DAY')
+    this.assertUnlocked(from)
+    this.assertUnlocked(to)
+    if (this.state.collections.some((row) => row.date === to)) {
+      throw new Error('TARGET_NOT_EMPTY')
+    }
+    const sourceStart = this.state.dailyMeta[from] ?? 1
+    const now = new Date().toISOString()
+    for (const row of this.state.collections) {
+      if (row.date === from) {
+        row.date = to
+        row.updatedAt = now
+      }
+    }
+    if (this.state.dailyMeta[to] === undefined) {
+      this.state.dailyMeta[to] = sourceStart
+    }
+    delete this.state.dailyMeta[from]
+    delete this.state.locks[from]
+    this.renumber(to)
+    this.persist()
+  }
+
   async setStartReceipt(date: string, start: number): Promise<void> {
     this.assertUnlocked(date)
     this.state.dailyMeta[date] = Math.max(
@@ -813,6 +837,16 @@ export class WebRepository implements Repository {
       holderByAccount.set(holder.accountNo.trim(), holder)
     }
 
+    // Days that already have collections keep a merged, renumbered sequence;
+    // fresh days keep the exact receipt numbers from the file (e.g. a transfer).
+    const hadExisting = new Set<string>()
+    for (const row of data.collections) {
+      if (hadExisting.has(row.date)) continue
+      if (this.state.collections.some((candidate) => candidate.date === row.date)) {
+        hadExisting.add(row.date)
+      }
+    }
+
     const now = new Date().toISOString()
     const rows = [...data.collections].sort(
       (a, b) => a.date.localeCompare(b.date) || a.receiptNo - b.receiptNo,
@@ -877,7 +911,7 @@ export class WebRepository implements Repository {
       if (data.locks?.[date]) this.state.locks[date] = true
     }
     for (const date of affected) {
-      this.renumber(date)
+      if (hadExisting.has(date)) this.renumber(date)
     }
 
     this.persist()

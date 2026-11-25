@@ -336,6 +336,11 @@ export interface Strings {
   deleteDay: string
   deleteDayHint: string
   deleteDayDone: string
+  moveDay: string
+  moveDayHint: string
+  moveDayDone: string
+  moveDaySame: string
+  moveDayTargetNotEmpty: string
   changeAccount: string
   changeAccountTitle: string
   changeAccountHint: string
@@ -690,6 +695,13 @@ export const STRINGS: Record<Lang, Strings> = {
     deleteDayHint:
       'या दिवसाची सर्व वसुली कायमची काढली जाईल. पुढे जाण्यासाठी मास्टर पासवर्ड टाका.',
     deleteDayDone: 'दिवसाची वसुली काढली.',
+    moveDay: 'दिवस हलवा',
+    moveDayHint:
+      'या दिवसाची सर्व वसुली दुसऱ्या तारखेला हलवा. नवीन तारीख निवडण्यासाठी मास्टर पासवर्ड टाका.',
+    moveDayDone: 'दिवसाची वसुली हलवली.',
+    moveDaySame: 'स्रोत आणि नवीन तारीख सारखीच आहे.',
+    moveDayTargetNotEmpty:
+      'त्या तारखेला आधीच वसुली आहे. आधी ती रिकामी करा.',
     changeAccount: 'खाते बदला',
     changeAccountTitle: 'खाते बदला',
     changeAccountHint:
@@ -1040,8 +1052,15 @@ export const STRINGS: Record<Lang, Strings> = {
       'This amount is already collected. Enter the master password to edit or remove it.',
     deleteDay: "Delete day's collection",
     deleteDayHint:
-      "This permanently deletes all collections for this day. Enter the master password to continue.",
+      'This permanently removes every collection for this day. Enter the master password to continue.',
     deleteDayDone: "Day's collection deleted.",
+    moveDay: 'Shift day',
+    moveDayHint:
+      "Move every collection from this day to another date. Enter the master password to pick the new date.",
+    moveDayDone: "Day's collection moved.",
+    moveDaySame: 'The source and target dates are the same.',
+    moveDayTargetNotEmpty:
+      'That date already has collections. Clear it first.',
     changeAccount: 'Change account',
     changeAccountTitle: 'Change account',
     changeAccountHint:

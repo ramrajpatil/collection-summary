@@ -51,6 +51,7 @@ import {
   UnlockIcon,
   UsersIcon,
   WalletIcon,
+  ArrowRightIcon,
 } from '../components/Icons'
 
 interface CollectionScreenProps {
@@ -108,7 +109,9 @@ export function CollectionScreen({
   const [unlockError, setUnlockError] = useState('')
   const [showUnlockPassword, setShowUnlockPassword] = useState(false)
   const [editPassOpen, setEditPassOpen] = useState(false)
-  const [passMode, setPassMode] = useState<'edit' | 'clearDay'>('edit')
+  const [passMode, setPassMode] = useState<'edit' | 'clearDay' | 'moveDay'>(
+    'edit',
+  )
   const [editPassInput, setEditPassInput] = useState('')
   const [editPassError, setEditPassError] = useState('')
   const [showEditPassword, setShowEditPassword] = useState(false)
@@ -131,6 +134,7 @@ export function CollectionScreen({
   const [filter, setFilter] = useState<'all' | 'collected' | 'pending'>('all')
   const [filterOpen, setFilterOpen] = useState(false)
   const [calendarOpen, setCalendarOpen] = useState(false)
+  const [movePickOpen, setMovePickOpen] = useState(false)
   const [scanOpen, setScanOpen] = useState(false)
   const [pdfOpen, setPdfOpen] = useState(false)
   const [pdfSort, setPdfSort] = useState<SheetSort>('account')
@@ -198,7 +202,7 @@ export function CollectionScreen({
 
   function requestEditPassword(
     action: () => void,
-    mode: 'edit' | 'clearDay' = 'edit',
+    mode: 'edit' | 'clearDay' | 'moveDay' = 'edit',
   ) {
     pendingEdit.current = action
     setPassMode(mode)
@@ -233,6 +237,36 @@ export function CollectionScreen({
     } catch (err) {
       setStatus(
         `${s.failed}: ${err instanceof Error ? err.message : String(err)}`,
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function moveWholeDay(target: string) {
+    setMovePickOpen(false)
+    if (target === date) {
+      setStatus(s.moveDaySame)
+      return
+    }
+    setBusy(true)
+    setStatus('')
+    try {
+      await repo.moveDay(date, target)
+      entryEditUnlocked.current = false
+      refresh()
+      changeDate(target)
+      setStatus(s.moveDayDone)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      setStatus(
+        message === 'TARGET_NOT_EMPTY'
+          ? s.moveDayTargetNotEmpty
+          : message === 'DAY_LOCKED'
+            ? s.dayLockedError
+            : message === 'SAME_DAY'
+              ? s.moveDaySame
+              : `${s.failed}: ${message}`,
       )
     } finally {
       setBusy(false)
@@ -308,6 +342,7 @@ export function CollectionScreen({
     if (
       !amountTarget &&
       !calendarOpen &&
+      !movePickOpen &&
       !filterOpen &&
       !unlockOpen &&
       !lockConfirmOpen &&
@@ -342,12 +377,17 @@ export function CollectionScreen({
         setAmountError('')
         return true
       }
+      if (movePickOpen) {
+        setMovePickOpen(false)
+        return true
+      }
       setCalendarOpen(false)
       return true
     })
   }, [
     amountTarget,
     calendarOpen,
+    movePickOpen,
     filterOpen,
     unlockOpen,
     lockConfirmOpen,
@@ -966,17 +1006,30 @@ export function CollectionScreen({
         </div>
 
         {collectedCount > 0 ? (
-          <button
-            type="button"
-            className="btn-danger-text delete-day-btn"
-            disabled={busy}
-            onClick={() =>
-              requestEditPassword(() => void clearWholeDay(), 'clearDay')
-            }
-          >
-            <TrashIcon />
-            {s.deleteDay}
-          </button>
+          <div className="day-actions">
+            <button
+              type="button"
+              className="btn-ghost day-shift-btn"
+              disabled={busy}
+              onClick={() =>
+                requestEditPassword(() => setMovePickOpen(true), 'moveDay')
+              }
+            >
+              <ArrowRightIcon />
+              {s.moveDay}
+            </button>
+            <button
+              type="button"
+              className="btn-danger-text delete-day-btn"
+              disabled={busy}
+              onClick={() =>
+                requestEditPassword(() => void clearWholeDay(), 'clearDay')
+              }
+            >
+              <TrashIcon />
+              {s.deleteDay}
+            </button>
+          </div>
         ) : null}
 
         <div className="stats">
@@ -1454,7 +1507,13 @@ export function CollectionScreen({
 
       {editPassOpen ? (
         <BottomSheet
-          title={passMode === 'clearDay' ? s.deleteDay : s.entryLockTitle}
+          title={
+            passMode === 'clearDay'
+              ? s.deleteDay
+              : passMode === 'moveDay'
+                ? s.moveDay
+                : s.entryLockTitle
+          }
           closeLabel={s.close}
           onClose={closeEditPassword}
           footer={
@@ -1475,13 +1534,21 @@ export function CollectionScreen({
                 disabled={busy}
                 onClick={submitEditPassword}
               >
-                {passMode === 'clearDay' ? s.deleteDay : s.unlock}
+                {passMode === 'clearDay'
+                  ? s.deleteDay
+                  : passMode === 'moveDay'
+                    ? s.moveDay
+                    : s.unlock}
               </button>
             </>
           }
         >
           <p className="field-hint">
-            {passMode === 'clearDay' ? s.deleteDayHint : s.entryLockHint}
+            {passMode === 'clearDay'
+              ? s.deleteDayHint
+              : passMode === 'moveDay'
+                ? s.moveDayHint
+                : s.entryLockHint}
           </p>
           <div className="field">
             <label htmlFor="editPassword">{s.masterPassword}</label>
@@ -1619,6 +1686,16 @@ export function CollectionScreen({
           amounts={collectionTotals}
           onSelect={(next) => changeDate(next)}
           onClose={() => setCalendarOpen(false)}
+        />
+      ) : null}
+
+      {movePickOpen ? (
+        <DatePicker
+          value={date}
+          max={today}
+          amounts={collectionTotals}
+          onSelect={(next) => void moveWholeDay(next)}
+          onClose={() => setMovePickOpen(false)}
         />
       ) : null}
 
