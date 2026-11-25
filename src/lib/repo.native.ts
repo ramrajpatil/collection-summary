@@ -681,6 +681,53 @@ export class NativeRepository implements Repository {
     }
   }
 
+  async insertCollectionAtReceipt(
+    date: string,
+    holderId: number,
+    amount: number,
+    receiptNo: number,
+  ): Promise<void> {
+    const db = await this.getDb()
+    const target = Math.floor(Number(receiptNo) || 0)
+    if (target <= 0) throw new Error('INVALID_RECEIPT')
+    await db.beginTransaction()
+    try {
+      await this.assertUnlocked(db, date)
+      const dup = await db.query(
+        'SELECT id FROM collections WHERE holder_id = ? AND date = ?',
+        [holderId, date],
+      )
+      if ((dup.values ?? []).length > 0) throw new Error('ALREADY_COLLECTED')
+      await db.run(
+        'INSERT OR IGNORE INTO daily_meta (date, start_receipt) VALUES (?, 1)',
+        [date],
+        false,
+      )
+      await db.run(
+        `UPDATE collections SET receipt_no = receipt_no + 1
+          WHERE date = ? AND receipt_no >= ?`,
+        [date, target],
+        false,
+      )
+      const now = new Date().toISOString()
+      await db.run(
+        `INSERT INTO collections
+          (holder_id, date, amount, receipt_no, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [holderId, date, Math.max(0, Number(amount) || 0), target, now, now],
+        false,
+      )
+      await db.commitTransaction()
+    } catch (err) {
+      try {
+        await db.rollbackTransaction()
+      } catch {
+        void 0
+      }
+      throw err
+    }
+  }
+
   async deleteCollection(holderId: number, date: string): Promise<void> {
     const db = await this.getDb()
     await this.assertUnlocked(db, date)
@@ -692,6 +739,25 @@ export class NativeRepository implements Repository {
           values: [holderId, date],
         },
         { statement: RENUMBER_DATE_SQL, values: [date, date] },
+      ],
+      true,
+    )
+  }
+
+  async clearDay(date: string): Promise<void> {
+    const db = await this.getDb()
+    // Master password was verified on the client; wipe the whole day and its
+    // meta row so the day resets to an empty, unlocked state.
+    await db.executeSet(
+      [
+        {
+          statement: 'DELETE FROM collections WHERE date = ?',
+          values: [date],
+        },
+        {
+          statement: 'DELETE FROM daily_meta WHERE date = ?',
+          values: [date],
+        },
       ],
       true,
     )

@@ -444,12 +444,60 @@ export class WebRepository implements Repository {
     this.persist()
   }
 
+  async insertCollectionAtReceipt(
+    date: string,
+    holderId: number,
+    amount: number,
+    receiptNo: number,
+  ): Promise<void> {
+    this.assertUnlocked(date)
+    const target = Math.floor(Number(receiptNo) || 0)
+    if (target <= 0) throw new Error('INVALID_RECEIPT')
+    if (
+      this.state.collections.some(
+        (row) => row.holderId === holderId && row.date === date,
+      )
+    ) {
+      throw new Error('ALREADY_COLLECTED')
+    }
+    if (this.state.dailyMeta[date] === undefined) {
+      this.state.dailyMeta[date] = 1
+    }
+    const now = new Date().toISOString()
+    for (const row of this.state.collections) {
+      if (row.date === date && row.receiptNo >= target) {
+        row.receiptNo += 1
+        row.updatedAt = now
+      }
+    }
+    this.state.collections.push({
+      id: this.state.nextCollectionId,
+      holderId,
+      date,
+      amount: Math.max(0, Number(amount) || 0),
+      receiptNo: target,
+      createdAt: now,
+      updatedAt: now,
+    })
+    this.state.nextCollectionId += 1
+    this.persist()
+  }
+
   async deleteCollection(holderId: number, date: string): Promise<void> {
     this.assertUnlocked(date)
     this.state.collections = this.state.collections.filter(
       (row) => !(row.holderId === holderId && row.date === date),
     )
     this.renumber(date)
+    this.persist()
+  }
+
+  async clearDay(date: string): Promise<void> {
+    this.state.collections = this.state.collections.filter(
+      (row) => row.date !== date,
+    )
+    delete this.state.dailyMeta[date]
+    delete this.state.locks[date]
     this.persist()
   }
 

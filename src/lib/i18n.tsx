@@ -141,6 +141,8 @@ export interface Strings {
   scanAlready: string
   scanDuplicate: string
   scanAdd: string
+  scanInsertBelow: string
+  scanInserted: string
   scanCustom: string
   scanExisting: string
   scanSave: string
@@ -303,6 +305,9 @@ export interface Strings {
   dayLockedError: string
   entryLockTitle: string
   entryLockHint: string
+  deleteDay: string
+  deleteDayHint: string
+  deleteDayDone: string
   changeAccount: string
   changeAccountTitle: string
   changeAccountHint: string
@@ -436,7 +441,7 @@ export const STRINGS: Record<Lang, Strings> = {
     removeCollection: 'वसुली रद्द करा',
     amountSaved: 'रक्कम जतन झाली.',
     scanEntries: 'स्कॅन करा',
-    scanTitle: 'पावती स्कॅन करा',
+    scanTitle: 'मॅन्युअल एंट्री',
     scanHint:
       'पावतीचे पान कॅमेऱ्याने स्पष्ट काढा. खाते क्रमांक व रक्कम ओळखल्यानंतर तपासून जतन करा.',
     scanStart: 'कॅमेरा उघडा',
@@ -447,6 +452,8 @@ export const STRINGS: Record<Lang, Strings> = {
     scanAlready: 'आधीच नोंदवले',
     scanDuplicate: 'दुहेरी खाते',
     scanAdd: 'नोंद जोडा',
+    scanInsertBelow: 'खाली जोडा',
+    scanInserted: 'नोंद जोडली.',
     scanCustom: 'इतर',
     scanExisting: 'आधीच नोंदवलेल्या नोंदी',
     scanSave: 'वसुलीत जोडा',
@@ -619,6 +626,10 @@ export const STRINGS: Record<Lang, Strings> = {
     entryLockTitle: 'बदलासाठी लॉक उघडा',
     entryLockHint:
       'ही रक्कम आधीच नोंदवली आहे. बदल किंवा काढण्यासाठी मास्टर पासवर्ड टाका.',
+    deleteDay: 'दिवसाची वसुली काढा',
+    deleteDayHint:
+      'या दिवसाची सर्व वसुली कायमची काढली जाईल. पुढे जाण्यासाठी मास्टर पासवर्ड टाका.',
+    deleteDayDone: 'दिवसाची वसुली काढली.',
     changeAccount: 'खाते बदला',
     changeAccountTitle: 'खाते बदला',
     changeAccountHint:
@@ -751,7 +762,7 @@ export const STRINGS: Record<Lang, Strings> = {
     removeCollection: 'Remove collection',
     amountSaved: 'Amount saved.',
     scanEntries: 'Scan',
-    scanTitle: 'Scan collection sheet',
+    scanTitle: 'Manual entry',
     scanHint:
       'Take a clear photo of the collection page. Review the detected account numbers and amounts before saving.',
     scanStart: 'Open camera',
@@ -762,6 +773,8 @@ export const STRINGS: Record<Lang, Strings> = {
     scanAlready: 'Already collected',
     scanDuplicate: 'Duplicate account',
     scanAdd: 'Add entry',
+    scanInsertBelow: 'Insert below',
+    scanInserted: 'Entry inserted.',
     scanCustom: 'Other',
     scanExisting: 'Already saved for this day',
     scanSave: 'Add to collection',
@@ -932,6 +945,10 @@ export const STRINGS: Record<Lang, Strings> = {
     entryLockTitle: 'Unlock to edit',
     entryLockHint:
       'This amount is already collected. Enter the master password to edit or remove it.',
+    deleteDay: "Delete day's collection",
+    deleteDayHint:
+      "This permanently deletes all collections for this day. Enter the master password to continue.",
+    deleteDayDone: "Day's collection deleted.",
     changeAccount: 'Change account',
     changeAccountTitle: 'Change account',
     changeAccountHint:

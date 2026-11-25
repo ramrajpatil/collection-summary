@@ -47,6 +47,7 @@ import {
   PrinterIcon,
   SearchIcon,
   ShareIcon,
+  TrashIcon,
   UnlockIcon,
   UsersIcon,
   WalletIcon,
@@ -107,6 +108,7 @@ export function CollectionScreen({
   const [unlockError, setUnlockError] = useState('')
   const [showUnlockPassword, setShowUnlockPassword] = useState(false)
   const [editPassOpen, setEditPassOpen] = useState(false)
+  const [passMode, setPassMode] = useState<'edit' | 'clearDay'>('edit')
   const [editPassInput, setEditPassInput] = useState('')
   const [editPassError, setEditPassError] = useState('')
   const [showEditPassword, setShowEditPassword] = useState(false)
@@ -194,8 +196,12 @@ export function CollectionScreen({
     setReassignSearch('')
   }
 
-  function requestEditPassword(action: () => void) {
+  function requestEditPassword(
+    action: () => void,
+    mode: 'edit' | 'clearDay' = 'edit',
+  ) {
     pendingEdit.current = action
+    setPassMode(mode)
     setEditPassInput('')
     setEditPassError('')
     setShowEditPassword(false)
@@ -214,6 +220,23 @@ export function CollectionScreen({
     const action = pendingEdit.current
     pendingEdit.current = null
     action?.()
+  }
+
+  async function clearWholeDay() {
+    setBusy(true)
+    setStatus('')
+    try {
+      await repo.clearDay(date)
+      entryEditUnlocked.current = false
+      refresh()
+      setStatus(s.deleteDayDone)
+    } catch (err) {
+      setStatus(
+        `${s.failed}: ${err instanceof Error ? err.message : String(err)}`,
+      )
+    } finally {
+      setBusy(false)
+    }
   }
 
   useEffect(() => {
@@ -942,6 +965,20 @@ export function CollectionScreen({
           </button>
         </div>
 
+        {collectedCount > 0 ? (
+          <button
+            type="button"
+            className="btn-danger-text delete-day-btn"
+            disabled={busy}
+            onClick={() =>
+              requestEditPassword(() => void clearWholeDay(), 'clearDay')
+            }
+          >
+            <TrashIcon />
+            {s.deleteDay}
+          </button>
+        ) : null}
+
         <div className="stats">
           <div className="stat">
             <div className="stat-text">
@@ -1417,7 +1454,7 @@ export function CollectionScreen({
 
       {editPassOpen ? (
         <BottomSheet
-          title={s.entryLockTitle}
+          title={passMode === 'clearDay' ? s.deleteDay : s.entryLockTitle}
           closeLabel={s.close}
           onClose={closeEditPassword}
           footer={
@@ -1432,16 +1469,20 @@ export function CollectionScreen({
               </button>
               <button
                 type="button"
-                className="btn-primary"
+                className={
+                  passMode === 'clearDay' ? 'btn-danger' : 'btn-primary'
+                }
                 disabled={busy}
                 onClick={submitEditPassword}
               >
-                {s.unlock}
+                {passMode === 'clearDay' ? s.deleteDay : s.unlock}
               </button>
             </>
           }
         >
-          <p className="field-hint">{s.entryLockHint}</p>
+          <p className="field-hint">
+            {passMode === 'clearDay' ? s.deleteDayHint : s.entryLockHint}
+          </p>
           <div className="field">
             <label htmlFor="editPassword">{s.masterPassword}</label>
             <div className="input-group">
@@ -1592,6 +1633,7 @@ export function CollectionScreen({
           existingReceipts={existingReceipts}
           existingEntries={day?.entries ?? []}
           onClose={() => setScanOpen(false)}
+          onRefresh={() => refresh()}
           onSaved={(count) => {
             setScanOpen(false)
             refresh()
