@@ -820,16 +820,17 @@ export class WebRepository implements Repository {
     const minReceipt = new Map<string, number>()
     const affected = new Set<string>()
     let imported = 0
-    let skipped = 0
+    let skippedLocked = 0
+    let skippedUnknown = 0
 
     for (const row of rows) {
       if (this.state.locks[row.date] === true) {
-        skipped += 1
+        skippedLocked += 1
         continue
       }
       const holder = holderByAccount.get(String(row.accountNo).trim())
       if (!holder) {
-        skipped += 1
+        skippedUnknown += 1
         continue
       }
       const receiptNo = Math.max(0, Math.floor(Number(row.receiptNo) || 0))
@@ -880,7 +881,13 @@ export class WebRepository implements Repository {
     }
 
     this.persist()
-    return { imported, skipped, dates: affected.size }
+    return {
+      imported,
+      skipped: skippedLocked + skippedUnknown,
+      skippedLocked,
+      skippedUnknown,
+      dates: affected.size,
+    }
   }
 
   async seedDemoData(profile: Profile): Promise<void> {

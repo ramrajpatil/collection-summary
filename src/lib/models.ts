@@ -183,5 +183,7 @@ export interface CollectionExport {
 export interface CollectionImportResult {
   imported: number
   skipped: number
+  skippedLocked: number
+  skippedUnknown: number
   dates: number
 }

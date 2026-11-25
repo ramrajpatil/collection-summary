@@ -288,8 +288,36 @@ export interface Strings {
   exportImportConfirm: string
   exportImported: string
   exportSkipped: string
+  exportSkippedLocked: string
+  exportSkippedUnknown: string
   exportInvalidFile: string
   exportRangeInvalid: string
+
+  nearbyTitle: string
+  nearbySubtitle: string
+  nearbySend: string
+  nearbyReceive: string
+  nearbySendHint: string
+  nearbyReceiveHint: string
+  nearbySearching: string
+  nearbyWaiting: string
+  nearbyNoDevices: string
+  nearbyConnecting: string
+  nearbyConnected: string
+  nearbySending: string
+  nearbySent: string
+  nearbyReceiving: string
+  nearbyImported: string
+  nearbyUnavailable: string
+  nearbyCancel: string
+  nearbyDone: string
+  nearbySendRows: string
+  nearbyConnect: string
+  nearbyRestart: string
+  nearbyIncoming: string
+  nearbyOutgoing: string
+  nearbyReview: string
+  nearbyReviewHint: string
 
   lockDay: string
   lockConfirm: string
@@ -607,8 +635,40 @@ export const STRINGS: Record<Lang, Strings> = {
     exportImportConfirm: 'जोडा व जतन करा',
     exportImported: 'यशस्वीरित्या जोडले.',
     exportSkipped: 'वगळले',
+    exportSkippedLocked: 'लॉक केलेल्या दिवसांतील',
+    exportSkippedUnknown: 'या फोनवर न सापडलेल्या खात्यांच्या',
     exportInvalidFile: 'ही वैध निर्यात फाइल वाटत नाही.',
     exportRangeInvalid: 'कृपया वैध तारखा निवडा.',
+
+    nearbyTitle: 'जवळपास हस्तांतरण',
+    nearbySubtitle:
+      'इंटरनेटशिवाय दोन फोनमध्ये निवडलेली वसुली हस्तांतरित करा. दोन्ही फोन जवळ ठेवा.',
+    nearbySend: 'डेटा पाठवा',
+    nearbyReceive: 'डेटा घ्या',
+    nearbySendHint:
+      'पाठवणार्‍या फोनवर हे निवडा, नंतर दुसर्‍या फोनवर “डेटा घ्या” दाबा.',
+    nearbyReceiveHint: 'दुसर्‍या फोनवर “डेटा पाठवा” निवडल्यावर तो येथे दिसेल.',
+    nearbySearching: 'जवळचे फोन शोधत आहे…',
+    nearbyWaiting: 'दुसर्‍या फोनची प्रतीक्षा…',
+    nearbyNoDevices: 'अजून कोणताही फोन आढळला नाही.',
+    nearbyConnecting: 'जोडत आहे…',
+    nearbyConnected: 'फोन जोडला गेला.',
+    nearbySending: 'डेटा पाठवत आहे…',
+    nearbySent: 'डेटा यशस्वीरित्या पाठवला.',
+    nearbyReceiving: 'डेटा घेत आहे…',
+    nearbyImported: 'डेटा यशस्वीरित्या जोडला.',
+    nearbyUnavailable:
+      'जवळपास हस्तांतरण फक्त Android अ‍ॅपमध्ये उपलब्ध आहे.',
+    nearbyCancel: 'रद्द करा',
+    nearbyDone: 'पूर्ण',
+    nearbySendRows: 'पाठवायच्या नोंदी',
+    nearbyConnect: 'जोडा',
+    nearbyRestart: 'पुन्हा प्रयत्न करा',
+    nearbyIncoming: 'येणारा डेटा',
+    nearbyOutgoing: 'पाठवायचा डेटा',
+    nearbyReview: 'जोडण्यापूर्वी तपासा',
+    nearbyReviewHint:
+      'खाती व रकमा तपासा, नंतर “जोडा व जतन करा” दाबा.',
 
     lockDay: 'दिवस लॉक करा',
     lockConfirm:
@@ -925,9 +985,42 @@ export const STRINGS: Record<Lang, Strings> = {
     exportImportPreview: 'File contains',
     exportImportConfirm: 'Merge & save',
     exportImported: 'Imported successfully.',
-    exportSkipped: 'skipped',
+    exportSkipped: 'Skipped',
+    exportSkippedLocked: 'on locked days',
+    exportSkippedUnknown: 'for accounts not found on this phone',
     exportInvalidFile: 'That does not look like a valid export file.',
     exportRangeInvalid: 'Please pick a valid date range.',
+
+    nearbyTitle: 'Nearby transfer',
+    nearbySubtitle:
+      'Move the selected collection data between two phones without internet. Keep both phones close.',
+    nearbySend: 'Send data',
+    nearbyReceive: 'Receive data',
+    nearbySendHint:
+      'Pick this on the sending phone, then tap “Receive data” on the other phone.',
+    nearbyReceiveHint:
+      'Once the other phone chooses “Send data”, it will appear here.',
+    nearbySearching: 'Looking for nearby phones…',
+    nearbyWaiting: 'Waiting for the other phone…',
+    nearbyNoDevices: 'No phones found yet.',
+    nearbyConnecting: 'Connecting…',
+    nearbyConnected: 'Phone connected.',
+    nearbySending: 'Sending data…',
+    nearbySent: 'Data sent successfully.',
+    nearbyReceiving: 'Receiving data…',
+    nearbyImported: 'Data merged successfully.',
+    nearbyUnavailable:
+      'Nearby transfer is only available in the Android app.',
+    nearbyCancel: 'Cancel',
+    nearbyDone: 'Done',
+    nearbySendRows: 'Rows to send',
+    nearbyConnect: 'Connect',
+    nearbyRestart: 'Try again',
+    nearbyIncoming: 'Incoming data',
+    nearbyOutgoing: 'Data to send',
+    nearbyReview: 'Review before merging',
+    nearbyReviewHint:
+      'Check the accounts and amounts, then tap “Merge & save”.',
 
     lockDay: 'Lock day',
     lockConfirm:

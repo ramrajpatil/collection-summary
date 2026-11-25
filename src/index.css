@@ -971,6 +971,95 @@ body {
   transform: scale(0.94);
 }
 
+.nearby-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 8px;
+  border-radius: 20px;
+  background: linear-gradient(160deg, var(--panel-a), var(--panel-b));
+  border: 1px solid var(--panel-border);
+}
+
+.nearby-row .picker-action {
+  height: 34px;
+  padding: 0 14px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  transition: transform 0.4s var(--spring);
+}
+
+.nearby-row .picker-action:active {
+  transform: scale(0.94);
+}
+
+.nearby-details {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.nearby-month {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nearby-month-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 4px;
+}
+
+.nearby-month-head b {
+  font-size: 0.9rem;
+}
+
+.nearby-month-head small {
+  color: var(--muted);
+  font-size: 0.68rem;
+  white-space: nowrap;
+}
+
+.nearby-holder {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: var(--chip-bg);
+  border: 1px solid var(--chip-border);
+}
+
+.nearby-holder-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  text-align: right;
+}
+
+.nearby-holder-amount b {
+  font-size: 0.82rem;
+}
+
+.nearby-holder-amount small {
+  color: var(--muted);
+  font-size: 0.66rem;
+}
+
 .sr {
   display: grid;
   place-items: center;
@@ -1361,6 +1450,29 @@ body {
 
 .sheet-actions .btn-primary {
   flex: 1;
+}
+
+.sheet.sticky-footer {
+  overflow: hidden;
+}
+
+.sheet.sticky-footer .sheet-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overscroll-behavior: contain;
+  margin-right: -2px;
+  padding-right: 2px;
+}
+
+.sheet.sticky-footer .sheet-actions {
+  flex: 0 0 auto;
+  margin-top: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--panel-border);
 }
 
 .btn-ghost {

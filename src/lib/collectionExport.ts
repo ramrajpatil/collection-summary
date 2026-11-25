@@ -171,3 +171,58 @@ export function summarizeCollectionExport(
     total,
   }
 }
+
+export interface CollectionDaySummary {
+  date: string
+  accounts: number
+  total: number
+}
+
+export interface CollectionMonthDaysSummary {
+  month: string
+  dayCount: number
+  accounts: number
+  total: number
+  days: CollectionDaySummary[]
+}
+
+export function collectionMonthDaySummaries(
+  data: CollectionExport,
+): CollectionMonthDaysSummary[] {
+  const months = new Map<
+    string,
+    { days: Map<string, CollectionDaySummary>; accounts: number; total: number }
+  >()
+
+  for (const row of data.collections) {
+    const month = row.date.slice(0, 7)
+    if (!month) continue
+    let bucket = months.get(month)
+    if (!bucket) {
+      bucket = { days: new Map(), accounts: 0, total: 0 }
+      months.set(month, bucket)
+    }
+    bucket.accounts += 1
+    bucket.total += row.amount
+    const day = bucket.days.get(row.date) ?? {
+      date: row.date,
+      accounts: 0,
+      total: 0,
+    }
+    day.accounts += 1
+    day.total += row.amount
+    bucket.days.set(row.date, day)
+  }
+
+  return [...months.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, bucket]) => ({
+      month,
+      dayCount: bucket.days.size,
+      accounts: bucket.accounts,
+      total: bucket.total,
+      days: [...bucket.days.values()].sort((a, b) =>
+        a.date.localeCompare(b.date),
+      ),
+    }))
+}

@@ -19,12 +19,16 @@ import {
   summarizeCollectionExport,
 } from '../lib/collectionExport'
 import { calendarMonthPeriod } from '../lib/reports'
+import { isNearbySupported } from '../lib/nearby'
+import { describeImportResult } from '../lib/importSummary'
 import { DatePicker } from '../components/DatePicker'
+import { NearbySyncSheet } from '../components/NearbySyncSheet'
 import {
   ArchiveIcon,
   CopyIcon,
   DocIcon,
   DownloadIcon,
+  ShareIcon,
 } from '../components/Icons'
 
 interface ExportScreenProps {
@@ -63,6 +67,7 @@ export function ExportScreen({ repo, profile }: ExportScreenProps) {
   const [reloadToken, setReloadToken] = useState(0)
   const [importData, setImportData] = useState<CollectionExport | null>(null)
   const [importName, setImportName] = useState('')
+  const [nearbyOpen, setNearbyOpen] = useState(false)
 
   const range = useMemo(() => {
     if (mode === 'day') return { start: anchor, end: anchor }
@@ -188,13 +193,7 @@ export function ExportScreen({ repo, profile }: ExportScreenProps) {
     setError('')
     try {
       const result = await repo.importCollections(importData)
-      setStatus(
-        `${s.exportImported} (${formatDigits(result.imported, lang)}${
-          result.skipped > 0
-            ? `, ${formatDigits(result.skipped, lang)} ${s.exportSkipped}`
-            : ''
-        })`,
-      )
+      setStatus(describeImportResult(result, lang))
       setImportData(null)
       setImportName('')
       setReloadToken((token) => token + 1)
@@ -369,6 +368,22 @@ export function ExportScreen({ repo, profile }: ExportScreenProps) {
         ) : null}
       </div>
 
+      {isNearbySupported() ? (
+        <div className="backup-section">
+          <h3>{s.nearbyTitle}</h3>
+          <p className="field-hint">{s.nearbySubtitle}</p>
+          <button
+            type="button"
+            className="btn-primary wide"
+            disabled={busy}
+            onClick={() => setNearbyOpen(true)}
+          >
+            <ShareIcon />
+            {s.nearbyTitle}
+          </button>
+        </div>
+      ) : null}
+
       {status ? <p className="form-note">{status}</p> : null}
       {error ? <p className="form-error">{error}</p> : null}
 
@@ -378,6 +393,19 @@ export function ExportScreen({ repo, profile }: ExportScreenProps) {
           max={today}
           onSelect={onPick}
           onClose={() => setPickTarget(null)}
+        />
+      ) : null}
+
+      {nearbyOpen ? (
+        <NearbySyncSheet
+          repo={repo}
+          profile={profile}
+          exportData={activeData}
+          onClose={() => setNearbyOpen(false)}
+          onImported={(result) => {
+            setStatus(describeImportResult(result, lang))
+            setReloadToken((token) => token + 1)
+          }}
         />
       ) : null}
     </>

@@ -149,4 +149,47 @@ describe('collection receipts', () => {
     const again = await repo.getDay(nextDate)
     expect(again.entries).toHaveLength(1)
   })
+
+  it('reports why imported rows were skipped', async () => {
+    const { repo } = await setup()
+    const lockedDate = '2026-11-22'
+    await repo.setDayLocked(lockedDate, true)
+
+    const result = await repo.importCollections({
+      type: 'collection-export',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      range: { start: '2026-11-21', end: '2026-11-23' },
+      dailyMeta: {},
+      locks: {},
+      collections: [
+        {
+          accountNo: '001',
+          name: 'A',
+          date: '2026-11-21',
+          amount: 100,
+          receiptNo: 1,
+        },
+        {
+          accountNo: '001',
+          name: 'A',
+          date: lockedDate,
+          amount: 100,
+          receiptNo: 1,
+        },
+        {
+          accountNo: '999',
+          name: 'Unknown',
+          date: '2026-11-23',
+          amount: 100,
+          receiptNo: 1,
+        },
+      ],
+    })
+
+    expect(result.imported).toBe(1)
+    expect(result.skippedLocked).toBe(1)
+    expect(result.skippedUnknown).toBe(1)
+    expect(result.skipped).toBe(2)
+  })
 })

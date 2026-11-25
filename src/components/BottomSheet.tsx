@@ -9,6 +9,7 @@ interface BottomSheetProps {
   footer?: ReactNode
   centered?: boolean
   className?: string
+  stickyFooter?: boolean
 }
 
 interface BodyLockSnapshot {
@@ -69,6 +70,7 @@ export function BottomSheet({
   footer,
   centered = false,
   className,
+  stickyFooter = false,
 }: BottomSheetProps) {
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -88,7 +90,9 @@ export function BottomSheet({
   return (
     <div className={`sheet-backdrop${centered ? ' centered' : ''}`} onClick={onClose}>
       <div
-        className={`sheet glass${className ? ` ${className}` : ''}`}
+        className={`sheet glass${className ? ` ${className}` : ''}${
+          stickyFooter ? ' sticky-footer' : ''
+        }`}
         role="dialog"
         aria-modal="true"
         aria-label={title}
@@ -105,7 +109,11 @@ export function BottomSheet({
             <CloseIcon />
           </button>
         </div>
-        {children}
+        {stickyFooter ? (
+          <div className="sheet-body">{children}</div>
+        ) : (
+          children
+        )}
         {footer ? <div className="sheet-actions">{footer}</div> : null}
       </div>
     </div>

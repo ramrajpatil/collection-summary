@@ -3,6 +3,7 @@ import type { CollectionExport } from './models'
 import {
   collectionExportCsv,
   collectionExportFileName,
+  collectionMonthDaySummaries,
   parseCollectionExport,
   serializeCollectionExport,
   summarizeCollectionExport,
@@ -72,5 +73,73 @@ describe('collection export', () => {
   it('rejects invalid exports', () => {
     expect(() => parseCollectionExport('{bad')).toThrow('INVALID_JSON')
     expect(() => parseCollectionExport('{"foo":1}')).toThrow('INVALID_EXPORT')
+  })
+
+  it('summarizes each day with the number of accounts and amount', () => {
+    const months = collectionMonthDaySummaries({
+      ...sample,
+      range: { start: '2026-10-31', end: '2026-11-02' },
+      collections: [
+        {
+          accountNo: '001',
+          name: 'A',
+          date: '2026-10-31',
+          amount: 100,
+          receiptNo: 1,
+        },
+        {
+          accountNo: '001',
+          name: 'A',
+          date: '2026-11-01',
+          amount: 100,
+          receiptNo: 1,
+        },
+        {
+          accountNo: '002',
+          name: 'B',
+          date: '2026-11-01',
+          amount: 200,
+          receiptNo: 2,
+        },
+        {
+          accountNo: '003',
+          name: 'C',
+          date: '2026-11-01',
+          amount: 300,
+          receiptNo: 3,
+        },
+        {
+          accountNo: '002',
+          name: 'B',
+          date: '2026-11-02',
+          amount: 200,
+          receiptNo: 2,
+        },
+      ],
+    })
+
+    expect(months.map((month) => month.month)).toEqual([
+      '2026-10',
+      '2026-11',
+    ])
+    expect(months[0]).toMatchObject({
+      month: '2026-10',
+      dayCount: 1,
+      accounts: 1,
+      total: 100,
+    })
+    expect(months[0].days).toEqual([
+      { date: '2026-10-31', accounts: 1, total: 100 },
+    ])
+    expect(months[1]).toMatchObject({
+      month: '2026-11',
+      dayCount: 2,
+      accounts: 4,
+      total: 800,
+    })
+    expect(months[1].days).toEqual([
+      { date: '2026-11-01', accounts: 3, total: 600 },
+      { date: '2026-11-02', accounts: 1, total: 200 },
+    ])
   })
 })

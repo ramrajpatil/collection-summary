@@ -1290,16 +1290,17 @@ export class NativeRepository implements Repository {
       const affected = new Set<string>()
       const upserts: { statement: string; values: unknown[] }[] = []
       let imported = 0
-      let skipped = 0
+      let skippedLocked = 0
+      let skippedUnknown = 0
 
       for (const row of rows) {
         if (lockedDates.has(row.date)) {
-          skipped += 1
+          skippedLocked += 1
           continue
         }
         const holderId = holderByAccount.get(String(row.accountNo).trim())
         if (!holderId) {
-          skipped += 1
+          skippedUnknown += 1
           continue
         }
         const receiptNo = Math.max(0, Math.floor(Number(row.receiptNo) || 0))
@@ -1358,7 +1359,13 @@ export class NativeRepository implements Repository {
         await this.renumberDate(db, date)
       }
       await db.commitTransaction()
-      return { imported, skipped, dates: affected.size }
+      return {
+        imported,
+        skipped: skippedLocked + skippedUnknown,
+        skippedLocked,
+        skippedUnknown,
+        dates: affected.size,
+      }
     } catch (err) {
       try {
         await db.rollbackTransaction()
