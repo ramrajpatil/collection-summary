@@ -205,15 +205,26 @@ export function ScanFlow({
     () => new Set(existingReceipts),
     [existingReceipts],
   )
-  const receiptNumber = Number(startDraft)
+  const existingMaxReceipt = useMemo(
+    () => existingReceipts.reduce((max, value) => Math.max(max, value), 0),
+    [existingReceipts],
+  )
+  const startReceiptNumber = Number(startDraft)
+  // The start field shows the day's real starting receipt, but new rows must
+  // never collide with already-saved receipts — so they begin after the day's
+  // highest saved receipt.
+  const receiptNumber =
+    Number.isInteger(startReceiptNumber) && startReceiptNumber >= 1
+      ? Math.max(startReceiptNumber, existingMaxReceipt + 1)
+      : startReceiptNumber
   const receiptCollision =
     Number.isInteger(receiptNumber) &&
     receiptNumber >= 1 &&
     saveable.some((_, index) => existingReceiptsSet.has(receiptNumber + index))
   const receiptError =
     startDraft.trim() === '' ||
-    !Number.isInteger(receiptNumber) ||
-    receiptNumber < 1
+    !Number.isInteger(startReceiptNumber) ||
+    startReceiptNumber < 1
       ? s.scanReceiptInvalid
       : receiptCollision
         ? s.scanReceiptUsed

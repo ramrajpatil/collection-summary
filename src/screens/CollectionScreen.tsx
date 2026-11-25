@@ -1627,7 +1627,7 @@ export function CollectionScreen({
           repo={repo}
           date={date}
           lang={lang}
-          startReceipt={nextReceipt}
+          startReceipt={day?.startReceipt ?? 1}
           receiptsEnabled={receiptsEnabled}
           collectedHolderIds={collectedHolderIds}
           existingReceipts={existingReceipts}

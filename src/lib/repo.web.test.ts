@@ -79,4 +79,31 @@ describe('collection receipts', () => {
       'ALREADY_COLLECTED',
     )
   })
+
+  it('inserts a collection at a receipt and shifts the later ones', async () => {
+    const { repo } = await setup()
+    const d = await repo.createHolder({
+      name: 'D',
+      accountNo: '004',
+      defaultAmount: 50,
+    })
+    // Insert after B (receipt 2) -> new entry takes receipt 2, C moves to 4.
+    await repo.insertCollectionAtReceipt(DATE, d.id, 50, 3)
+    const day = await repo.getDay(DATE)
+    expect(
+      day.entries.map((entry) => [entry.name, entry.receiptNo, entry.amount]),
+    ).toEqual([
+      ['A', 1, 100],
+      ['B', 2, 200],
+      ['D', 3, 50],
+      ['C', 4, 300],
+    ])
+  })
+
+  it('clearDay wipes every collection for the date', async () => {
+    const { repo } = await setup()
+    await repo.clearDay(DATE)
+    const day = await repo.getDay(DATE)
+    expect(day.entries).toEqual([])
+  })
 })
