@@ -18,7 +18,7 @@ import {
   serializeCollectionExport,
   summarizeCollectionExport,
 } from '../lib/collectionExport'
-import { commissionPeriod } from '../lib/reports'
+import { calendarMonthPeriod } from '../lib/reports'
 import { DatePicker } from '../components/DatePicker'
 import {
   ArchiveIcon,
@@ -68,7 +68,7 @@ export function ExportScreen({ repo, profile }: ExportScreenProps) {
     if (mode === 'day') return { start: anchor, end: anchor }
     if (mode === 'week') return weekRange(anchor, today)
     if (mode === 'month') {
-      const period = commissionPeriod(anchor.slice(0, 7))
+      const period = calendarMonthPeriod(anchor.slice(0, 7))
       return {
         start: period.start,
         end: period.end > today ? today : period.end,

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildMonthlyReport,
   buildMonthlyReportFromSummary,
+  calendarMonthPeriod,
   commissionFor,
   commissionPeriod,
   shiftMonth,
@@ -16,25 +17,56 @@ describe('commissionFor', () => {
 })
 
 describe('commissionPeriod', () => {
-  it('covers the whole calendar month', () => {
-    expect(commissionPeriod('2026-03')).toEqual({
-      start: '2026-03-01',
-      end: '2026-03-31',
-    })
+  it('runs from the 30th of the previous month to the 29th', () => {
     expect(commissionPeriod('2026-01')).toEqual({
-      start: '2026-01-01',
-      end: '2026-01-31',
+      start: '2025-12-30',
+      end: '2026-01-29',
+    })
+    expect(commissionPeriod('2026-07')).toEqual({
+      start: '2026-06-30',
+      end: '2026-07-29',
     })
   })
 
-  it('ends on the last day of the month, including leap years', () => {
+  it('rolls the 30th and 31st into the next month', () => {
+    expect(commissionPeriod('2026-07')).toEqual({
+      start: '2026-06-30',
+      end: '2026-07-29',
+    })
+    expect(commissionPeriod('2026-08')).toEqual({
+      start: '2026-07-30',
+      end: '2026-08-29',
+    })
+  })
+
+  it('starts on the 1st when the previous month has no 30th', () => {
+    expect(commissionPeriod('2026-03')).toEqual({
+      start: '2026-03-01',
+      end: '2026-03-29',
+    })
+  })
+
+  it('ends on the last day of February', () => {
     expect(commissionPeriod('2026-02')).toEqual({
-      start: '2026-02-01',
+      start: '2026-01-30',
       end: '2026-02-28',
     })
     expect(commissionPeriod('2024-02')).toEqual({
-      start: '2024-02-01',
+      start: '2024-01-30',
       end: '2024-02-29',
+    })
+  })
+})
+
+describe('calendarMonthPeriod', () => {
+  it('covers the whole calendar month', () => {
+    expect(calendarMonthPeriod('2026-03')).toEqual({
+      start: '2026-03-01',
+      end: '2026-03-31',
+    })
+    expect(calendarMonthPeriod('2026-02')).toEqual({
+      start: '2026-02-01',
+      end: '2026-02-28',
     })
   })
 })
@@ -71,7 +103,7 @@ describe('buildMonthlyReport', () => {
         name: 'B',
         nameEn: '',
         accountNo: '002',
-        date: '2026-03-31',
+        date: '2026-03-29',
         amount: 999,
       },
     ])
@@ -127,7 +159,7 @@ describe('buildMonthlyReportFromSummary', () => {
         name: 'B',
         nameEn: '',
         accountNo: '002',
-        date: '2026-03-31',
+        date: '2026-03-29',
         amount: 999,
       },
     ]
@@ -156,7 +188,7 @@ describe('buildMonthlyReportFromSummary', () => {
       [
         { date: '2026-03-01', total: 300, count: 2 },
         { date: '2026-03-02', total: 50.25, count: 1 },
-        { date: '2026-03-31', total: 999, count: 1 },
+        { date: '2026-03-29', total: 999, count: 1 },
       ],
     )
 

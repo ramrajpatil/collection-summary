@@ -106,4 +106,47 @@ describe('collection receipts', () => {
     const day = await repo.getDay(DATE)
     expect(day.entries).toEqual([])
   })
+
+  it('importCollections appends new days and keeps existing days intact', async () => {
+    const { repo } = await setup()
+    const nextDate = '2026-11-21'
+    const file = {
+      type: 'collection-export' as const,
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      range: { start: nextDate, end: nextDate },
+      dailyMeta: {},
+      locks: {},
+      collections: [
+        {
+          accountNo: '001',
+          name: 'A',
+          date: nextDate,
+          amount: 150,
+          receiptNo: 1,
+        },
+      ],
+    }
+
+    const result = await repo.importCollections(file)
+    expect(result.imported).toBe(1)
+
+    const existing = await repo.getDay(DATE)
+    expect(
+      existing.entries.map((entry) => [entry.name, entry.amount]),
+    ).toEqual([
+      ['A', 100],
+      ['B', 200],
+      ['C', 300],
+    ])
+
+    const imported = await repo.getDay(nextDate)
+    expect(imported.entries.map((entry) => [entry.name, entry.amount])).toEqual([
+      ['A', 150],
+    ])
+
+    await repo.importCollections(file)
+    const again = await repo.getDay(nextDate)
+    expect(again.entries).toHaveLength(1)
+  })
 })

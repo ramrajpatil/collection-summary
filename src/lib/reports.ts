@@ -23,13 +23,32 @@ export function commissionFor(total: number): number {
   return round2(total * COMMISSION_RATE)
 }
 
-export function commissionPeriod(month: string): {
+export function calendarMonthPeriod(month: string): {
   start: string
   end: string
 } {
   const [year, monthNo] = month.split('-').map(Number)
   const start = isoDate(year, monthNo, 1)
   const end = isoDate(year, monthNo, daysInMonth(year, monthNo))
+
+  return { start, end }
+}
+
+export function commissionPeriod(month: string): {
+  start: string
+  end: string
+} {
+  const [year, monthNo] = month.split('-').map(Number)
+  const prevYear = monthNo === 1 ? year - 1 : year
+  const prevMonth = monthNo === 1 ? 12 : monthNo - 1
+  const prevDays = daysInMonth(prevYear, prevMonth)
+  const currentDays = daysInMonth(year, monthNo)
+
+  const start =
+    prevDays >= 30
+      ? isoDate(prevYear, prevMonth, 30)
+      : isoDate(year, monthNo, 1)
+  const end = isoDate(year, monthNo, Math.min(29, currentDays))
 
   return { start, end }
 }

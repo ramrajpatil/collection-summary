@@ -1165,20 +1165,20 @@ export function CollectionScreen({
                   >
                     {entry ? formatRupees(entry.amount, lang) : '—'}
                   </button>
-                  <button
-                    type="button"
-                    className={`collect${isDone ? ' done' : ''}`}
-                    aria-label={
-                      isDone ? s.unmarkCollected : s.markCollected
-                    }
-                    disabled={busy || locked}
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      void toggle(holder)
-                    }}
-                  >
-                    {isDone ? <CheckIcon /> : <PlusIcon />}
-                  </button>
+                  {isDone ? (
+                    <button
+                      type="button"
+                      className="collect done"
+                      aria-label={s.unmarkCollected}
+                      disabled={busy || locked}
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        void toggle(holder)
+                      }}
+                    >
+                      <CheckIcon />
+                    </button>
+                  ) : null}
                 </div>
               )
             })}
