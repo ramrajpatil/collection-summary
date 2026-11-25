@@ -44,11 +44,8 @@ export function commissionPeriod(month: string): {
   const prevDays = daysInMonth(prevYear, prevMonth)
   const currentDays = daysInMonth(year, monthNo)
 
-  const start =
-    prevDays >= 30
-      ? isoDate(prevYear, prevMonth, 30)
-      : isoDate(year, monthNo, 1)
-  const end = isoDate(year, monthNo, Math.min(29, currentDays))
+  const start = isoDate(prevYear, prevMonth, prevDays)
+  const end = isoDate(year, monthNo, currentDays - 1)
 
   return { start, end }
 }

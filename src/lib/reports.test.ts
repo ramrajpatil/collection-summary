@@ -17,43 +17,47 @@ describe('commissionFor', () => {
 })
 
 describe('commissionPeriod', () => {
-  it('runs from the 30th of the previous month to the 29th', () => {
-    expect(commissionPeriod('2026-01')).toEqual({
-      start: '2025-12-30',
-      end: '2026-01-29',
+  it('runs from the last day of the previous month', () => {
+    expect(commissionPeriod('2026-11')).toEqual({
+      start: '2026-10-31',
+      end: '2026-11-29',
     })
-    expect(commissionPeriod('2026-07')).toEqual({
-      start: '2026-06-30',
-      end: '2026-07-29',
+    expect(commissionPeriod('2026-12')).toEqual({
+      start: '2026-11-30',
+      end: '2026-12-30',
+    })
+    expect(commissionPeriod('2026-01')).toEqual({
+      start: '2025-12-31',
+      end: '2026-01-30',
     })
   })
 
-  it('rolls the 30th and 31st into the next month', () => {
+  it('rolls the last day of each month into the next month', () => {
     expect(commissionPeriod('2026-07')).toEqual({
       start: '2026-06-30',
-      end: '2026-07-29',
+      end: '2026-07-30',
     })
     expect(commissionPeriod('2026-08')).toEqual({
-      start: '2026-07-30',
-      end: '2026-08-29',
+      start: '2026-07-31',
+      end: '2026-08-30',
     })
   })
 
-  it('starts on the 1st when the previous month has no 30th', () => {
+  it('ends one day before the last day of the month', () => {
     expect(commissionPeriod('2026-03')).toEqual({
-      start: '2026-03-01',
-      end: '2026-03-29',
+      start: '2026-02-28',
+      end: '2026-03-30',
     })
   })
 
-  it('ends on the last day of February', () => {
+  it('ends on the 27th/28th of February', () => {
     expect(commissionPeriod('2026-02')).toEqual({
-      start: '2026-01-30',
-      end: '2026-02-28',
+      start: '2026-01-31',
+      end: '2026-02-27',
     })
     expect(commissionPeriod('2024-02')).toEqual({
-      start: '2024-01-30',
-      end: '2024-02-29',
+      start: '2024-01-31',
+      end: '2024-02-28',
     })
   })
 })
