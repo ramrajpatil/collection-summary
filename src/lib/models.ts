@@ -4,6 +4,7 @@ export interface Profile {
   agentName: string
   managerName: string
   receiptsEnabled?: boolean
+  showDayActions?: boolean
 }
 
 export interface Holder {

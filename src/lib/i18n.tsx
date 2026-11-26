@@ -252,6 +252,11 @@ export interface Strings {
   notificationsHint: string
   receiptNumbers: string
   receiptNumbersHint: string
+  dayActionButtons: string
+  dayActionButtonsHint: string
+  deleteDayShort: string
+  collectedSaved: string
+  collectedRemoved: string
   backupExport: string
   backupExportHint: string
   backupImport: string
@@ -601,6 +606,12 @@ export const STRINGS: Record<Lang, Strings> = {
     receiptNumbers: 'पावती क्रमांक',
     receiptNumbersHint:
       'बंद केल्यास पावती क्रमांक सर्वत्र लपवले जातात — नोंदी, छापलेली पावती व निर्यात यांसह.',
+    dayActionButtons: 'दिवस क्रिया बटणे',
+    dayActionButtonsHint:
+      'बंद केल्यास “दिवस हलवा” व “वसुली काढा” बटणे लपवली जातात.',
+    deleteDayShort: 'वसुली काढा',
+    collectedSaved: 'वसुली नोंद झाली.',
+    collectedRemoved: 'वसुली नोंद काढली.',
     backupExport: 'बॅकअप जतन करा',
     backupExportHint:
       'सर्व खातेदार व वसुली एका फाइलमध्ये जतन होते; ती जपून ठेवा किंवा दुसऱ्या फोनवर हलवा.',
@@ -958,6 +969,12 @@ export const STRINGS: Record<Lang, Strings> = {
     receiptNumbers: 'Receipt numbers',
     receiptNumbersHint:
       'Turn off to hide receipt numbers everywhere — entries, printed sheets and exports.',
+    dayActionButtons: 'Day action buttons',
+    dayActionButtonsHint:
+      'Turn off to hide the “Shift day” and “Delete collection” buttons.',
+    deleteDayShort: 'Delete collection',
+    collectedSaved: 'Collection recorded.',
+    collectedRemoved: 'Collection removed.',
     backupExport: 'Save backup',
     backupExportHint:
       'Saves every holder and collection into one file you can keep safe or move to another phone.',

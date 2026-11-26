@@ -85,6 +85,15 @@ export default function App() {
     saveNotifySettings(next)
   }
 
+  function toggleDayActions() {
+    const next = !(settingsDraft.showDayActions !== false)
+    setSettingsDraft({ ...settingsDraft, showDayActions: next })
+    const base = profile ?? defaultSettings(lang)
+    const nextProfile = { ...base, showDayActions: next }
+    setProfile(nextProfile)
+    if (repo) void repo.saveProfile(nextProfile).catch(() => {})
+  }
+
   useEffect(() => {
     let cancelled = false
     void (async () => {
@@ -219,6 +228,7 @@ export default function App() {
     setSettingsDraft({
       ...base,
       receiptsEnabled: base.receiptsEnabled !== false,
+      showDayActions: base.showDayActions !== false,
     })
     setGeminiKeyDraft(getGeminiKey())
     setShowGeminiKey(false)
@@ -684,6 +694,22 @@ export default function App() {
               </span>
             </label>
             <p className="field-hint">{s.receiptNumbersHint}</p>
+          </div>
+
+          <div className="field">
+            <span className="field-label">{s.dayActionButtons}</span>
+            <label className="toggle-row">
+              <span>{s.dayActionButtons}</span>
+              <input
+                type="checkbox"
+                checked={settingsDraft.showDayActions !== false}
+                onChange={toggleDayActions}
+              />
+              <span className="toggle-switch" aria-hidden>
+                <span />
+              </span>
+            </label>
+            <p className="field-hint">{s.dayActionButtonsHint}</p>
           </div>
 
           <div className="field">

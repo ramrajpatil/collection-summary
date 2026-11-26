@@ -4,15 +4,13 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react'
 import { createPortal } from 'react-dom'
-import { CloseIcon } from './Icons'
 
 interface ToastProps {
   message: string
   onDismiss: () => void
-  dismissLabel?: string
 }
 
-export function Toast({ message, onDismiss, dismissLabel }: ToastProps) {
+export function Toast({ message, onDismiss }: ToastProps) {
   const [dragY, setDragY] = useState(0)
   const [dragging, setDragging] = useState(false)
   const startY = useRef(0)
@@ -21,7 +19,6 @@ export function Toast({ message, onDismiss, dismissLabel }: ToastProps) {
 
   function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
     if (event.pointerType === 'mouse' && event.button !== 0) return
-    if ((event.target as HTMLElement).closest('button')) return
     startY.current = event.clientY
     offsetY.current = 0
     pointerId.current = event.pointerId
@@ -61,16 +58,12 @@ export function Toast({ message, onDismiss, dismissLabel }: ToastProps) {
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerEnd}
         onPointerCancel={handlePointerEnd}
+        onClick={() => {
+          if (Math.abs(offsetY.current) <= 6) onDismiss()
+        }}
       >
+        <span className="toast-dot" aria-hidden />
         <span className="toast-message">{message}</span>
-        <button
-          type="button"
-          className="toast-close"
-          aria-label={dismissLabel ?? 'Dismiss'}
-          onClick={onDismiss}
-        >
-          <CloseIcon />
-        </button>
       </div>
     </div>,
     document.body,

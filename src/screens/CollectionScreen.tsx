@@ -37,7 +37,6 @@ import {
   CameraIcon,
   CheckIcon,
   ChevronRightIcon,
-  ClockIcon,
   DownloadIcon,
   EyeIcon,
   EyeOffIcon,
@@ -50,7 +49,6 @@ import {
   TrashIcon,
   UnlockIcon,
   UsersIcon,
-  WalletIcon,
   ArrowRightIcon,
 } from '../components/Icons'
 
@@ -425,6 +423,11 @@ export function CollectionScreen({
   const collectedCount = day?.entries.length ?? 0
   const pendingCount = holders.length - collectedCount
   const receiptLocked = collectedCount > 0
+  const progressPct =
+    holders.length > 0
+      ? Math.min(100, (collectedCount / holders.length) * 100)
+      : 0
+  const showDayActions = profile.showDayActions !== false
 
   const deferredSearch = useDeferredValue(search)
 
@@ -537,9 +540,11 @@ export function CollectionScreen({
     try {
       if (existing) {
         await repo.deleteCollection(holder.id, date)
+        setStatus(s.collectedRemoved)
       } else {
         await repo.saveCollection(holder.id, date, holder.defaultAmount)
         void notifyCollection(holder, holder.defaultAmount)
+        setStatus(s.collectedSaved)
       }
       refresh()
     } catch (err) {
@@ -880,200 +885,192 @@ export function CollectionScreen({
 
   return (
     <>
-      <section className="hero glass">
-        <div className="hero-head">
-          <div>
-            <h1>{isToday ? s.todayCollection : s.pastCollection}</h1>
-            {locked ? <p>{s.lockedNote}</p> : null}
-          </div>
-          <button
-            type="button"
-            className={`action-pill lock-pill${locked ? ' locked' : ''}`}
-            aria-label={locked ? s.unlockDay : s.lockDay}
-            title={locked ? s.unlockDay : s.lockDay}
-            disabled={busy}
-            onClick={locked ? openUnlock : openLockConfirm}
-          >
-            {locked ? <UnlockIcon /> : <LockIcon />}
-            <span>{locked ? s.unlockDay : s.lockDay}</span>
-          </button>
-        </div>
-        {locked ? <p className="lock-note">{s.lockedBadge}</p> : null}
-
-        <div className="date-nav">
-          <button
-            type="button"
-            className="action-pill date-pill"
-            aria-label={s.selectDate}
-            onClick={() => setCalendarOpen(true)}
-          >
-            <CalendarIcon />
-            <span>{formatDate(date, lang)}</span>
-          </button>
-          <button
-            type="button"
-            className="action-pill scan-pill"
-            aria-label={s.scanEntries}
-            disabled={busy || locked}
-            onClick={() => setScanOpen(true)}
-          >
-            <CameraIcon />
-            <span>{s.scanEntries}</span>
-          </button>
-        </div>
-
+      <section className="collect-datebar">
+        <button
+          type="button"
+          className="date-pill"
+          aria-label={s.selectDate}
+          onClick={() => setCalendarOpen(true)}
+        >
+          <CalendarIcon />
+          <span>{formatDate(date, lang)}</span>
+        </button>
         {!isToday ? (
           <button
             type="button"
-            className="btn-ghost compact centered date-today"
+            className="today-pill"
             onClick={() => changeDate(today)}
           >
             {s.goToday}
           </button>
         ) : null}
+        <button
+          type="button"
+          className={`lock-square${locked ? ' locked' : ''}`}
+          aria-label={locked ? s.unlockDay : s.lockDay}
+          title={locked ? s.unlockDay : s.lockDay}
+          disabled={busy}
+          onClick={locked ? openUnlock : openLockConfirm}
+        >
+          {locked ? <UnlockIcon /> : <LockIcon />}
+        </button>
+      </section>
 
-        {receiptsEnabled ? (
-          <div className="receipt-label">
-            <label htmlFor="startReceipt">{s.startingReceipt}</label>
+      <section className="summary-card glass">
+        <div className="summary-head">
+          <div className="summary-amount">
+            <small>{isToday ? s.todayAmount : s.dayAmount}</small>
+            <b>{formatRupees(total, lang)}</b>
           </div>
-        ) : null}
-
-        <div className="hero-meta">
-          {receiptsEnabled ? (
-            <div className="stepper">
-              <button
-                type="button"
-                aria-label={s.startingReceipt}
-                disabled={busy || locked || receiptLocked}
-                onClick={() =>
-                  void commitStart(
-                    (Number(startDraft) || day?.startReceipt || 1) - 1,
-                  )
-                }
-              >
-                <MinusIcon />
-              </button>
-              <input
-                id="startReceipt"
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={4}
-                autoComplete="off"
-                autoCorrect="off"
-                spellCheck={false}
-                value={formatDigits(startDraft, lang)}
-                disabled={busy || locked || receiptLocked}
-                onChange={(event) =>
-                  setStartDraft(
-                    toLatinDigits(event.target.value)
-                      .replace(/\D/g, '')
-                      .slice(0, 4),
-                  )
-                }
-                onBlur={() => void commitStart(Number(startDraft))}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.currentTarget.blur()
-                  }
-                }}
-              />
-              <button
-                type="button"
-                aria-label={s.startingReceipt}
-                disabled={busy || locked || receiptLocked}
-                onClick={() =>
-                  void commitStart(
-                    (Number(startDraft) || day?.startReceipt || 1) + 1,
-                  )
-                }
-              >
-                <PlusIcon />
-              </button>
-            </div>
-          ) : null}
-          <button
-            type="button"
-            className="action-pill print-pill"
-            aria-label={s.printKara}
-            title={s.printKara}
-            disabled={busy || collectedCount === 0}
-            onClick={() => setPdfOpen(true)}
-          >
-            <PrinterIcon />
-            <span>{s.printKara}</span>
-          </button>
+          <div className="summary-collected">
+            <small>{s.collected}</small>
+            <b>
+              {formatDigits(collectedCount, lang)} /{' '}
+              {formatDigits(holders.length, lang)}
+            </b>
+          </div>
         </div>
-
-        {collectedCount > 0 ? (
-          <div className="day-actions">
-            <button
-              type="button"
-              className="btn-ghost day-shift-btn"
-              disabled={busy}
-              onClick={() =>
-                requestEditPassword(() => setMovePickOpen(true), 'moveDay')
-              }
-            >
-              <ArrowRightIcon />
-              {s.moveDay}
-            </button>
-            <button
-              type="button"
-              className="btn-danger-text delete-day-btn"
-              disabled={busy}
-              onClick={() =>
-                requestEditPassword(() => void clearWholeDay(), 'clearDay')
-              }
-            >
-              <TrashIcon />
-              {s.deleteDay}
-            </button>
+        <div className="summary-progress">
+          <span style={{ width: `${progressPct}%` }} />
+        </div>
+        <div className="summary-chips">
+          <div className="summary-chip neutral">
+            <span>{s.totalAccounts}</span>
+            <b>{formatDigits(holders.length, lang)}</b>
           </div>
-        ) : null}
-
-        <div className="stats">
-          <div className="stat">
-            <div className="stat-text">
-              <small>{s.totalAccounts}</small>
-              <b>{formatDigits(holders.length, lang)}</b>
-            </div>
-            <span className="stat-icon accounts">
-              <UsersIcon />
-            </span>
-          </div>
-          <div className="stat">
-            <div className="stat-text">
-              <small>{s.collected}</small>
-              <b>
-                {formatDigits(collectedCount, lang)} /{' '}
-                {formatDigits(holders.length, lang)}
-              </b>
-            </div>
-            <span className="stat-icon collected">
-              <CheckIcon />
-            </span>
-          </div>
-          <div className="stat">
-            <div className="stat-text">
-              <small>{s.uncollected}</small>
-              <b>{formatDigits(pendingCount, lang)}</b>
-            </div>
-            <span className="stat-icon pending">
-              <ClockIcon />
-            </span>
-          </div>
-          <div className="stat">
-            <div className="stat-text">
-              <small>{isToday ? s.todayAmount : s.dayAmount}</small>
-              <b>{formatRupees(total, lang)}</b>
-            </div>
-            <span className="stat-icon amount">
-              <WalletIcon />
-            </span>
+          <div className="summary-chip warn">
+            <span>{s.uncollected}</span>
+            <b>{formatDigits(pendingCount, lang)}</b>
           </div>
         </div>
       </section>
+
+      {receiptsEnabled ? (
+        <section className="receipt-card glass">
+          <label className="receipt-card-label" htmlFor="startReceipt">
+            {s.startingReceipt}
+          </label>
+          <div className="stepper">
+            <button
+              type="button"
+              aria-label={s.startingReceipt}
+              disabled={busy || (receiptLocked && !locked)}
+              onClick={() =>
+                void commitStart(
+                  (Number(startDraft) || day?.startReceipt || 1) - 1,
+                )
+              }
+            >
+              <MinusIcon />
+            </button>
+            <input
+              id="startReceipt"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={4}
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              value={formatDigits(startDraft, lang)}
+              disabled={busy || (receiptLocked && !locked)}
+              readOnly={locked}
+              onClick={() => {
+                if (locked) setStatus(s.dayLockedError)
+              }}
+              onChange={(event) =>
+                setStartDraft(
+                  toLatinDigits(event.target.value)
+                    .replace(/\D/g, '')
+                    .slice(0, 4),
+                )
+              }
+              onBlur={() => {
+                if (!locked) void commitStart(Number(startDraft))
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.currentTarget.blur()
+                }
+              }}
+            />
+            <button
+              type="button"
+              aria-label={s.startingReceipt}
+              disabled={busy || (receiptLocked && !locked)}
+              onClick={() =>
+                void commitStart(
+                  (Number(startDraft) || day?.startReceipt || 1) + 1,
+                )
+              }
+            >
+              <PlusIcon />
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      <div className="action-grid">
+        <button
+          type="button"
+          className="action-tile primary"
+          disabled={busy || collectedCount === 0}
+          onClick={() => setPdfOpen(true)}
+        >
+          <PrinterIcon />
+          <span>{s.printKara}</span>
+        </button>
+        <button
+          type="button"
+          className="action-tile"
+          disabled={busy}
+          onClick={() => {
+            if (locked) {
+              setStatus(s.dayLockedError)
+              return
+            }
+            setScanOpen(true)
+          }}
+        >
+          <CameraIcon />
+          <span>{s.scanEntries}</span>
+        </button>
+      </div>
+
+      {showDayActions && collectedCount > 0 ? (
+        <div className="action-grid">
+          <button
+            type="button"
+            className="action-tile"
+            disabled={busy}
+            onClick={() => {
+              if (locked) {
+                setStatus(s.dayLockedError)
+                return
+              }
+              requestEditPassword(() => setMovePickOpen(true), 'moveDay')
+            }}
+          >
+            <ArrowRightIcon />
+            <span>{s.moveDay}</span>
+          </button>
+          <button
+            type="button"
+            className="action-tile danger"
+            disabled={busy}
+            onClick={() => {
+              if (locked) {
+                setStatus(s.dayLockedError)
+                return
+              }
+              requestEditPassword(() => void clearWholeDay(), 'clearDay')
+            }}
+          >
+            <TrashIcon />
+            <span>{s.deleteDayShort}</span>
+          </button>
+        </div>
+      ) : null}
 
       {holders.length === 0 ? (
         <div className="empty glass">
@@ -1223,7 +1220,7 @@ export function CollectionScreen({
                       type="button"
                       className="collect done"
                       aria-label={s.unmarkCollected}
-                      disabled={busy || locked}
+                      disabled={busy}
                       onClick={(event) => {
                         event.stopPropagation()
                         void toggle(holder)
@@ -1314,7 +1311,6 @@ export function CollectionScreen({
           key={status}
           message={status}
           onDismiss={() => setStatus('')}
-          dismissLabel={s.close}
         />
       ) : null}
 

@@ -403,7 +403,6 @@ export function ReportsScreen({ repo, profile }: ReportsScreenProps) {
           key={status}
           message={status}
           onDismiss={() => setStatus('')}
-          dismissLabel={s.close}
         />
       ) : null}
 

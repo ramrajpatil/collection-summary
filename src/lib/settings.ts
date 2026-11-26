@@ -13,6 +13,7 @@ export function defaultSettings(lang: Lang): Settings {
         agentName: 'सचिन कदम',
         managerName: 'व्यवस्थापक',
         receiptsEnabled: true,
+        showDayActions: true,
       }
     : {
         societyName: 'Shri Ganesh Pat Sanstha',
@@ -20,6 +21,7 @@ export function defaultSettings(lang: Lang): Settings {
         agentName: 'Sachin Kadam',
         managerName: 'Manager',
         receiptsEnabled: true,
+        showDayActions: true,
       }
 }
 
@@ -37,6 +39,7 @@ export function loadStoredSettings(): Settings | null {
       agentName: pick(parsed.agentName, base.agentName),
       managerName: pick(parsed.managerName, base.managerName),
       receiptsEnabled: parsed.receiptsEnabled !== false,
+      showDayActions: parsed.showDayActions !== false,
     }
   } catch {
     return null

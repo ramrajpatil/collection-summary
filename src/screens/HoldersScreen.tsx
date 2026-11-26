@@ -471,7 +471,6 @@ export function HoldersScreen({
           key={status}
           message={status}
           onDismiss={() => setStatus('')}
-          dismissLabel={s.close}
         />
       ) : null}
 
