@@ -56,6 +56,7 @@ export interface Strings {
   startingReceipt: string
   receiptNo: string
   receiptShort: string
+  receiptNoShort: string
 
   tabCollection: string
   tabHolders: string
@@ -401,6 +402,7 @@ export const STRINGS: Record<Lang, Strings> = {
     startingReceipt: 'आजचा सुरुवातीचा पावती क्रमांक',
     receiptNo: 'पावती क्रमांक',
     receiptShort: 'पावती',
+    receiptNoShort: 'पावती क्र.',
 
     tabCollection: 'वसुली',
     tabHolders: 'खातेदार',
@@ -478,7 +480,7 @@ export const STRINGS: Record<Lang, Strings> = {
     collectNow: 'वसुली नोंदवा',
     removeCollection: 'वसुली रद्द करा',
     amountSaved: 'रक्कम जतन झाली.',
-    scanEntries: 'स्कॅन करा',
+    scanEntries: 'स्कॅन',
     scanTitle: 'मॅन्युअल एंट्री',
     scanHint:
       'पावतीचे पान कॅमेऱ्याने स्पष्ट काढा. खाते क्रमांक व रक्कम ओळखल्यानंतर तपासून जतन करा.',
@@ -527,7 +529,7 @@ export const STRINGS: Record<Lang, Strings> = {
     pdfSaved: 'PDF तयार झाला.',
     pdfFailed: 'PDF तयार करता आला नाही.',
     sharePdf: 'PDF शेअर करा',
-    printKara: 'प्रिंट करा',
+    printKara: 'प्रिंट',
     shareTitle: 'दैनिक वसुली पत्रक',
     shareText: 'आजचे वसुली पत्रक जोडले आहे.',
     sortReceipt: 'पावती क्र.',
@@ -767,6 +769,7 @@ export const STRINGS: Record<Lang, Strings> = {
     startingReceipt: "Today's starting receipt no.",
     receiptNo: 'Receipt No.',
     receiptShort: 'Rcpt',
+    receiptNoShort: 'Rcpt no.',
 
     tabCollection: 'Collection',
     tabHolders: 'Holders',

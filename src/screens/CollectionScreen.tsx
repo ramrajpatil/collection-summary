@@ -945,12 +945,9 @@ export function CollectionScreen({
         </div>
       </section>
 
-      {receiptsEnabled ? (
-        <section className="receipt-card glass">
-          <label className="receipt-card-label" htmlFor="startReceipt">
-            {s.startingReceipt}
-          </label>
-          <div className="stepper">
+      <div className={`top-actions${receiptsEnabled ? '' : ' no-receipt'}`}>
+        {receiptsEnabled ? (
+          <div className="receipt-stepper glass">
             <button
               type="button"
               aria-label={s.startingReceipt}
@@ -963,37 +960,40 @@ export function CollectionScreen({
             >
               <MinusIcon />
             </button>
-            <input
-              id="startReceipt"
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              maxLength={4}
-              autoComplete="off"
-              autoCorrect="off"
-              spellCheck={false}
-              value={formatDigits(startDraft, lang)}
-              disabled={busy || (receiptLocked && !locked)}
-              readOnly={locked}
-              onClick={() => {
-                if (locked) setStatus(s.dayLockedError)
-              }}
-              onChange={(event) =>
-                setStartDraft(
-                  toLatinDigits(event.target.value)
-                    .replace(/\D/g, '')
-                    .slice(0, 4),
-                )
-              }
-              onBlur={() => {
-                if (!locked) void commitStart(Number(startDraft))
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.currentTarget.blur()
+            <div className="receipt-stepper-center">
+              <small>{s.receiptNoShort}</small>
+              <input
+                id="startReceipt"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={4}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                value={formatDigits(startDraft, lang)}
+                disabled={busy || (receiptLocked && !locked)}
+                readOnly={locked}
+                onClick={() => {
+                  if (locked) setStatus(s.dayLockedError)
+                }}
+                onChange={(event) =>
+                  setStartDraft(
+                    toLatinDigits(event.target.value)
+                      .replace(/\D/g, '')
+                      .slice(0, 4),
+                  )
                 }
-              }}
-            />
+                onBlur={() => {
+                  if (!locked) void commitStart(Number(startDraft))
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.currentTarget.blur()
+                  }
+                }}
+              />
+            </div>
             <button
               type="button"
               aria-label={s.startingReceipt}
@@ -1007,10 +1007,7 @@ export function CollectionScreen({
               <PlusIcon />
             </button>
           </div>
-        </section>
-      ) : null}
-
-      <div className="action-grid">
+        ) : null}
         <button
           type="button"
           className="action-tile primary"

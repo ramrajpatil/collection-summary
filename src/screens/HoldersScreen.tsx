@@ -15,7 +15,7 @@ import { isAccountExistsError } from '../lib/db'
 import { pushBackHandler } from '../lib/backButton'
 import { STRINGS, useLanguage } from '../lib/i18n'
 import { formatDigits } from '../lib/marathi'
-import { holderName, toEnglishName, toMarathiName, upperName } from '../lib/names'
+import { holderName, toEnglishName, upperName } from '../lib/names'
 import { digitsOnly, stripDigits } from '../lib/input'
 import { accountDigits, rankByAccount } from '../lib/accounts'
 import { BottomSheet } from '../components/BottomSheet'
@@ -205,13 +205,9 @@ export function HoldersScreen({
     }))
   }
 
-  function updateEnglishName(value: string, sync = true) {
+  function updateEnglishName(value: string) {
     const clean = stripDigits(value)
-    setDraft((prev) => ({
-      ...prev,
-      nameEn: clean,
-      name: sync ? toMarathiName(clean) : prev.name,
-    }))
+    setDraft((prev) => ({ ...prev, nameEn: clean }))
   }
 
   function normalizeEnglishName() {
@@ -533,16 +529,7 @@ export function HoldersScreen({
               autoCorrect="off"
               spellCheck={false}
               placeholder={s.holderNameEnHint}
-              onChange={(event) =>
-                updateEnglishName(event.target.value, !composingRef.current)
-              }
-              onCompositionStart={() => {
-                composingRef.current = true
-              }}
-              onCompositionEnd={(event) => {
-                composingRef.current = false
-                updateEnglishName(event.currentTarget.value)
-              }}
+              onChange={(event) => updateEnglishName(event.target.value)}
               onBlur={normalizeEnglishName}
             />
           </div>
