@@ -359,7 +359,7 @@ public class PdfGeneratorPlugin extends Plugin {
                     PdfDocument document = new PdfDocument();
                     renderPage(webView, html, baseUrl, document, breaks, 0,
                             reservedTop, density, pdfFile, saveToDownloads, call, cleanup);
-                }), 120);
+                }), 60);
     }
 
     private List<Integer> computeBreaks(
@@ -538,7 +538,10 @@ public class PdfGeneratorPlugin extends Plugin {
                         cleanup.run();
                         call.reject("Unable to render page: " + e.getMessage(), e);
                     }
-                }, 700);
+                    // The font is already cached from the first load, so a short
+                    // settle is enough; the old 700ms per page dominated the
+                    // total time for multi-page sheets.
+                }, 250);
             }
         });
 

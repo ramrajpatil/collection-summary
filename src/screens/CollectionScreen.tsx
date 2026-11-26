@@ -29,6 +29,7 @@ import {
 } from '../lib/sheets'
 import { BottomSheet } from '../components/BottomSheet'
 import { DatePicker } from '../components/DatePicker'
+import { PdfPreview } from '../components/PdfPreview'
 import { ScanFlow } from '../components/ScanFlow'
 import { ScrollTopButton } from '../components/ScrollTopButton'
 import { Toast } from '../components/Toast'
@@ -37,7 +38,6 @@ import {
   CameraIcon,
   CheckIcon,
   ChevronRightIcon,
-  DownloadIcon,
   EyeIcon,
   EyeOffIcon,
   LockIcon,
@@ -45,7 +45,6 @@ import {
   PlusIcon,
   PrinterIcon,
   SearchIcon,
-  ShareIcon,
   TrashIcon,
   UnlockIcon,
   UsersIcon,
@@ -135,6 +134,7 @@ export function CollectionScreen({
   const [movePickOpen, setMovePickOpen] = useState(false)
   const [scanOpen, setScanOpen] = useState(false)
   const [pdfOpen, setPdfOpen] = useState(false)
+  const [pdfHtml, setPdfHtml] = useState('')
   const [pdfSort, setPdfSort] = useState<SheetSort>('account')
   const [pdfAction, setPdfAction] = useState<'save' | 'share' | null>(null)
 
@@ -345,10 +345,15 @@ export function CollectionScreen({
       !unlockOpen &&
       !lockConfirmOpen &&
       !editPassOpen &&
-      !reassignOpen
+      !reassignOpen &&
+      !pdfOpen
     )
       return
     return pushBackHandler(() => {
+      if (pdfOpen) {
+        if (!busy) setPdfOpen(false)
+        return true
+      }
       if (editPassOpen) {
         closeEditPassword()
         return true
@@ -391,6 +396,8 @@ export function CollectionScreen({
     lockConfirmOpen,
     editPassOpen,
     reassignOpen,
+    pdfOpen,
+    busy,
   ])
 
   const entryByHolder = useMemo(() => {
@@ -828,7 +835,43 @@ export function CollectionScreen({
     }
   }
 
-  async function handlePdf(sort: SheetSort, action: 'save' | 'share') {
+  async function openPdfPreview() {
+    if (busy) return
+    if (!day || day.entries.length === 0) {
+      setStatus(s.noEntries)
+      return
+    }
+    setBusy(true)
+    setStatus('')
+    try {
+      const html = await buildDailySheetHtml(repo, profile, date, lang, pdfSort)
+      if (!html) {
+        setStatus(s.noEntries)
+        return
+      }
+      setPdfHtml(html)
+      setPdfOpen(true)
+    } catch (err) {
+      setStatus(
+        `${s.pdfFailed} ${err instanceof Error ? err.message : String(err)}`,
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function changePdfSort(next: SheetSort) {
+    if (next === pdfSort) return
+    setPdfSort(next)
+    try {
+      const html = await buildDailySheetHtml(repo, profile, date, lang, next)
+      if (html) setPdfHtml(html)
+    } catch {
+      void 0
+    }
+  }
+
+  async function handlePdf(action: 'save' | 'share') {
     if (busy) return
     if (!day || day.entries.length === 0) {
       setStatus(s.noEntries)
@@ -838,7 +881,7 @@ export function CollectionScreen({
     setPdfAction(action)
     setStatus('')
     try {
-      const html = await buildDailySheetHtml(repo, profile, date, lang, sort)
+      const html = await buildDailySheetHtml(repo, profile, date, lang, pdfSort)
       if (!html) {
         setStatus(s.noEntries)
         return
@@ -1012,7 +1055,7 @@ export function CollectionScreen({
           type="button"
           className="action-tile primary"
           disabled={busy || collectedCount === 0}
-          onClick={() => setPdfOpen(true)}
+          onClick={() => void openPdfPreview()}
         >
           <PrinterIcon />
           <span>{s.printKara}</span>
@@ -1241,66 +1284,19 @@ export function CollectionScreen({
       </div>
 
       {pdfOpen ? (
-        <BottomSheet
-          title={s.sharePdf}
-          closeLabel={s.close}
+        <PdfPreview
+          html={pdfHtml}
+          sort={pdfSort}
+          receiptsEnabled={receiptsEnabled}
+          busy={busy}
+          action={pdfAction}
+          native={Capacitor.isNativePlatform()}
+          onSort={(next) => void changePdfSort(next)}
+          onAction={(action) => void handlePdf(action)}
           onClose={() => {
             if (!busy) setPdfOpen(false)
           }}
-        >
-          {receiptsEnabled ? (
-            <div className="field">
-              <span className="field-label">{s.sortPdfBy}</span>
-              <div className="segmented" role="group" aria-label={s.sortPdfBy}>
-                <button
-                  type="button"
-                  className={pdfSort === 'account' ? 'active' : ''}
-                  disabled={busy}
-                  onClick={() => setPdfSort('account')}
-                >
-                  {s.sortAccount}
-                </button>
-                <button
-                  type="button"
-                  className={pdfSort === 'receipt' ? 'active' : ''}
-                  disabled={busy}
-                  onClick={() => setPdfSort('receipt')}
-                >
-                  {s.sortReceipt}
-                </button>
-              </div>
-            </div>
-          ) : null}
-
-          <div className="pdf-actions">
-            <button
-              type="button"
-              className="btn-ghost"
-              disabled={busy}
-              onClick={() => void handlePdf(pdfSort, 'save')}
-            >
-              {pdfAction === 'save' ? (
-                <span className="spinner" />
-              ) : (
-                <DownloadIcon />
-              )}
-              {s.saveToDownloads}
-            </button>
-            <button
-              type="button"
-              className="btn-primary"
-              disabled={busy}
-              onClick={() => void handlePdf(pdfSort, 'share')}
-            >
-              {pdfAction === 'share' ? (
-                <span className="spinner" />
-              ) : (
-                <ShareIcon />
-              )}
-              {s.shareToWhatsApp}
-            </button>
-          </div>
-        </BottomSheet>
+        />
       ) : null}
 
       {status ? (

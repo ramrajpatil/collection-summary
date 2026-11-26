@@ -166,6 +166,27 @@ const PRINT_STYLE = `
 `
 
 /**
+ * Wraps the print sheet HTML in screen-only styles so it can be shown in an
+ * in-app preview iframe (white page on a grey canvas) without altering the
+ * layout that the native PDF renderer produces.
+ */
+const PREVIEW_STYLE = `
+  html { background: #e5e7eb; }
+  body {
+    background: #fff;
+    width: 210mm;
+    min-height: 100%;
+    margin: 0;
+    padding: 12mm 16mm 12mm 22mm;
+    box-sizing: border-box;
+  }
+`
+
+export function withPreviewStyles(html: string): string {
+  return html.replace('</head>', `<style>${PREVIEW_STYLE}</style></head>`)
+}
+
+/**
  * Opens the browser print preview. Setting the page margin to zero and applying
  * the margins as body padding prevents browsers from printing their own
  * headers/footers (URL, date, time and page number) on the sheet.
