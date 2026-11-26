@@ -156,6 +156,53 @@ export default function App() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  // Pause the full-screen aurora drift while idle or backgrounded. Left running,
+  // the animated layer (plus the blurred chrome above it) keeps the compositor
+  // awake at 60fps, which is the app's main battery/heat cost when it is just
+  // sitting open.
+  useEffect(() => {
+    const root = document.documentElement
+    let timer = 0
+    let paused = false
+
+    function setPaused(next: boolean) {
+      if (paused === next) return
+      paused = next
+      root.classList.toggle('aurora-paused', next)
+    }
+
+    function wake() {
+      setPaused(false)
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => {
+        if (!document.hidden) setPaused(true)
+      }, 5000)
+    }
+
+    function handleVisibility() {
+      if (document.hidden) {
+        window.clearTimeout(timer)
+        setPaused(true)
+      } else {
+        wake()
+      }
+    }
+
+    wake()
+    window.addEventListener('pointerdown', wake, { passive: true })
+    window.addEventListener('scroll', wake, { passive: true })
+    window.addEventListener('keydown', wake)
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => {
+      window.clearTimeout(timer)
+      window.removeEventListener('pointerdown', wake)
+      window.removeEventListener('scroll', wake)
+      window.removeEventListener('keydown', wake)
+      document.removeEventListener('visibilitychange', handleVisibility)
+      root.classList.remove('aurora-paused')
+    }
+  }, [])
+
   const backAction = useRef<() => boolean>(() => false)
   useEffect(() => {
     backAction.current = () => {

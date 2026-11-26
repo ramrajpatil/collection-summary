@@ -103,6 +103,12 @@ public class PdfGeneratorPlugin extends Plugin {
                         root.removeView(container);
                     } catch (Exception ignored) {
                     }
+                    // Free the hidden renderer immediately instead of leaving a
+                    // WebView (and its raster caches) alive until GC.
+                    try {
+                        webView.destroy();
+                    } catch (Exception ignored) {
+                    }
                 };
 
                 layoutWebView(webView, density, CSS_PAGE_H);

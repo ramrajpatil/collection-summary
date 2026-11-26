@@ -202,6 +202,13 @@ body {
   display: none;
 }
 
+/* Idle/background pause: keeps the ambient gradient but stops the per-frame
+   compositing (and backdrop re-blur) that drains battery. */
+html.aurora-paused .aurora,
+html.aurora-paused .scan-screen::before {
+  animation-play-state: paused;
+}
+
 @keyframes drift {
   0% {
     transform: translate3d(-2%, -1.5%, 0) scale(1.15);
@@ -234,6 +241,15 @@ body {
     inset 0 1px 0 var(--glass-inset);
   -webkit-backdrop-filter: blur(10px) saturate(140%);
   backdrop-filter: blur(10px) saturate(140%);
+}
+
+/* Native WebView: render the aurora as a static gradient. Same colours and
+   composition, but no per-vsync compositing, which is the app's main battery
+   cost on a phone. */
+[data-platform='native'] .aurora,
+[data-platform='native'] .scan-screen::before {
+  animation: none;
+  will-change: auto;
 }
 
 /* Native WebView: keep the liquid-glass look on floating chrome only, where
@@ -4388,6 +4404,8 @@ html[lang='mr'] .collect-datebar .date-pill span {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .aurora,
+  .scan-screen::before,
   .tabbar,
   .holder-row,
   .report-holder,
